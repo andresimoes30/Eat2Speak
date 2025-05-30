@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { register } from "@/services/api"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { GraduationCap, Store, User, Wine } from "lucide-react"
@@ -47,6 +48,8 @@ export default function RegisterPage() {
   const [nativeLanguage, setNativeLanguage] = useState("")
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [apiError, setApiError] = useState("")
 
   useEffect(() => {
     const type = searchParams.get("type")
@@ -55,8 +58,11 @@ export default function RegisterPage() {
     }
   }, [searchParams])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Clear previous API error
+    setApiError("")
 
     // Validation
     const newErrors: Record<string, string> = {}
@@ -86,16 +92,63 @@ export default function RegisterPage() {
       return
     }
 
-    // Mock registration success
-    toast({
-      title: "Registro realizado com sucesso!",
-      description: "Redirecionando para o dashboard...",
-    })
+    // Prepare data for API
+    const userData = {
+      firstName,
+      lastName,
+      email,
+      password,
+      phoneNumber: phone,
+      userTypes: [userType], // API expects an array of user types
+      ...(userType === "teacher" ? { languageName: nativeLanguage } : {})
+    }
 
-    // Redirect to dashboard after a short delay
-    setTimeout(() => {
-      router.push("/dashboard")
-    }, 1500)
+    // Show loading state
+    setIsLoading(true)
+
+    try {
+      // Call the API
+      const response = await register(userData)
+      
+      // Show success message
+      toast({
+        title: "Registro realizado com sucesso!",
+        description: "Redirecionando para o dashboard...",
+      })
+
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 1500)
+    } catch (error) {
+      // Handle API errors
+      console.error("Registration error:", error)
+      
+      // Set the error message
+      if (typeof error === "object" && error !== null) {
+        // Use type guard to check if the error object has a message property
+        const errorMessage = 'message' in error && typeof error.message === 'string' 
+          ? error.message 
+          : "Erro ao registrar. Tente novamente."
+        setApiError(errorMessage)
+        
+        toast({
+          title: "Erro no registro",
+          description: errorMessage,
+          variant: "destructive",
+        })
+      } else {
+        setApiError("Erro ao registrar. Tente novamente.")
+        
+        toast({
+          title: "Erro no registro",
+          description: "Erro ao registrar. Tente novamente.",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -111,6 +164,11 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {apiError && (
+            <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-600">
+              <p className="text-sm">{apiError}</p>
+            </div>
+          )}
           <RadioGroup value={userType} onValueChange={setUserType} className="grid grid-cols-3 gap-3 mb-6">
             {userTypes.map((type) => {
               const Icon = type.icon
@@ -213,7 +271,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Label htmlFor="nativeLanguage">Idioma Nativo</Label>
               <Select value={nativeLanguage} onValueChange={setNativeLanguage}>
-                <SelectTrigger id="nativeLanguage" className={errors.nativeLanguage ? "border-red-500" : ""}>
+                <SelectTrigger className={errors.nativeLanguage ? "border-red-500" : ""}>
                   <SelectValue placeholder="Selecione seu idioma nativo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -228,8 +286,12 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <Button type="submit" className="w-full bg-wine-600 hover:bg-wine-700">
-            Registrar
+          <Button 
+            onClick={handleSubmit}
+            className="w-full bg-wine-600 hover:bg-wine-700"
+            disabled={isLoading}
+          >
+            {isLoading ? "Registrando..." : "Registrar"}
           </Button>
 
           <p className="text-center text-sm text-gray-600">

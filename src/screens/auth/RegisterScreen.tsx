@@ -325,17 +325,29 @@ export default function RegisterScreen() {
       // Use the register function
       const response = await register(userData);
       
-      // On success, show success message and navigate to login screen
-      Alert.alert(
-        "Registration Successful",
-        response.message || "Your account has been created successfully. Please log in.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate(getLoginScreenName()),
-          },
-        ]
-      );
+      // Success handling - store success message for the login screen
+      const successMessage = response.message || "Your account has been created successfully. Please log in.";
+      
+      // Show brief success message
+      Alert.alert("Registration Successful", successMessage);
+      
+      // Automatically navigate to login screen after a brief delay
+      // This ensures the user sees the success message before navigation
+      setIsLoading(false);
+      
+      // Get the correct login screen name based on user type
+      const loginScreen = getLoginScreenName();
+      
+      // Direct navigation to login screen with success message
+      setTimeout(() => {
+        navigation.navigate(loginScreen, { 
+          registrationSuccess: true, 
+          message: successMessage 
+        });
+      }, 800); // Short delay for user to see success message
+      
+      // Return early to prevent the finally block from executing
+      return;
     } catch (error: any) {
       // Enhanced error handling with specific guidance for connectivity issues
       let errorMessage = "Registration failed. Please try again.";
