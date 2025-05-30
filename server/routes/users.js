@@ -12,26 +12,26 @@ const logger = require('../utils/logger');
 const router = express.Router();
 
 /**
- * Get all users with pagination
- * GET /api/users
+ * Get all Users with pagination
+ * GET /api/Users
  */
 router.get('/', async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     
-    const users = await User.list({ page, limit });
+    const Users = await User.list({ page, limit });
     
-    res.status(200).json(users);
+    res.status(200).json(Users);
   } catch (error) {
-    logger.error(`Error fetching users: ${error.message}`);
+    logger.error(`Error fetching Users: ${error.message}`);
     next(error);
   }
 });
 
 /**
  * Get user by ID
- * GET /api/users/:id
+ * GET /api/Users/:id
  */
 router.get('/:id', async (req, res, next) => {
   try {
@@ -51,7 +51,7 @@ router.get('/:id', async (req, res, next) => {
 
 /**
  * Create a new user
- * POST /api/users
+ * POST /api/Users
  */
 router.post('/', async (req, res, next) => {
   try {
@@ -97,7 +97,7 @@ router.post('/', async (req, res, next) => {
 
 /**
  * Update user
- * PUT /api/users/:id
+ * PUT /api/Users/:id
  */
 router.put('/:id', async (req, res, next) => {
   try {
@@ -133,7 +133,7 @@ router.put('/:id', async (req, res, next) => {
 
 /**
  * Delete user
- * DELETE /api/users/:id
+ * DELETE /api/Users/:id
  */
 router.delete('/:id', async (req, res, next) => {
   try {

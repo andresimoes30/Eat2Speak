@@ -284,8 +284,8 @@ export default function RegisterScreen() {
     setIsLoading(true);
     setApiError("");
 
-    try {
-      // Create base user data object with only fields from the form - keeping it minimal
+  try {
+      // Create base user data object with required fields
       const baseUserData: BaseUserData = {
         firstName: form.firstName,
         lastName: form.lastName,
@@ -293,12 +293,12 @@ export default function RegisterScreen() {
         password: form.password,
         phoneNumber: form.phone,
         address: form.address,
-        userTypes: userType, // Changed from userType to userTypes to match backend expectations
+        userTypes: userType, // This field name matches backend expectations
       };
 
       let userData: UserData = baseUserData;
 
-      // Add fields based on user type - only include required fields
+      // Add fields based on user type - include all required fields for each type
       if (userType === "student") {
         userData = {
           ...baseUserData,
@@ -313,35 +313,83 @@ export default function RegisterScreen() {
           languageName: form.nativeLanguage,
         } as NativeUserData;
       } else if (userType === "restaurant") {
-        // For restaurant, use restaurantName instead of name
         userData = {
           ...baseUserData,
-          restaurantName: form.restaurantName, // Use restaurantName as expected by backend
+          restaurantName: form.restaurantName,
           cuisineType: form.cuisineType,
         } as RestaurantUserData;
       }
 
       console.log("Submitting registration data:", userData);
 
-      // Call the register API
-      const response = await register(userData)
+      // Use the register function
+      const response = await register(userData);
       
-      // On success, navigate to confirmation or login screen
+      // On success, show success message and navigate to login screen
       Alert.alert(
         "Registration Successful",
-        "Your account has been created successfully. Please log in.",
+        response.message || "Your account has been created successfully. Please log in.",
         [
           {
             text: "OK",
             onPress: () => navigation.navigate(getLoginScreenName()),
           },
         ]
-      )
+      );
     } catch (error: any) {
-      // Handle registration errors
-      const errorMessage = error?.message || "Registration failed. Please try again."
-      setApiError(errorMessage)
-      Alert.alert("Registration Failed", errorMessage)
+      // Enhanced error handling with specific guidance for connectivity issues
+      let errorMessage = "Registration failed. Please try again.";
+      let alertTitle = "Registration Failed";
+      
+      // Check for server connectivity issues
+      if (error?.code === 'SERVER_UNAVAILABLE' || error?.code === 'NETWORK_ERROR') {
+        alertTitle = "Server Connection Error";
+        errorMessage = error.message || "Cannot connect to server. Please ensure the server is running.";
+        
+        // Show more detailed instructions for developers
+        if (__DEV__) {
+          errorMessage += "\n\nDeveloper Note: Start the server with:\ncd server && node start.js";
+        }
+      } 
+      // Check if there's a specific field error
+      else if (error?.field) {
+        // Map field names to user-friendly names
+        const fieldNames: {[key: string]: string} = {
+          email: "Email",
+          password: "Password",
+          firstName: "First Name",
+          lastName: "Last Name",
+          phoneNumber: "Phone Number",
+          restaurantName: "Restaurant Name",
+          cuisineType: "Cuisine Type",
+          address: "Address",
+          nationality: "Nationality",
+          gender: "Gender",
+          languageName: "Native Language"
+        };
+        
+        const fieldName = fieldNames[error.field] || error.field;
+        errorMessage = `${fieldName}: ${error.message || "Invalid value"}`;
+        
+        // Update the specific field error
+        setErrors(prev => ({
+          ...prev,
+          [error.field]: error.message
+        }));
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      setApiError(errorMessage);
+      
+      // Show alert with actionable guidance
+      Alert.alert(
+        alertTitle, 
+        errorMessage,
+        error?.code === 'SERVER_UNAVAILABLE' || error?.code === 'NETWORK_ERROR'
+          ? [{ text: "OK" }]
+          : [{ text: "OK" }]
+      );
     } finally {
       setIsLoading(false)
     }
@@ -861,6 +909,7 @@ export default function RegisterScreen() {
               <Text style={styles.registerButtonText}>{t("auth.register.continue")}</Text>
             )}
           </TouchableOpacity>
+
 
           {/* Login Link */}
           <View style={styles.loginContainer}>

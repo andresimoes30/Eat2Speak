@@ -18,8 +18,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet()); // Security headers
-app.use(cors()); // Enable CORS for all routes
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+})); // Security headers with cross-origin policy
+
+// Basic CORS configuration - simpler approach to avoid path-to-regexp issues
+app.use(cors());
+
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
@@ -63,11 +68,86 @@ app.get('/health', (req, res) => {
   }
 });
 
-// Import API routes
-const apiRoutes = require('./routes/index');
+// Import API routes but handle potential route errors
+let apiRoutes;
+try {
+  apiRoutes = require('./routes/index');
+  
+  // Register API routes
+  app.use('/api', apiRoutes);
+} catch (error) {
+  logger.error(`Failed to load API routes: ${error.message}`);
+  
+  // Fallback route handler
+  app.use('/api', (req, res) => {
+    res.status(500).json({
+      message: 'API routes failed to load properly',
+      error: error.message
+    });
+  });
+}
 
-// Register API routes
-app.use('/api', apiRoutes);
+// Add basic route for testing server functionality
+app.get('/ping', (req, res) => {
+  res.status(200).json({ message: 'pong', time: new Date().toISOString() });
+});
+
+// Add direct test routes for debugging
+app.post('/test-register', express.json(), (req, res) => {
+  logger.info('Test registration endpoint called');
+  logger.info(`Request body: ${JSON.stringify(req.body)}`);
+  
+  // Return success for testing
+  res.status(200).json({
+    message: 'Test registration received successfully',
+    data: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Direct root endpoint test
+app.get('/hello', (req, res) => {
+  logger.info('Hello endpoint called');
+  res.status(200).json({ 
+    message: 'Hello from Eat2Speak server!',
+    time: new Date().toISOString()
+  });
+});
+
+// Direct auth test endpoint
+app.get('/auth-test', (req, res) => {
+  logger.info('Auth test endpoint called');
+  res.status(200).json({ 
+    message: 'Auth test endpoint working!',
+    time: new Date().toISOString()
+  });
+});
+
+// Add a direct route to expose auth routes information
+app.get('/routes-info', (req, res) => {
+  logger.info('Routes info endpoint called');
+  try {
+    const authRoutes = require('./routes/auth');
+    const stack = authRoutes.stack || [];
+    const routes = stack.map(r => ({
+      path: r.route?.path,
+      methods: r.route?.methods,
+      middlewares: r.route?.stack.length
+    })).filter(r => r.path);
+    
+    res.status(200).json({
+      message: 'Routes information',
+      apiRoutes: 'Mounted at /api',
+      authRoutes: routes,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error getting routes info',
+      error: error.message
+    });
+  }
+});
 
 // Database test endpoint (outside of API routes for direct testing)
 app.get('/test-db', async (req, res) => {

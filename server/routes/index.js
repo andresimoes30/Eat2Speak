@@ -6,7 +6,9 @@
  */
 
 const express = require('express');
-const userRoutes = require('./users');
+const userRoutes = require('./Users');
+const authRoutes = require('./auth');
+const testRoutes = require('../test-endpoint');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -21,7 +23,18 @@ router.get('/', (req, res) => {
 });
 
 // Register route modules
-router.use('/users', userRoutes);
+router.use('/Users', userRoutes);
+router.use('/auth', authRoutes);
+router.use('/test', testRoutes);
+
+// Add a direct health check endpoint
+router.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Future route modules can be added here
 // router.use('/restaurants', restaurantRoutes);
