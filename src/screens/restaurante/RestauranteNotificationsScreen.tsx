@@ -177,15 +177,15 @@ export default function RestauranteNotificationsScreen() {
   // Mark all notifications as read
   const markAllAsRead = () => {
     Alert.alert(
-      "Marcar todo como leído",
-      "¿Deseas marcar todas las notificaciones como leídas?",
+      t("restaurant.markAllAsRead"),
+      t("restaurant.confirmMarkAllAsRead"),
       [
         {
-          text: "Cancelar",
+          text: t("common.cancel"),
           style: "cancel"
         },
         {
-          text: "Confirmar",
+          text: t("common.confirm"),
           onPress: () => {
             const updatedNotifications = notifications.map(notification => (
               { ...notification, read: true }
@@ -193,7 +193,7 @@ export default function RestauranteNotificationsScreen() {
             
             setNotifications(updatedNotifications)
             
-            Alert.alert("Éxito", "Todas las notificaciones han sido marcadas como leídas")
+            Alert.alert(t("common.success"), t("restaurant.allNotificationsMarkedAsRead"))
           }
         }
       ]
@@ -203,15 +203,15 @@ export default function RestauranteNotificationsScreen() {
   // Delete notification
   const deleteNotification = (id: number) => {
     Alert.alert(
-      "Eliminar notificación",
-      "¿Deseas eliminar esta notificación? Esta acción no se puede deshacer.",
+      t("restaurant.deleteNotification"),
+      t("restaurant.confirmDeleteNotification"),
       [
         {
-          text: "Cancelar",
+          text: t("common.cancel"),
           style: "cancel"
         },
         {
-          text: "Eliminar",
+          text: t("common.delete"),
           style: "destructive",
           onPress: () => {
             const updatedNotifications = notifications.filter(
@@ -224,7 +224,7 @@ export default function RestauranteNotificationsScreen() {
               setDetailsModalVisible(false)
             }
             
-            Alert.alert("Éxito", "La notificación ha sido eliminada")
+            Alert.alert(t("common.success"), t("restaurant.notificationDeleted"))
           }
         }
       ]
@@ -347,7 +347,7 @@ export default function RestauranteNotificationsScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Detalles de la notificación
+                {t("restaurant.notificationDetails")}
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -385,7 +385,7 @@ export default function RestauranteNotificationsScreen() {
                   <View style={styles.relatedEventHeader}>
                     <Ionicons name="calendar-outline" size={20} color={colors.primary} />
                     <Text style={[styles.relatedEventTitle, { color: colors.primary }]}>
-                      Evento Relacionado
+                      {t("restaurant.relatedEvent")}
                     </Text>
                   </View>
                   
@@ -394,7 +394,7 @@ export default function RestauranteNotificationsScreen() {
                       {selectedNotification.relatedEvent.language}
                     </Text>
                     <Text style={[styles.relatedEventDateTime, { color: colors.text + "80" }]}>
-                      {selectedNotification.relatedEvent.date} a las {selectedNotification.relatedEvent.time}
+                      {selectedNotification.relatedEvent.date} {t("common.atTime")} {selectedNotification.relatedEvent.time}
                     </Text>
                   </View>
                   
@@ -406,7 +406,7 @@ export default function RestauranteNotificationsScreen() {
                       navigation.navigate('Eventos' as never);
                     }}
                   >
-                    <Text style={styles.viewEventButtonText}>Ver Evento</Text>
+                    <Text style={styles.viewEventButtonText}>{t("restaurant.viewEvent")}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -422,7 +422,7 @@ export default function RestauranteNotificationsScreen() {
               >
                 <Ionicons name="trash-outline" size={20} color={colors.error} />
                 <Text style={[styles.deleteButtonText, { color: colors.error }]}>
-                  Eliminar
+                  {t("common.delete")}
                 </Text>
               </TouchableOpacity>
               
@@ -431,7 +431,7 @@ export default function RestauranteNotificationsScreen() {
                 onPress={() => setDetailsModalVisible(false)}
               >
                 <Text style={styles.closeModalButtonText}>
-                  Cerrar
+                  {t("common.close")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -444,7 +444,7 @@ export default function RestauranteNotificationsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, Platform.OS === 'ios' ? { paddingTop: 8 } : null]}>
-        <Text style={[styles.title, { color: colors.text }]}>Notificaciones</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t("restaurant.notifications")}</Text>
         {unreadCount > 0 && (
           <TouchableOpacity
             style={[styles.markAllReadButton, { borderColor: colors.primary }]}
@@ -452,7 +452,7 @@ export default function RestauranteNotificationsScreen() {
           >
             <Ionicons name="checkmark-done" size={18} color={colors.primary} />
             <Text style={[styles.markAllReadText, { color: colors.primary }]}>
-              Marcar todo como leído
+              {t("restaurant.markAllAsRead")}
             </Text>
           </TouchableOpacity>
         )}
@@ -481,7 +481,7 @@ export default function RestauranteNotificationsScreen() {
               }
             ]}
           >
-            Todas
+            {t("common.all")}
           </Text>
         </TouchableOpacity>
         
@@ -507,7 +507,7 @@ export default function RestauranteNotificationsScreen() {
               }
             ]}
           >
-            No leídas
+            {t("restaurant.unread")}
           </Text>
           {unreadCount > 0 && (
             <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
@@ -538,7 +538,7 @@ export default function RestauranteNotificationsScreen() {
               }
             ]}
           >
-            Leídas
+            {t("restaurant.read")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -553,14 +553,14 @@ export default function RestauranteNotificationsScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="notifications-off-outline" size={48} color={colors.text + "40"} />
             <Text style={[styles.emptyStateText, { color: colors.text + "80" }]}>
-              No hay notificaciones
+              {t("restaurant.noNotifications")}
             </Text>
             <Text style={[styles.emptyStateSubtext, { color: colors.text + "60" }]}>
               {filter === 'unread' 
-                ? "No tienes notificaciones sin leer" 
+                ? t("restaurant.noUnreadNotifications") 
                 : filter === 'read' 
-                  ? "No tienes notificaciones leídas" 
-                  : "Las notificaciones aparecerán aquí"}
+                  ? t("restaurant.noReadNotifications") 
+                  : t("restaurant.notificationsWillAppearHere")}
             </Text>
           </View>
         }

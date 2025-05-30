@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linkin
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
-
+import { useLanguage } from "../../contexts/LanguageContext"
 // Define FAQ item type
 interface FAQItem {
   id: number;
@@ -11,16 +11,17 @@ interface FAQItem {
   answer: string;
   expanded: boolean;
 }
-
 export default function RestauranteHelpSupportScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   
   // Estado para la mensaje de soporte
   const [supportMessage, setSupportMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   
   // Estado para preguntas frecuentes
+  // TODO: Move FAQ content to translations system to support multiple languages
   const [faqs, setFaqs] = useState<FAQItem[]>([
     {
       id: 1,
@@ -66,7 +67,6 @@ export default function RestauranteHelpSupportScreen() {
       faq.id === id ? { ...faq, expanded: !faq.expanded } : faq
     ));
   };
-
   // Filtrar FAQs con base en la búsqueda
   const filteredFAQs = faqs.filter(faq => 
     faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,10 +76,10 @@ export default function RestauranteHelpSupportScreen() {
   // Función para enviar mensaje de soporte
   const sendSupportMessage = () => {
     if (supportMessage.trim()) {
-      alert("Tu mensaje ha sido enviado. Te responderemos en breve.");
+      alert(t("support.messageSent"));
       setSupportMessage("");
     } else {
-      alert("Por favor, escribe un mensaje antes de enviar.");
+      alert(t("support.pleaseWriteMessage"));
     }
   };
 
@@ -129,7 +129,7 @@ export default function RestauranteHelpSupportScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Ayuda y Soporte</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("support.helpAndSupport")}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -139,7 +139,7 @@ export default function RestauranteHelpSupportScreen() {
           <Ionicons name="search-outline" size={20} color={colors.text + '80'} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Buscar ayuda..."
+            placeholder={t("support.searchHelp")}
             placeholderTextColor={colors.text + '80'}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -152,7 +152,7 @@ export default function RestauranteHelpSupportScreen() {
         </View>
 
         {/* Contactos rápidos */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Contacto Rápido</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("support.quickContact")}</Text>
         <View style={styles.contactLinksContainer}>
           {contactLinks.map(link => (
             <TouchableOpacity
@@ -164,8 +164,8 @@ export default function RestauranteHelpSupportScreen() {
                 <Ionicons name={link.icon as any} size={24} color={link.color} />
               </View>
               <View style={styles.contactTextContainer}>
-                <Text style={[styles.contactTitle, { color: colors.text }]}>{link.title}</Text>
-                <Text style={[styles.contactDescription, { color: colors.text + '80' }]}>{link.description}</Text>
+                <Text style={[styles.contactTitle, { color: colors.text }]}>{t(`support.${link.id === 1 ? 'supportEmail' : link.id === 2 ? 'phone' : link.id === 3 ? 'whatsapp' : 'helpCenter'}`)}</Text>
+                <Text style={[styles.contactDescription, { color: colors.text + '80' }]}>{link.id === 3 ? t("support.liveChat") : link.id === 4 ? t("support.visitHelpWebsite") : link.description}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.text + '80'} />
             </TouchableOpacity>
@@ -173,7 +173,7 @@ export default function RestauranteHelpSupportScreen() {
         </View>
 
         {/* FAQs */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Preguntas Frecuentes</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("support.frequentlyAskedQuestions")}</Text>
         <View style={styles.faqsContainer}>
           {filteredFAQs.length > 0 ? (
             filteredFAQs.map(faq => (
@@ -199,20 +199,20 @@ export default function RestauranteHelpSupportScreen() {
             <View style={[styles.noResultsContainer, { backgroundColor: colors.card }]}>
               <Ionicons name="search-outline" size={48} color={colors.text + '80'} />
               <Text style={[styles.noResultsText, { color: colors.text }]}>
-                No se encontraron resultados para "{searchQuery}"
+                {t("support.noResultsFound")} "{searchQuery}"
               </Text>
               <Text style={[styles.noResultsSubtext, { color: colors.text + '80' }]}>
-                Intenta con diferentes palabras o revisa nuestra sección de contacto
+                {t("support.tryDifferentWords")}
               </Text>
             </View>
           )}
         </View>
 
         {/* Formulario de soporte */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Enviar Mensaje al Soporte</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("support.sendSupportMessage")}</Text>
         <View style={[styles.supportCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.supportText, { color: colors.text + '80' }]}>
-            Envíanos un mensaje detallado sobre tu consulta o problema y te responderemos en breve.
+            {t("support.detailedMessageInstructions")}
           </Text>
           
           <TextInput
@@ -224,7 +224,7 @@ export default function RestauranteHelpSupportScreen() {
                 color: colors.text
               }
             ]}
-            placeholder="Describe tu problema o pregunta..."
+            placeholder={t("support.describeYourProblem")}
             placeholderTextColor={colors.text + '80'}
             multiline
             numberOfLines={6}
@@ -244,7 +244,7 @@ export default function RestauranteHelpSupportScreen() {
             onPress={sendSupportMessage}
           >
             <Ionicons name="send" size={20} color="white" style={{ marginRight: 8 }} />
-            <Text style={styles.sendButtonText}>Enviar Mensaje</Text>
+            <Text style={styles.sendButtonText}>{t("support.sendMessage")}</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -213,11 +213,11 @@ export default function RestauranteEventsScreen() {
   const getStatusText = (status: string) => {
     switch(status) {
       case 'confirmed':
-        return "Confirmado"
+        return t("restaurant.confirmed")
       case 'pending':
-        return "Pendiente"
+        return t("restaurant.pending")
       case 'cancelled':
-        return "Cancelado"
+        return t("restaurant.cancelled")
       default:
         return status
     }
@@ -226,15 +226,15 @@ export default function RestauranteEventsScreen() {
   // Handle cancellation
   const handleCancelEvent = (eventId: number) => {
     Alert.alert(
-      "Cancelar Evento",
-      "¿Estás seguro de que deseas cancelar este evento?",
+      t("restaurant.cancelEvent"),
+      t("restaurant.confirmCancelEvent"),
       [
         {
-          text: "No",
+          text: t("common.no"),
           style: "cancel"
         },
         {
-          text: "Sí, Cancelar",
+          text: t("restaurant.yesCancel"),
           style: "destructive",
           onPress: () => {
             // Update the event status
@@ -251,7 +251,7 @@ export default function RestauranteEventsScreen() {
               setSelectedEvent({ ...selectedEvent, status: 'cancelled' as 'cancelled' })
             }
             
-            Alert.alert("Evento Cancelado", "El evento ha sido cancelado correctamente")
+            Alert.alert(t("restaurant.eventCancelled"), t("restaurant.eventCancelledSuccess"))
           }
         }
       ]
@@ -275,7 +275,7 @@ export default function RestauranteEventsScreen() {
                 {item.language}
               </Text>
               <Text style={[styles.eventDateTime, { color: colors.text }]}>
-                {item.date} a las {item.time}
+                {item.date} {t("common.atTime")} {item.time}
               </Text>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
@@ -289,7 +289,7 @@ export default function RestauranteEventsScreen() {
             <View style={styles.detailItem}>
               <Ionicons name="people-outline" size={16} color={colors.text + "80"} />
               <Text style={[styles.detailText, { color: colors.text + "80" }]}>
-                {item.totalParticipants} participantes
+                {item.totalParticipants} {t("restaurant.participants")}
               </Text>
             </View>
             <View style={styles.detailItem}>
@@ -369,7 +369,7 @@ export default function RestauranteEventsScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Detalles del Evento
+                {t("restaurant.eventDetails")}
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -383,7 +383,7 @@ export default function RestauranteEventsScreen() {
               <View style={styles.eventSummary}>
                 <View style={styles.eventSummaryHeader}>
                   <Text style={[styles.eventSummaryLanguage, { color: colors.primary }]}>
-                    Sesión de {selectedEvent.language}
+                    {t("restaurant.sessionOf")} {selectedEvent.language}
                   </Text>
                   <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
                     <Text style={[styles.statusText, { color: statusColor }]}>
@@ -399,10 +399,10 @@ export default function RestauranteEventsScreen() {
                     </View>
                     <View style={styles.infoContent}>
                       <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>
-                        Fecha y Hora
+                        {t("restaurant.dateAndTime")}
                       </Text>
                       <Text style={[styles.infoValue, { color: colors.text }]}>
-                        {selectedEvent.date} a las {selectedEvent.time}
+                        {selectedEvent.date} {t("common.atTime")} {selectedEvent.time}
                       </Text>
                     </View>
                   </View>
@@ -413,10 +413,10 @@ export default function RestauranteEventsScreen() {
                     </View>
                     <View style={styles.infoContent}>
                       <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>
-                        Participantes
+                        {t("restaurant.participants")}
                       </Text>
                       <Text style={[styles.infoValue, { color: colors.text }]}>
-                        {selectedEvent.totalParticipants} personas
+                        {selectedEvent.totalParticipants} {t("common.people")}
                       </Text>
                     </View>
                   </View>
@@ -427,7 +427,7 @@ export default function RestauranteEventsScreen() {
                     </View>
                     <View style={styles.infoContent}>
                       <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>
-                        Ingresos Estimados
+                        {t("restaurant.estimatedRevenue")}
                       </Text>
                       <Text style={[styles.infoValue, { color: colors.text }]}>
                         {selectedEvent.revenue}
@@ -439,7 +439,7 @@ export default function RestauranteEventsScreen() {
               
               <View style={styles.participantsSection}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Profesor
+                  {t("restaurant.teacher")}
                 </Text>
                 {teachers.map((teacher) => (
                   <View key={teacher.id} style={[styles.participantItem, { borderColor: colors.border }]}>
@@ -463,7 +463,7 @@ export default function RestauranteEventsScreen() {
                 ))}
                 
                 <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 20 }]}>
-                  Estudiantes ({students.length})
+                  {t("restaurant.students")} ({students.length})
                 </Text>
                 {students.map((student) => (
                   <View key={student.id} style={[styles.participantItem, { borderColor: colors.border }]}>
@@ -497,7 +497,7 @@ export default function RestauranteEventsScreen() {
                   }}
                 >
                   <Text style={[styles.cancelButtonText, { color: colors.error }]}>
-                    Cancelar Evento
+                    {t("restaurant.cancelEvent")}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -507,7 +507,7 @@ export default function RestauranteEventsScreen() {
                 onPress={() => setDetailsModalVisible(false)}
               >
                 <Text style={styles.closeModalButtonText}>
-                  Cerrar
+                  {t("common.close")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -520,7 +520,7 @@ export default function RestauranteEventsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, Platform.OS === 'ios' ? { paddingTop: 8 } : null]}>
-        <Text style={[styles.title, { color: colors.text }]}>Eventos</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t("restaurant.events")}</Text>
       </View>
       
       <View style={styles.tabsContainer}>
@@ -547,7 +547,7 @@ export default function RestauranteEventsScreen() {
               }
             ]}
           >
-            Próximos
+            {t("restaurant.upcoming")}
           </Text>
           {upcomingEventsList.length > 0 && (
             <View style={[styles.tabBadge, { backgroundColor: colors.primary }]}>
@@ -579,7 +579,7 @@ export default function RestauranteEventsScreen() {
               }
             ]}
           >
-            Pasados
+            {t("restaurant.past")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -602,14 +602,14 @@ export default function RestauranteEventsScreen() {
             ]}
             onPress={() => setStatusFilter('all')}
           >
-            <Text 
-              style={[
-                styles.filterChipText, 
-                { color: statusFilter === 'all' ? "white" : colors.text }
-              ]}
-            >
-              Todos
-            </Text>
+              <Text 
+                style={[
+                  styles.filterChipText, 
+                  { color: statusFilter === 'all' ? "white" : colors.text }
+                ]}
+              >
+                {t("common.all")}
+              </Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -624,13 +624,13 @@ export default function RestauranteEventsScreen() {
             ]}
             onPress={() => setStatusFilter('confirmed')}
           >
-            <Text 
-              style={[
-                styles.filterChipText, 
-                { color: statusFilter === 'confirmed' ? "white" : colors.text }
-              ]}
-            >
-              Confirmados
+              <Text 
+                style={[
+                  styles.filterChipText, 
+                  { color: statusFilter === 'confirmed' ? "white" : colors.text }
+                ]}
+              >
+              {t("restaurant.confirmed")}
             </Text>
           </TouchableOpacity>
           
@@ -652,7 +652,7 @@ export default function RestauranteEventsScreen() {
                 { color: statusFilter === 'pending' ? "white" : colors.text }
               ]}
             >
-              Pendientes
+              {t("restaurant.pending")}
             </Text>
           </TouchableOpacity>
           
@@ -674,7 +674,7 @@ export default function RestauranteEventsScreen() {
                 { color: statusFilter === 'cancelled' ? "white" : colors.text }
               ]}
             >
-              Cancelados
+              {t("restaurant.cancelled")}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -690,14 +690,14 @@ export default function RestauranteEventsScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={48} color={colors.text + "40"} />
             <Text style={[styles.emptyStateText, { color: colors.text + "80" }]}>
-              No hay eventos {activeTab === 'upcoming' ? 'próximos' : 'pasados'}
+              {activeTab === 'upcoming' ? t("restaurant.noUpcomingEvents") : t("restaurant.noPastEvents")}
             </Text>
             <Text style={[styles.emptyStateSubtext, { color: colors.text + "60" }]}>
               {statusFilter !== 'all' 
-                ? "Prueba con otro filtro" 
+                ? t("restaurant.tryAnotherFilter") 
                 : activeTab === 'upcoming' 
-                  ? "Los eventos programados aparecerán aquí" 
-                  : "El historial de eventos aparecerá aquí"}
+                  ? t("restaurant.scheduledEventsWillAppearHere") 
+                  : t("restaurant.eventHistoryWillAppearHere")}
             </Text>
           </View>
         }

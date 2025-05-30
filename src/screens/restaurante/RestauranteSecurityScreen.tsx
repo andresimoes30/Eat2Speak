@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert } f
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
+import { useLanguage } from "../../contexts/LanguageContext"
 
 export default function RestauranteSecurityScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   
   // Estados para las opciones de seguridad
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -17,40 +19,40 @@ export default function RestauranteSecurityScreen() {
 
   // Manejadores de eventos
   const handleChangePassword = () => {
-    Alert.alert("Cambiar Contraseña", "Esta funcionalidad te permitirá cambiar tu contraseña actual por una nueva.");
+    Alert.alert(t("security.changePassword"), t("security.changePasswordDescription"));
   };
 
   const handleSessionManagement = () => {
-    Alert.alert("Gestión de Sesiones", "Aquí podrás ver y cerrar sesiones activas en otros dispositivos.");
+    Alert.alert(t("security.sessionManagement"), t("security.sessionManagementDescription"));
   };
 
   const handleTwoFactorAuth = () => {
     if (!twoFactorEnabled) {
       Alert.alert(
-        "Activar Autenticación de Dos Factores",
-        "Esto mejorará significativamente la seguridad de tu cuenta. ¿Deseas continuar?",
+        t("security.enableTwoFactor"),
+        t("security.twoFactorEnableDescription"),
         [
           {
-            text: "Cancelar",
+            text: t("common.cancel"),
             style: "cancel"
           },
           {
-            text: "Continuar",
+            text: t("common.continue"),
             onPress: () => setTwoFactorEnabled(true)
           }
         ]
       );
     } else {
       Alert.alert(
-        "Desactivar Autenticación de Dos Factores",
-        "Esto disminuirá la seguridad de tu cuenta. ¿Estás seguro?",
+        t("security.disableTwoFactor"),
+        t("security.twoFactorDisableDescription"),
         [
           {
-            text: "Cancelar",
+            text: t("common.cancel"),
             style: "cancel"
           },
           {
-            text: "Desactivar",
+            text: t("common.disable"),
             onPress: () => setTwoFactorEnabled(false),
             style: "destructive"
           }
@@ -60,11 +62,11 @@ export default function RestauranteSecurityScreen() {
   };
 
   const handlePrivacySettings = () => {
-    Alert.alert("Configuración de Privacidad", "Aquí podrás gestionar qué información se comparte y con quién.");
+    Alert.alert(t("privacy.settings"), t("privacy.settingsDescription"));
   };
 
   const handleDeviceManagement = () => {
-    Alert.alert("Dispositivos Autorizados", "Gestiona los dispositivos que tienen acceso a tu cuenta.");
+    Alert.alert(t("security.authorizedDevices"), t("security.authorizedDevicesDescription"));
   };
 
   return (
@@ -73,13 +75,13 @@ export default function RestauranteSecurityScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Seguridad</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("common.security")}</Text>
         <View style={styles.rightPlaceholder} />
       </View>
 
       <View style={styles.content}>
         <View style={[styles.sectionTitle, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.sectionTitleText, { color: colors.text }]}>Acceso a la cuenta</Text>
+          <Text style={[styles.sectionTitleText, { color: colors.text }]}>{t("restaurant.accountAccess")}</Text>
         </View>
 
         {/* Cambiar contraseña */}
@@ -93,9 +95,9 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Cambiar Contraseña</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("security.changePassword")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Actualiza tu contraseña regularmente para mayor seguridad
+              {t("security.updatePasswordRegularly")}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.text + "60"} />
@@ -112,9 +114,9 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Autenticación de Dos Factores</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("security.twoFactorAuthentication")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Añade una capa extra de seguridad a tu cuenta
+              {t("security.addExtraSecurityLayer")}
             </Text>
           </View>
           <Switch
@@ -136,9 +138,9 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Gestión de Sesiones</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("security.sessionManagement")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Revisa y cierra sesiones activas en otros dispositivos
+              {t("security.reviewAndCloseSessions")}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.text + "60"} />
@@ -154,9 +156,9 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Autenticación Biométrica</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("security.biometricAuthentication")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Usa tu huella digital o reconocimiento facial para iniciar sesión
+              {t("security.useFingerprintOrFaceId")}
             </Text>
           </View>
           <Switch
@@ -178,16 +180,16 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Dispositivos Autorizados</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("security.authorizedDevices")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Gestiona los dispositivos que tienen acceso a tu cuenta
+              {t("security.manageDevicesWithAccess")}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.text + "60"} />
         </TouchableOpacity>
 
         <View style={[styles.sectionTitle, { borderBottomColor: colors.border, marginTop: 20 }]}>
-          <Text style={[styles.sectionTitleText, { color: colors.text }]}>Privacidad</Text>
+          <Text style={[styles.sectionTitleText, { color: colors.text }]}>{t("common.privacy")}</Text>
         </View>
 
         {/* Configuración de privacidad */}
@@ -201,9 +203,9 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Configuración de Privacidad</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("privacy.settings")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Controla qué información es visible para los demás
+              {t("privacy.controlVisibleInformation")}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.text + "60"} />
@@ -217,9 +219,9 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Seguimiento de Ubicación</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("privacy.locationTracking")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Permitir que la app acceda a tu ubicación
+              {t("privacy.allowAppToAccessLocation")}
             </Text>
           </View>
           <Switch
@@ -238,9 +240,9 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Compartir Datos</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("privacy.dataSharing")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Compartir datos anónimos para mejorar el servicio
+              {t("privacy.shareAnonymousData")}
             </Text>
           </View>
           <Switch
@@ -259,9 +261,9 @@ export default function RestauranteSecurityScreen() {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={[styles.optionTitle, { color: colors.text }]}>Notificaciones de Marketing</Text>
+            <Text style={[styles.optionTitle, { color: colors.text }]}>{t("privacy.marketingNotifications")}</Text>
             <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-              Recibir correos sobre ofertas y novedades
+              {t("privacy.receiveEmailsAboutOffers")}
             </Text>
           </View>
           <Switch
@@ -273,29 +275,29 @@ export default function RestauranteSecurityScreen() {
         </TouchableOpacity>
 
         <View style={styles.dangerZone}>
-          <Text style={[styles.dangerZoneTitle, { color: colors.error }]}>Zona de peligro</Text>
+          <Text style={[styles.dangerZoneTitle, { color: colors.error }]}>{t("common.dangerZone")}</Text>
           
           <TouchableOpacity 
             style={[styles.dangerButton, { borderColor: colors.error }]}
             onPress={() => {
               Alert.alert(
-                "Eliminar Cuenta",
-                "Esta acción es irreversible. ¿Estás seguro de que quieres eliminar tu cuenta permanentemente?",
+                t("account.deleteAccount"),
+                t("account.deleteAccountConfirmation"),
                 [
                   {
-                    text: "Cancelar",
+                    text: t("common.cancel"),
                     style: "cancel"
                   },
                   {
-                    text: "Eliminar",
-                    onPress: () => Alert.alert("Función de demostración", "En una aplicación real, esto eliminaría tu cuenta."),
+                    text: t("common.delete"),
+                    onPress: () => Alert.alert(t("common.demoFeature"), t("account.deleteAccountDemoMessage")),
                     style: "destructive"
                   }
                 ]
               );
             }}
           >
-            <Text style={[styles.dangerButtonText, { color: colors.error }]}>Eliminar Cuenta</Text>
+            <Text style={[styles.dangerButtonText, { color: colors.error }]}>{t("account.deleteAccount")}</Text>
           </TouchableOpacity>
         </View>
       </View>
