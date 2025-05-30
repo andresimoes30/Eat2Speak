@@ -121,8 +121,9 @@ const ThemeContext = createContext<ThemeContextType>({
 export const useTheme = () => useContext(ThemeContext)
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Force light mode as default regardless of device setting
   const deviceTheme = useColorScheme() as "light" | "dark"
-  const [theme, setTheme] = useState<"light" | "dark">(deviceTheme || "light")
+  const [theme, setTheme] = useState<"light" | "dark">("light")
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {

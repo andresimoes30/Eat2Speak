@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
 import { AppContext, AppContextType, Notification, Restaurant, mockData } from "./AppTypes"
 import { useLanguage } from "../../contexts/LanguageContext"
+import { useTheme } from "../../contexts/ThemeContext"
 import { Language } from "../../translations"
 
 // Define the parameter list for the Native Navigator stack
@@ -39,6 +40,7 @@ export default function NativeProfileScreen() {
   const { appState, updateAppState } = useContext(AppContext) as AppContextType
   const navigation = useNavigation<NativeProfileNavigationProp>();
   const { language, setLanguage, t } = useLanguage()
+  const { colors, theme, toggleTheme } = useTheme()
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showBugHuntModal, setShowBugHuntModal] = useState(false)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
@@ -64,29 +66,6 @@ export default function NativeProfileScreen() {
     hasScreenshot: false,
     screenshotUri: ""
   })
-  
-  // Theme colors - simplified version since we don't have ThemeContext
-  const colors = {
-    background: '#f9fafb',
-    text: '#111827',
-    border: '#e5e7eb',
-    primary: '#2563eb',
-    error: '#dc2626',
-    card: '#ffffff',
-    blue: {
-      50: '#eff6ff',
-      500: '#3b82f6',
-      600: '#2563eb'
-    },
-    purple: {
-      50: '#f5f3ff',
-      600: '#7c3aed'
-    },
-    gold: {
-      50: '#fffbeb',
-      600: '#ca8a04'
-    }
-  }
 
   // Get user initials for avatar
   const getUserInitials = () => {
@@ -129,7 +108,7 @@ export default function NativeProfileScreen() {
       <View style={styles.content}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.account")}</Text>
 
-        <View style={styles.menuCard}>
+        <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("NativePersonalInfo")}>
             <View style={styles.menuItemLeft}>
               <View style={[styles.menuItemIcon, { backgroundColor: colors.blue[50] }]}>
@@ -155,7 +134,7 @@ export default function NativeProfileScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.preferences")}</Text>
 
-        <View style={styles.menuCard}>
+        <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("NativeAvailabilityMain")}>
             <View style={styles.menuItemLeft}>
               <View style={[styles.menuItemIcon, { backgroundColor: colors.purple[50] }]}>
@@ -171,6 +150,37 @@ export default function NativeProfileScreen() {
             </View>
           </TouchableOpacity>
           
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => toggleTheme()}>
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.menuItemIcon, { backgroundColor: colors.blue[50] }]}>
+                <Ionicons name={theme === "dark" ? "moon" : "moon-outline"} size={20} color={colors.blue[600]} />
+              </View>
+              <Text style={[styles.menuItemText, { color: colors.text }]}>{t("profile.darkMode")}</Text>
+            </View>
+            <View style={styles.toggleContainer}>
+              <View 
+                style={[
+                  styles.toggleSwitch, 
+                  { 
+                    backgroundColor: theme === "dark" ? colors.primary + "80" : colors.border 
+                  }
+                ]}
+              >
+                <View 
+                  style={[
+                    styles.toggleHandle, 
+                    { 
+                      transform: [{ translateX: theme === "dark" ? 24 : 0 }],
+                      backgroundColor: theme === "dark" ? colors.primary : '#f4f3f4'
+                    }
+                  ]} 
+                />
+              </View>
+            </View>
+          </TouchableOpacity>
+
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <TouchableOpacity style={styles.menuItem} onPress={() => setShowLanguageModal(true)}>
@@ -189,7 +199,7 @@ export default function NativeProfileScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.more")}</Text>
 
-        <View style={styles.menuCard}>
+        <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("NativeHelpSupport")}>
             <View style={styles.menuItemLeft}>
               <View style={[styles.menuItemIcon, { backgroundColor: colors.blue[50] }]}>
@@ -635,7 +645,6 @@ const styles = StyleSheet.create({
   },
   menuCard: {
     borderRadius: 12,
-    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,

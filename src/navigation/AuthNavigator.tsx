@@ -6,6 +6,7 @@ import RestaurantLoginScreen from "../screens/auth/RestaurantLoginScreen"
 import RegisterScreen from "../screens/auth/RegisterScreen"
 import ConfirmRegistrationScreen from "../screens/auth/ConfirmRegistration"
 import NativeNavigator from "./NativeNavigator"
+import RestauranteNavigator from "./RestauranteNavigator"
 
 // Definir los tipos para las rutas
 export type AuthStackParamList = {
@@ -32,6 +33,7 @@ export type AuthStackParamList = {
     }
   }
   NativeHome: undefined
+  RestauranteHome: undefined
 }
 
 const Stack = createNativeStackNavigator<AuthStackParamList>()
@@ -54,6 +56,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="ConfirmRegistration" component={ConfirmRegistrationScreen} />
       <Stack.Screen name="NativeHome" component={NativeNavigator} />
+      <Stack.Screen name="RestauranteHome" component={RestauranteNavigator} />
     </Stack.Navigator>
   )
 }

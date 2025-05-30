@@ -154,6 +154,15 @@ export default function WelcomeScreen() {
             <Ionicons name="construct-outline" size={20} color="white" style={{ marginRight: 8 }} />
             <Text style={styles.directLoginText}>Login como Nativo</Text>
           </TouchableOpacity>
+          
+          {/* Direct login as restaurant button for development */}
+          <TouchableOpacity
+            style={[styles.directLoginButton, { borderColor: "white", marginTop: 10 }]}
+            onPress={() => navigation.navigate("RestauranteHome" as never)}
+          >
+            <Ionicons name="restaurant-outline" size={20} color="white" style={{ marginRight: 8 }} />
+            <Text style={styles.directLoginText}>Login como Restaurante</Text>
+          </TouchableOpacity>
         </Animated.View>
       </View>
     </LinearGradient>
