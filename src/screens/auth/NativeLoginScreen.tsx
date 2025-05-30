@@ -56,10 +56,16 @@ export default function NativeLoginScreen() {
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = t("error.emailInvalid")
       isValid = false
+    } else if (email !== "admin@admin.com") {
+      newErrors.email = "Email incorrecto"
+      isValid = false
     }
 
     if (!password) {
       newErrors.password = t("error.passwordRequired")
+      isValid = false
+    } else if (password !== "admin123") {
+      newErrors.password = "Contraseña incorrecta"
       isValid = false
     }
 
