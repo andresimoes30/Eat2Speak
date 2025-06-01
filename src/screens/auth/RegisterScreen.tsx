@@ -164,6 +164,7 @@ export default function RegisterScreen() {
       address: "",
       nationality: "",
       gender: "",
+      customGender: "",
     });
     setApiError("");
   }, [userType]);
@@ -183,6 +184,7 @@ export default function RegisterScreen() {
       address: "",
       nationality: "",
       gender: "",
+      customGender: "",
     }
 
     // Reset API error
