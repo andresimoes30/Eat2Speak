@@ -21,18 +21,28 @@ import { useTheme } from "../../contexts/ThemeContext"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 
-// Languages for native selection
+// Languages for native selection with 20 languages from the database
 const languages = [
-  "Inglés",
-  "Español",
-  "Francés",
-  "Alemán",
-  "Italiano",
-  "Japonés",
-  "Mandarín",
-  "Portugués",
-  "Ruso",
+  "Inglês",
+  "Mandarim",
+  "Hindi",
+  "Espanhol",
+  "Francês",
   "Árabe",
+  "Bengali",
+  "Português",
+  "Russo",
+  "Urdu",
+  "Indonésio",
+  "Alemão",
+  "Japonês",
+  "Marata",
+  "Telugu",
+  "Turco",
+  "Tâmil",
+  "Vietnamita",
+  "Coreano",
+  "Italiano"
 ]
 
 // Countries with flag emojis for the nationality dropdown
@@ -307,6 +317,14 @@ export default function RegisterScreen() {
       country.name.toLowerCase().includes(nationalitySearch.toLowerCase())
     );
   }, [nationalitySearch]);
+  
+  // Filtered languages for native language dropdown
+  const [languageSearch, setLanguageSearch] = useState("")
+  const filteredLanguages = useMemo(() => {
+    return languages.filter(language => 
+      language.toLowerCase().includes(languageSearch.toLowerCase())
+    );
+  }, [languageSearch]);
 
   // Gender options
   const genderOptions = [
@@ -922,58 +940,81 @@ export default function RegisterScreen() {
                 ]}
                 onPress={() => setShowLanguageDropdown(!showLanguageDropdown)}
               >
-                <Ionicons name="language-outline" size={20} color={colors.text} style={styles.inputIcon} />
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    {
-                      color: form.nativeLanguage ? colors.text : colors.text + "80",
-                    },
-                  ]}
-                >
-                  {form.nativeLanguage || t("auth.register.native.selectLanguage")}
-                </Text>
-                <Ionicons
-                  name={showLanguageDropdown ? "chevron-up" : "chevron-down"}
-                  size={20}
-                  color={colors.text}
-                  style={styles.dropdownIcon}
-                />
-              </TouchableOpacity>
+            <Ionicons name="language-outline" size={20} color={colors.text} style={styles.inputIcon} />
+            <Text
+              style={[
+                styles.dropdownText,
+                {
+                  color: form.nativeLanguage ? colors.text : colors.text + "80",
+                },
+              ]}
+            >
+              {form.nativeLanguage || t("auth.register.native.selectLanguage") || "Select your native language"}
+            </Text>
+            <Ionicons
+              name={showLanguageDropdown ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={colors.text}
+              style={styles.dropdownIcon}
+            />
+          </TouchableOpacity>
 
-              {showLanguageDropdown && (
-                <View
-                  style={[
-                    styles.dropdown,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
-                    {languages.map((language) => (
-                      <TouchableOpacity
-                        key={language}
-                        style={[
-                          styles.dropdownItem,
-                          form.nativeLanguage === language && {
-                            backgroundColor: colors.primary + "20",
-                          },
-                        ]}
-                        onPress={() => {
-                          handleChange("nativeLanguage", language)
-                          setShowLanguageDropdown(false)
-                        }}
-                      >
-                        <Text style={{ color: colors.text }}>{language}</Text>
-                        {form.nativeLanguage === language && (
-                          <Ionicons name="checkmark" size={18} color={colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
+          {showLanguageDropdown && (
+            <View
+              style={[
+                styles.dropdown,
+                styles.languageDropdown,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+              accessible={true}
+              accessibilityLabel="Language options"
+            >
+              <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color={colors.text} style={styles.searchIcon} />
+                <TextInput
+                  style={[styles.searchInput, { color: colors.text }]}
+                  placeholder="Search languages..."
+                  placeholderTextColor={colors.text + "80"}
+                  value={languageSearch}
+                  onChangeText={setLanguageSearch}
+                  autoFocus={true}
+                />
+                {languageSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => setLanguageSearch("")}>
+                    <Ionicons name="close-circle" size={20} color={colors.text} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                {filteredLanguages.map((language) => (
+                  <TouchableOpacity
+                    key={language}
+                    style={[
+                      styles.dropdownItem,
+                      form.nativeLanguage === language && {
+                        backgroundColor: colors.primary + "20",
+                      },
+                    ]}
+                    onPress={() => {
+                      handleChange("nativeLanguage", language)
+                      setShowLanguageDropdown(false)
+                    }}
+                    accessible={true}
+                    accessibilityLabel={language}
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ color: colors.text }}>{language}</Text>
+                    {form.nativeLanguage === language && (
+                      <Ionicons name="checkmark" size={18} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
               )}
 
               {errors.nativeLanguage ? (
@@ -1335,6 +1376,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   nationalityDropdown: {
+    maxHeight: 300,
+  },
+  languageDropdown: {
     maxHeight: 300,
   },
   countryItem: {
