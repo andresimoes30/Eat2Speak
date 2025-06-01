@@ -199,7 +199,9 @@ async function loginUser({ email, password }, ipAddress, userAgent = 'API Login'
     });
     
     // Update session with token hash if using a real session
-    if (session.sessionId && !session.sessionId.startsWith('temp-')) {
+    // sessionId is an integer in the database but a string in fallback sessions
+    // Use type checking instead of startsWith to avoid type errors
+    if (session.sessionId && typeof session.sessionId === 'number') {
       try {
         await Session.update(
           { token: token.substring(0, 10) + '...' }, // Store only token prefix for security
