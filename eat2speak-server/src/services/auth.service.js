@@ -102,7 +102,7 @@ async function loginUser({ email, password }, ipAddress, userAgent = 'API Login'
       attributes: ['userId', 'firstName', 'lastName', 'email', 'passwordHash', 'createdAt'],
       include: [{
         model: Role,
-        // No explicit alias needed as it uses the default from association
+        as: 'Roles', // Explicitly use Roles alias for consistency with later access
         attributes: ['roleId', 'description'],
         through: { attributes: [] } // Don't include the join table attributes
       }]
