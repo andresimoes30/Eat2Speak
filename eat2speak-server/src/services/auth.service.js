@@ -1,5 +1,7 @@
 const bcrypt = require('bcrypt');
-const { User, Session } = require('../models');
+// Import the full database models object for role relationships
+const db = require('../models');
+const { User, Session, Role } = db;
 const { generateToken } = require('../utils/jwt');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
@@ -52,7 +54,7 @@ async function loginUser({ email, password }, ipAddress, userAgent = 'API Login'
       },
       attributes: ['userId', 'firstName', 'lastName', 'email', 'passwordHash', 'createdAt'],
       include: [{
-        model: db.Role,
+        model: Role,
         as: 'roles',
         attributes: ['roleId', 'description'],
         through: { attributes: [] } // Don't include the join table attributes
