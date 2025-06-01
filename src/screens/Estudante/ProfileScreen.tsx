@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, TextInput } from "react-native"
+import { useState, useEffect } from "react"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, TextInput, ActivityIndicator } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
@@ -9,6 +9,7 @@ import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { Card } from "../../components/Card"
 import { Language } from "../../translations"
+import api from "../../../services/api"
 
 // Language options with names and flags
 const languages = [
@@ -27,13 +28,76 @@ export default function ProfileScreen() {
   const { language, setLanguage, t } = useLanguage()
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showBugHuntModal, setShowBugHuntModal] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [profileData, setProfileData] = useState<any>(null)
   const [bugHuntForm, setBugHuntForm] = useState({
-    email: "carlos.rodriguez@example.com",
-    name: "Carlos Rodríguez",
+    email: user?.email || "",
+    name: user ? `${user.firstName} ${user.lastName}` : "",
     description: "",
     hasScreenshot: false,
     screenshotUri: ""
   })
+
+  // Fetch user profile data from API
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return
+      
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        const response = await api.get('/api/user/me')
+        setProfileData(response.data)
+      } catch (err) {
+        console.error('Error fetching profile data:', err)
+        setError('Failed to load profile data')
+        // Use existing user data from AuthContext as fallback
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProfileData()
+  }, [user])
+
+  // Helper function to get user's full name
+  const getUserFullName = () => {
+    if (profileData) {
+      return `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim()
+    }
+    if (user) {
+      return `${user.firstName || ''} ${user.lastName || ''}`.trim()
+    }
+    return ''
+  }
+
+  // Helper function to get user's email
+  const getUserEmail = () => {
+    if (profileData) {
+      return profileData.email
+    }
+    if (user) {
+      return user.email
+    }
+    return ''
+  }
+
+  // Helper function to get user's initials for avatar
+  const getUserInitials = () => {
+    const fullName = getUserFullName()
+    if (!fullName) return ''
+    
+    const nameParts = fullName.split(' ').filter(part => part.length > 0)
+    if (nameParts.length === 0) return ''
+    
+    if (nameParts.length === 1) {
+      return nameParts[0].charAt(0).toUpperCase()
+    }
+    
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+  }
 
   const handleLanguageChange = async (languageCode: Language) => {
     await setLanguage(languageCode)
@@ -51,17 +115,31 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <View style={styles.profileInfo}>
           <View style={[styles.initialsAvatar, { backgroundColor: colors.blue[500] }]}>
-            <Text style={styles.initialsText}>CR</Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text style={styles.initialsText}>{getUserInitials()}</Text>
+            )}
           </View>
-        <View>
-          <Text style={[styles.profileName, { color: colors.text }]}>
-            {"Carlos Rodríguez"}
-          </Text>
-          <Text style={[styles.profileEmail, { color: colors.text + "80" }]}>
-            {"carlos.rodriguez@example.com"}
-          </Text>
+          <View>
+            {isLoading ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : error ? (
+              <Text style={[styles.errorText, { color: colors.error }]}>
+                {error}
+              </Text>
+            ) : (
+              <>
+                <Text style={[styles.profileName, { color: colors.text }]}>
+                  {getUserFullName()}
+                </Text>
+                <Text style={[styles.profileEmail, { color: colors.text + "80" }]}>
+                  {getUserEmail()}
+                </Text>
+              </>
+            )}
+          </View>
         </View>
-      </View>
       </View>
 
       <View style={styles.content}>
@@ -324,6 +402,11 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
   formLabel: {
     fontSize: 16,
     fontWeight: '500',
