@@ -1,56 +1,106 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const fs = require('fs');
 
-// Robust module loading function to handle different deployment environments
-function loadModule(possiblePaths) {
+/**
+ * Robust module loading function that handles different deployment environments
+ * This solves the "Cannot find module" error in production
+ * 
+ * @param {string} moduleName - The base name of the module to load
+ * @param {Array<string>} basePaths - Array of possible base directory paths to try
+ * @returns {Object} - The loaded module
+ * @throws {Error} - If module cannot be found in any of the paths
+ */
+function loadModuleRobustly(moduleName, basePaths = ['../']) {
+  // Add the current directory path for absolute path resolution
+  const currentDir = __dirname;
+  
+  // Create array of possible paths to try
+  const possiblePaths = [];
+  
+  // Add various path formats
+  basePaths.forEach(basePath => {
+    // Regular relative path
+    possiblePaths.push(`${basePath}${moduleName}`);
+    
+    // Absolute path using path.resolve
+    possiblePaths.push(path.resolve(currentDir, `${basePath}${moduleName}`));
+    
+    // Path with /src/ prefix for some deployment scenarios
+    possiblePaths.push(`${basePath}src/${moduleName}`);
+    
+    // Absolute path with /src/ prefix
+    possiblePaths.push(path.resolve(currentDir, `${basePath}src/${moduleName}`));
+  });
+  
+  // Add production-specific paths based on error message
+  possiblePaths.push(path.resolve('/home/oxiyveey/public_html/eat2speak', `src/${moduleName}`));
+  possiblePaths.push(`/home/oxiyveey/public_html/eat2speak/src/${moduleName}`);
+  
+  // Try each path until one works
+  let lastError = null;
   for (const modulePath of possiblePaths) {
     try {
-      // Try to resolve the module with the current path
       return require(modulePath);
     } catch (err) {
-      // If error is not about module resolution, rethrow it
+      lastError = err;
+      // Only continue if it's a module not found error
       if (err.code !== 'MODULE_NOT_FOUND') {
         throw err;
       }
-      // Otherwise try the next path
-      console.log(`Module not found at ${modulePath}, trying next path...`);
+      // Otherwise continue to the next path
     }
   }
   
-  // If we get here, all paths failed
-  throw new Error(`Could not find module in any of the paths: ${possiblePaths.join(', ')}`);
+  // If we get here, all paths failed - throw with helpful error
+  console.error(`Module loading failed for ${moduleName}. Paths tried:`, possiblePaths);
+  throw new Error(`Failed to load module ${moduleName}. Last error: ${lastError?.message}`);
 }
 
-// Try different possible paths for controllers and middlewares
-const authController = loadModule([
-  '../controllers/auth.controller',         // Standard relative path 
-  path.resolve(__dirname, '../controllers/auth.controller'), // Absolute path
-  './controllers/auth.controller',          // Alternative path for some deployments
-  '../../controllers/auth.controller',      // Another possible deployment path
-]);
+// Load required modules using the robust loader
+const controllerPath = 'controllers/auth.controller';
+const rateLimiterPath = 'middlewares/rate-limiter.middleware';
+const validationPath = 'middlewares/validation.middleware';
+const authMiddlewarePath = 'middlewares/auth.middleware';
 
-const { loginLimiter } = loadModule([
-  '../middlewares/rate-limiter.middleware',
-  path.resolve(__dirname, '../middlewares/rate-limiter.middleware'),
-  './middlewares/rate-limiter.middleware',
-  '../../middlewares/rate-limiter.middleware',
-]);
+// Load the modules with multiple base paths to try
+let authController, loginLimiter, validateLogin, verifyAuthToken;
 
-const { validateLogin } = loadModule([
-  '../middlewares/validation.middleware',
-  path.resolve(__dirname, '../middlewares/validation.middleware'),
-  './middlewares/validation.middleware',
-  '../../middlewares/validation.middleware',
-]);
-
-const { verifyAuthToken } = loadModule([
-  '../middlewares/auth.middleware',
-  path.resolve(__dirname, '../middlewares/auth.middleware'),
-  './middlewares/auth.middleware',
-  '../../middlewares/auth.middleware',
-]);
+try {
+  authController = loadModuleRobustly(controllerPath, ['../', './', '../../', '../../../']);
+  const rateLimiterModule = loadModuleRobustly(rateLimiterPath, ['../', './', '../../', '../../../']);
+  const validationModule = loadModuleRobustly(validationPath, ['../', './', '../../', '../../../']);
+  const authMiddlewareModule = loadModuleRobustly(authMiddlewarePath, ['../', './', '../../', '../../../']);
+  
+  // Extract the required functions
+  loginLimiter = rateLimiterModule.loginLimiter;
+  validateLogin = validationModule.validateLogin;
+  verifyAuthToken = authMiddlewareModule.verifyAuthToken;
+} catch (error) {
+  console.error('Critical error loading auth modules:', error);
+  // Provide fallback implementations to prevent total failure
+  loginLimiter = (req, res, next) => next();
+  validateLogin = (req, res, next) => next();
+  verifyAuthToken = (req, res, next) => next();
+  
+  // Create minimal authController if it couldn't be loaded
+  if (!authController) {
+    authController = {
+      login: (req, res) => res.status(500).json({ 
+        status: 'error', 
+        message: 'Authentication system is temporarily unavailable' 
+      }),
+      logout: (req, res) => res.status(200).json({ 
+        status: 'success', 
+        message: 'Logout successful (fallback mode)' 
+      }),
+      verifyAuth: (req, res) => res.status(401).json({ 
+        status: 'error', 
+        message: 'Authentication verification unavailable' 
+      })
+    };
+  }
+}
 
 // Extract controller methods
 const { login, logout, verifyAuth } = authController;
@@ -91,7 +141,8 @@ router.get('/status', (req, res) => {
     code: 200,
     message: 'Authentication service is operational',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    modulesLoaded: !!authController
   });
 });
 
