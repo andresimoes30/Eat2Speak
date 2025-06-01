@@ -1,6 +1,8 @@
 const { loginUser, logoutUser, verifySession, AuthError } = require('../services/auth.service');
 const logger = require('../utils/logger');
-const db = require('../models'); // Import database for role queries
+// Import database models for role queries with correct associations
+const db = require('../models'); 
+const { Role } = db;
 
 /**
  * Get client IP address from request
@@ -217,16 +219,34 @@ const verifyAuth = async (req, res) => {
     let accountTypeName = 'Student';
     
     try {
-      const roles = await db.sequelize.query(
-        `SELECT r.roleId, r.description 
-         FROM Roles r 
-         JOIN UserRoles ur ON r.roleId = ur.roleId 
-         WHERE ur.userId = :userId`,
-        {
-          replacements: { userId: user.userId },
-          type: db.sequelize.QueryTypes.SELECT
-        }
-      );
+      // Try first to get roles via model association
+      const userWithRoles = await db.User.findByPk(user.userId, {
+        include: [{
+          model: Role,
+          as: 'Roles', // Using the correct alias as defined in the model
+          attributes: ['roleId', 'description'],
+          through: { attributes: [] }
+        }]
+      });
+      
+      let roles = [];
+      
+      // If roles were found via association
+      if (userWithRoles && userWithRoles.Roles && userWithRoles.Roles.length > 0) {
+        roles = userWithRoles.Roles;
+      } else {
+        // Fallback to direct query if association doesn't return results
+        roles = await db.sequelize.query(
+          `SELECT r.roleId, r.description 
+           FROM Roles r 
+           JOIN UserRoles ur ON r.roleId = ur.roleId 
+           WHERE ur.userId = :userId`,
+          {
+            replacements: { userId: user.userId },
+            type: db.sequelize.QueryTypes.SELECT
+          }
+        );
+      }
       
       if (roles && roles.length > 0) {
         accountType = roles[0].roleId;
