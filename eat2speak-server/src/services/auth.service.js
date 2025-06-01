@@ -366,5 +366,6 @@ async function verifySession(userId, sessionId) {
 module.exports = { 
   loginUser,
   logoutUser,
+  verifySession,
   AuthError
 };
