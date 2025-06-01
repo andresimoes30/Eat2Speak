@@ -46,6 +46,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [userType, setUserType] = useState(searchParams.get("type") || "student")
   const [nativeLanguage, setNativeLanguage] = useState("")
+  const [gender, setGender] = useState("")
+  const [customGender, setCustomGender] = useState("")
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -86,6 +88,12 @@ export default function RegisterPage() {
     if (userType === "teacher" && !nativeLanguage) {
       newErrors.nativeLanguage = "Selecione seu idioma nativo"
     }
+    if (!gender) {
+      newErrors.gender = "Selecione seu gênero"
+    }
+    if (gender === "Outro" && !customGender.trim()) {
+      newErrors.customGender = "Especifique seu gênero"
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -100,6 +108,7 @@ export default function RegisterPage() {
       password,
       phoneNumber: phone,
       userTypes: [userType], // API expects an array of user types
+      gender: gender === "Outro" ? customGender : gender,
       ...(userType === "teacher" ? { languageName: nativeLanguage } : {})
     }
 
@@ -283,6 +292,36 @@ export default function RegisterPage() {
                 </SelectContent>
               </Select>
               {errors.nativeLanguage && <p className="text-red-500 text-sm">{errors.nativeLanguage}</p>}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="gender">Gênero</Label>
+            <Select value={gender} onValueChange={setGender}>
+              <SelectTrigger className={errors.gender ? "border-red-500" : ""}>
+                <SelectValue placeholder="Selecione seu gênero" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Masculino">Masculino</SelectItem>
+                <SelectItem value="Feminino">Feminino</SelectItem>
+                <SelectItem value="Não binário">Não binário</SelectItem>
+                <SelectItem value="Prefiro não dizer">Prefiro não dizer</SelectItem>
+                <SelectItem value="Outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.gender && <p className="text-red-500 text-sm">{errors.gender}</p>}
+          </div>
+
+          {gender === "Outro" && (
+            <div className="space-y-2">
+              <Label htmlFor="customGender">Especifique seu gênero</Label>
+              <Input
+                id="customGender"
+                value={customGender}
+                onChange={(e) => setCustomGender(e.target.value)}
+                className={errors.customGender ? "border-red-500" : ""}
+              />
+              {errors.customGender && <p className="text-red-500 text-sm">{errors.customGender}</p>}
             </div>
           )}
 
