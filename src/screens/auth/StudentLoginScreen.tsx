@@ -87,16 +87,23 @@ export default function StudentLoginScreen() {
     } catch (error) {
       console.error("Login error:", error)
       
+      // Properly type the error object
+      const errorObj = error as Error | { message?: string } | any;
+      const errorMessage = typeof errorObj === 'object' && errorObj !== null 
+        ? errorObj.message || t("error.wrongCredentials")
+        : t("error.wrongCredentials");
+      
       // Handle specific error messages from API if available
-      if (error.message) {
-        if (error.message.toLowerCase().includes("email")) {
+      if (errorMessage) {
+        const errorLower = errorMessage.toLowerCase();
+        if (errorLower.includes("email")) {
           setErrors(prev => ({ ...prev, email: "Email incorrecto" }))
-        } else if (error.message.toLowerCase().includes("password") || 
-                   error.message.toLowerCase().includes("contraseña")) {
+        } else if (errorLower.includes("password") || 
+                   errorLower.includes("contraseña")) {
           setErrors(prev => ({ ...prev, password: "Contraseña incorrecta" }))
         } else {
           // Generic error alert
-          Alert.alert(t("error.loginFailed"), error.message || t("error.wrongCredentials"))
+          Alert.alert(t("error.loginFailed"), errorMessage)
         }
       } else {
         Alert.alert(t("error.loginFailed"), t("error.wrongCredentials"))
