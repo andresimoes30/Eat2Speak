@@ -2,103 +2,36 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 
-/**
- * Robust module loading function that handles different deployment environments
- * This solves the "Cannot find module" error in production
- * 
- * @param {string} moduleName - The base name of the module to load
- * @param {Array<string>} basePaths - Array of possible base directory paths to try
- * @returns {Object} - The loaded module
- * @throws {Error} - If module cannot be found in any of the paths
- */
-function loadModuleRobustly(moduleName, basePaths = ['../']) {
-  // Add the current directory path for absolute path resolution
-  const currentDir = __dirname;
-  
-  // Create array of possible paths to try
-  const possiblePaths = [];
-  
-  // Add various path formats
-  basePaths.forEach(basePath => {
-    // Regular relative path
-    possiblePaths.push(`${basePath}${moduleName}`);
-    
-    // Absolute path using path.resolve
-    possiblePaths.push(path.resolve(currentDir, `${basePath}${moduleName}`));
-    
-    // Path with /src/ prefix for some deployment scenarios
-    possiblePaths.push(`${basePath}src/${moduleName}`);
-    
-    // Absolute path with /src/ prefix
-    possiblePaths.push(path.resolve(currentDir, `${basePath}src/${moduleName}`));
-  });
-  
-  // Add production-specific paths based on error message
-  possiblePaths.push(path.resolve('/home/oxiyveey/public_html/eat2speak', `src/${moduleName}`));
-  possiblePaths.push(`/home/oxiyveey/public_html/eat2speak/src/${moduleName}`);
-  
-  // Try each path until one works
-  let lastError = null;
-  for (const modulePath of possiblePaths) {
-    try {
-      return require(modulePath);
-    } catch (err) {
-      lastError = err;
-      // Only continue if it's a module not found error
-      if (err.code !== 'MODULE_NOT_FOUND') {
-        throw err;
-      }
-      // Otherwise continue to the next path
-    }
-  }
-  
-  // If we get here, all paths failed - throw with helpful error
-  console.error(`Module loading failed for ${moduleName}. Paths tried:`, possiblePaths);
-  throw new Error(`Failed to load module ${moduleName}. Last error: ${lastError?.message}`);
-}
-
-// Load required modules using the robust loader
-const controllerPath = 'controllers/auth.controller';
-const rateLimiterPath = 'middlewares/rate-limiter.middleware';
-const validationPath = 'middlewares/validation.middleware';
-const authMiddlewarePath = 'middlewares/auth.middleware';
-
-// Load the modules with multiple base paths to try
+// Simple fix for module loading in production
 let authController, loginLimiter, validateLogin, verifyAuthToken;
 
 try {
-  authController = loadModuleRobustly(controllerPath, ['../', './', '../../', '../../../']);
-  const rateLimiterModule = loadModuleRobustly(rateLimiterPath, ['../', './', '../../', '../../../']);
-  const validationModule = loadModuleRobustly(validationPath, ['../', './', '../../', '../../../']);
-  const authMiddlewareModule = loadModuleRobustly(authMiddlewarePath, ['../', './', '../../', '../../../']);
-  
-  // Extract the required functions
-  loginLimiter = rateLimiterModule.loginLimiter;
-  validateLogin = validationModule.validateLogin;
-  verifyAuthToken = authMiddlewareModule.verifyAuthToken;
+  // Try standard path first
+  authController = require('../controllers/auth.controller');
+  loginLimiter = require('../middlewares/rate-limiter.middleware').loginLimiter;
+  validateLogin = require('../middlewares/validation.middleware').validateLogin;
+  verifyAuthToken = require('../middlewares/auth.middleware').verifyAuthToken;
 } catch (error) {
-  console.error('Critical error loading auth modules:', error);
-  // Provide fallback implementations to prevent total failure
-  loginLimiter = (req, res, next) => next();
-  validateLogin = (req, res, next) => next();
-  verifyAuthToken = (req, res, next) => next();
+  console.error(`Standard module loading failed: ${error.message}`);
   
-  // Create minimal authController if it couldn't be loaded
-  if (!authController) {
+  try {
+    // Try absolute paths for production environment
+    const basePath = path.resolve(__dirname, '../../');
+    authController = require(path.join(basePath, 'src/controllers/auth.controller'));
+    loginLimiter = require(path.join(basePath, 'src/middlewares/rate-limiter.middleware')).loginLimiter;
+    validateLogin = require(path.join(basePath, 'src/middlewares/validation.middleware')).validateLogin;
+    verifyAuthToken = require(path.join(basePath, 'src/middlewares/auth.middleware')).verifyAuthToken;
+  } catch (fallbackError) {
+    console.error(`Both module loading approaches failed: ${fallbackError.message}`);
+    // Provide minimal fallbacks to prevent complete failure
     authController = {
-      login: (req, res) => res.status(500).json({ 
-        status: 'error', 
-        message: 'Authentication system is temporarily unavailable' 
-      }),
-      logout: (req, res) => res.status(200).json({ 
-        status: 'success', 
-        message: 'Logout successful (fallback mode)' 
-      }),
-      verifyAuth: (req, res) => res.status(401).json({ 
-        status: 'error', 
-        message: 'Authentication verification unavailable' 
-      })
+      login: (req, res) => res.status(500).json({ status: 'error', message: 'Auth system unavailable' }),
+      logout: (req, res) => res.status(200).json({ status: 'success', message: 'Logout (fallback)' }),
+      verifyAuth: (req, res) => res.status(500).json({ status: 'error', message: 'Auth check unavailable' })
     };
+    loginLimiter = (req, res, next) => next();
+    validateLogin = (req, res, next) => next();
+    verifyAuthToken = (req, res, next) => next();
   }
 }
 
@@ -141,8 +74,7 @@ router.get('/status', (req, res) => {
     code: 200,
     message: 'Authentication service is operational',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    modulesLoaded: !!authController
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
