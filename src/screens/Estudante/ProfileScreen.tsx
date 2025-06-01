@@ -48,12 +48,45 @@ export default function ProfileScreen() {
         setIsLoading(true)
         setError(null)
         
-        const response = await api.get('/api/user/me')
+        // Try path without /api prefix since the API client might be adding it automatically
+        const response = await api.get('/user/me')
         setProfileData(response.data)
-      } catch (err) {
+        console.log('Profile data loaded successfully:', response.data)
+      } catch (err: any) {
         console.error('Error fetching profile data:', err)
-        setError('Failed to load profile data')
-        // Use existing user data from AuthContext as fallback
+        
+        // Attempt to show a more helpful error message
+        let errorMessage = 'Failed to load profile data'
+        if (err.response) {
+          // The request was made and the server responded with a status code
+          errorMessage = `Server error: ${err.response.status}`
+          console.log('Error response:', err.response.data)
+          
+          // Try a fallback endpoint if the first one failed with 404
+          if (err.response.status === 404) {
+            try {
+              console.log('Trying alternative endpoint...')
+              const fallbackResponse = await api.get('/user/profile')
+              setProfileData(fallbackResponse.data)
+              console.log('Profile data loaded from fallback endpoint:', fallbackResponse.data)
+              setError(null)
+              setIsLoading(false)
+              return
+            } catch (fallbackErr) {
+              console.error('Fallback endpoint also failed:', fallbackErr)
+              errorMessage = 'Could not find user profile endpoint'
+            }
+          }
+        } else if (err.request) {
+          // The request was made but no response was received
+          errorMessage = 'No response from server'
+        } else {
+          // Something happened in setting up the request
+          errorMessage = err.message || 'Unknown error'
+        }
+        
+        setError(errorMessage)
+        // Continue using existing user data from AuthContext as fallback
       } finally {
         setIsLoading(false)
       }
