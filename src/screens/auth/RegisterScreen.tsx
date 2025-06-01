@@ -90,7 +90,8 @@ export default function RegisterScreen() {
     cuisineType: "",
     address: "",
     nationality: "",
-    gender: ""
+    gender: "",
+    customGender: ""
   })
 
   // UI state
@@ -99,6 +100,16 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
+  const [showGenderDropdown, setShowGenderDropdown] = useState(false)
+
+  // Gender options
+  const genderOptions = [
+    "Masculino",
+    "Feminino", 
+    "Não binário", 
+    "Prefiro não dizer", 
+    "Outro"
+  ]
 
   // Validation errors
   const [errors, setErrors] = useState({
@@ -114,6 +125,7 @@ export default function RegisterScreen() {
     address: "",
     nationality: "",
     gender: "",
+    customGender: ""
   })
 
   // Handle form input changes
@@ -235,6 +247,14 @@ export default function RegisterScreen() {
       newErrors.gender = t("auth.register.genderRequired")
       isValid = false
     }
+    
+    // Validate custom gender if "Outro" is selected
+    if ((userType === "student" || userType === "native") && 
+        form.gender === "Outro" && 
+        !form.customGender.trim()) {
+      newErrors.customGender = t("auth.register.customGenderRequired") || "Por favor, especifique seu gênero"
+      isValid = false
+    }
 
     if (form.password !== form.confirmPassword) {
       newErrors.confirmPassword = t("auth.register.passwordsDoNotMatch")
@@ -303,13 +323,13 @@ export default function RegisterScreen() {
         userData = {
           ...baseUserData,
           nationality: form.nationality,
-          gender: form.gender,
+          gender: form.gender === "Outro" ? form.customGender : form.gender,
         } as StudentNativeUserData;
       } else if (userType === "native") {
         userData = {
           ...baseUserData,
           nationality: form.nationality,
-          gender: form.gender,
+          gender: form.gender === "Outro" ? form.customGender : form.gender,
           languageName: form.nativeLanguage,
         } as NativeUserData;
       } else if (userType === "restaurant") {
@@ -813,8 +833,8 @@ export default function RegisterScreen() {
           {/* Gender field for student and native */}
           {(userType === "student" || userType === "native") && (
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>{t("auth.register.gender") || "Gender"}</Text>
-              <View
+              <Text style={[styles.label, { color: colors.text }]}>{t("auth.register.gender") || "Gênero"}</Text>
+              <TouchableOpacity
                 style={[
                   styles.inputContainer,
                   {
@@ -822,18 +842,93 @@ export default function RegisterScreen() {
                     backgroundColor: colors.card,
                   },
                 ]}
+                onPress={() => setShowGenderDropdown(!showGenderDropdown)}
               >
                 <Ionicons name="person-outline" size={20} color={colors.text} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder={t("auth.register.genderPlaceholder") || "Enter your gender"}
-                  placeholderTextColor={colors.text + "80"}
-                  value={form.gender}
-                  onChangeText={(text) => handleChange("gender", text)}
+                <Text
+                  style={[
+                    styles.dropdownText,
+                    {
+                      color: form.gender ? colors.text : colors.text + "80",
+                    },
+                  ]}
+                >
+                  {form.gender || t("auth.register.genderPlaceholder") || "Selecione seu gênero"}
+                </Text>
+                <Ionicons
+                  name={showGenderDropdown ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={colors.text}
+                  style={styles.dropdownIcon}
                 />
-              </View>
+              </TouchableOpacity>
+
+              {showGenderDropdown && (
+                <View
+                  style={[
+                    styles.dropdown,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                    {genderOptions.map((genderOption) => (
+                      <TouchableOpacity
+                        key={genderOption}
+                        style={[
+                          styles.dropdownItem,
+                          form.gender === genderOption && {
+                            backgroundColor: colors.primary + "20",
+                          },
+                        ]}
+                        onPress={() => {
+                          handleChange("gender", genderOption)
+                          setShowGenderDropdown(false)
+                        }}
+                      >
+                        <Text style={{ color: colors.text }}>{genderOption}</Text>
+                        {form.gender === genderOption && (
+                          <Ionicons name="checkmark" size={18} color={colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
               {errors.gender ? (
                 <Text style={[styles.errorText, { color: colors.error }]}>{errors.gender}</Text>
+              ) : null}
+            </View>
+          )}
+
+          {/* Custom Gender field when "Outro" is selected */}
+          {(userType === "student" || userType === "native") && form.gender === "Outro" && (
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                {t("auth.register.customGender") || "Especifique seu gênero"}
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    borderColor: errors.customGender ? colors.error : colors.border,
+                    backgroundColor: colors.card,
+                  },
+                ]}
+              >
+                <Ionicons name="create-outline" size={20} color={colors.text} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder={t("auth.register.customGenderPlaceholder") || "Informe seu gênero"}
+                  placeholderTextColor={colors.text + "80"}
+                  value={form.customGender}
+                  onChangeText={(text) => handleChange("customGender", text)}
+                />
+              </View>
+              {errors.customGender ? (
+                <Text style={[styles.errorText, { color: colors.error }]}>{errors.customGender}</Text>
               ) : null}
             </View>
           )}
