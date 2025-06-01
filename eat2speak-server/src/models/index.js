@@ -27,8 +27,8 @@ db.Payment = require('./payment.model')(sequelize, DataTypes);
 db.Review = require('./review.model')(sequelize, DataTypes);
 
 // Relationships
-db.User.belongsToMany(db.Role, { through: db.UserRole, foreignKey: 'userId' });
-db.Role.belongsToMany(db.User, { through: db.UserRole, foreignKey: 'roleId' });
+db.User.belongsToMany(db.Role, { through: db.UserRole, foreignKey: 'userId', as: 'Roles' });
+db.Role.belongsToMany(db.User, { through: db.UserRole, foreignKey: 'roleId', as: 'Users' });
 
 db.User.hasMany(db.UserLanguage, { foreignKey: 'userId' });
 db.UserLanguage.belongsTo(db.User, { foreignKey: 'userId' });
