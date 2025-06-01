@@ -1,5 +1,6 @@
 const { loginUser, logoutUser, verifySession, AuthError } = require('../services/auth.service');
 const logger = require('../utils/logger');
+const db = require('../models'); // Import database for role queries
 
 /**
  * Get client IP address from request
@@ -204,12 +205,6 @@ const verifyAuth = async (req, res) => {
         res.clearCookie('sessionId');
       }
       
-    if (!isSessionValid) {
-      // Clear any session cookies
-      if (res.clearCookie) {
-        res.clearCookie('sessionId');
-      }
-      
       return res.status(401).json({
         status: 'error',
         code: 401,
@@ -260,6 +255,7 @@ const verifyAuth = async (req, res) => {
         }
       }
     });
+  } catch (error) {
     logger.error('Auth verification error:', {
       error: error.message,
       stack: error.stack,
