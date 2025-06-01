@@ -300,6 +300,13 @@ export default function RegisterScreen() {
   const [showGenderDropdown, setShowGenderDropdown] = useState(false)
   const [showNationalityDropdown, setShowNationalityDropdown] = useState(false)
   const [nationalitySearch, setNationalitySearch] = useState("")
+  
+  // Filtered countries for nationality dropdown
+  const filteredCountries = useMemo(() => {
+    return countries.filter(country => 
+      country.name.toLowerCase().includes(nationalitySearch.toLowerCase())
+    );
+  }, [nationalitySearch]);
 
   // Gender options
   const genderOptions = [
@@ -1073,12 +1080,7 @@ export default function RegisterScreen() {
                   </View>
                   
                   <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
-                    {useMemo(() => {
-                      const filtered = countries.filter(country => 
-                        country.name.toLowerCase().includes(nationalitySearch.toLowerCase())
-                      );
-                      
-                      return filtered.map((country) => (
+                    {filteredCountries.map((country) => (
                         <TouchableOpacity
                           key={country.name}
                           style={[
@@ -1103,8 +1105,7 @@ export default function RegisterScreen() {
                             <Ionicons name="checkmark" size={18} color={colors.primary} />
                           )}
                         </TouchableOpacity>
-                      ));
-                    }, [form.nationality, nationalitySearch, colors])}
+                    ))}
                   </ScrollView>
                 </View>
               )}
