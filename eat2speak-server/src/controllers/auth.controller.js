@@ -1,8 +1,52 @@
-const { loginUser, logoutUser, verifySession, AuthError } = require('../services/auth.service');
-const logger = require('../utils/logger');
-// Import database models for role queries with correct associations
-const db = require('../models'); 
+const path = require('path');
+
+/**
+ * Robust module loading function that handles different deployment environments
+ * This solves the "Cannot find module" error in production
+ * 
+ * @param {string} modulePath - The path of the module to load
+ * @returns {Object} - The loaded module
+ */
+function loadModule(modulePath) {
+  const possiblePaths = [
+    // Standard relative path
+    modulePath,
+    // Absolute path using __dirname
+    path.resolve(__dirname, modulePath),
+    // Path with src/ prefix (common in production)
+    modulePath.replace('../', '../src/'),
+    // Production-specific path (based on error message)
+    `/home/oxiyveey/public_html/eat2speak/src/${modulePath.replace('../', '')}`
+  ];
+  
+  // Try each path until one works
+  let lastError = null;
+  for (const tryPath of possiblePaths) {
+    try {
+      return require(tryPath);
+    } catch (err) {
+      lastError = err;
+      // Only continue if it's a module not found error
+      if (err.code !== 'MODULE_NOT_FOUND') {
+        throw err;
+      }
+      // Otherwise continue to the next path
+    }
+  }
+  
+  // If we get here, all paths failed
+  console.error(`Failed to load module ${modulePath}. Tried paths:`, possiblePaths);
+  throw lastError || new Error(`Could not load module: ${modulePath}`);
+}
+
+// Load dependencies with robust module loading
+const authService = loadModule('../services/auth.service');
+const logger = loadModule('../utils/logger');
+const db = loadModule('../models');
 const { Role } = db;
+
+// Extract service functions
+const { loginUser, logoutUser, verifySession, AuthError } = authService;
 
 /**
  * Get client IP address from request
