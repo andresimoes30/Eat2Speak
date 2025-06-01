@@ -50,7 +50,13 @@ async function loginUser({ email, password }, ipAddress, userAgent = 'API Login'
       where: { 
         email: email.toLowerCase().trim() 
       },
-      attributes: ['userId', 'firstName', 'lastName', 'email', 'passwordHash', 'createdAt']
+      attributes: ['userId', 'firstName', 'lastName', 'email', 'passwordHash', 'createdAt'],
+      include: [{
+        model: db.Role,
+        as: 'roles',
+        attributes: ['roleId', 'description'],
+        through: { attributes: [] } // Don't include the join table attributes
+      }]
     }).catch(error => {
       logger.error('Database error during login:', {
         error: error.message,
@@ -159,14 +165,66 @@ async function loginUser({ email, password }, ipAddress, userAgent = 'API Login'
       }
     }
 
-    // Return authentication result with cloud-friendly response
+    // Get user role information for redirecting to appropriate screens
+    let userRoles = [];
+    
+    try {
+      // If roles were included in the query and exist
+      if (user.roles && user.roles.length > 0) {
+        userRoles = user.roles.map(role => ({
+          id: role.roleId,
+          type: role.description
+        }));
+      } else {
+        // Fallback to separate query if not included in initial query
+        const roles = await db.sequelize.query(
+          `SELECT r.roleId, r.description 
+           FROM Roles r 
+           JOIN UserRoles ur ON r.roleId = ur.roleId 
+           WHERE ur.userId = :userId`,
+          {
+            replacements: { userId: user.userId },
+            type: db.sequelize.QueryTypes.SELECT
+          }
+        );
+        
+        userRoles = roles.map(role => ({
+          id: role.roleId,
+          type: role.description
+        }));
+      }
+      
+      logger.info(`User roles retrieved: ${userRoles.length}`, {
+        userId: user.userId
+      });
+    } catch (error) {
+      logger.warn(`Error retrieving user roles: ${error.message}`, {
+        userId: user.userId
+      });
+      // Continue anyway - non-critical operation
+    }
+    
+    // Determine account type for frontend redirection
+    // 1: Student, 2: Native, 3: Restaurant
+    const accountType = userRoles.length > 0 ? 
+      userRoles[0].id : // Use the first role ID (prioritized)
+      1; // Default to Student (1) if no roles found
+      
+    const accountTypeName = userRoles.length > 0 ? 
+      userRoles[0].type : // Use the first role type description
+      'Student'; // Default to Student if no roles found
+    
+    // Return authentication result with cloud-friendly response and account type
     return {
       token,
       user: {
         id: user.userId,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        accountType, // Add account type for redirection (1: Student, 2: Native, 3: Restaurant)
+        accountTypeName, // Add descriptive account type
+        roles: userRoles // Include all roles for more advanced permissions
       },
       session: {
         id: session.sessionId,
