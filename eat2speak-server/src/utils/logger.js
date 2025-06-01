@@ -11,6 +11,8 @@
  * - Environment-based log levels
  * - Runtime configuration of log destinations
  * - Support for hosting environments
+ * - Secure authentication logging with PII redaction
+ * - Security event logging for audit trails
  */
 
 const winston = require('winston');
@@ -18,7 +20,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-// Define log levels and colors
+// Define log levels and colors with security levels
 const levels = {
   error: 0,
   warn: 1,
@@ -58,9 +60,50 @@ const consoleFormat = winston.format.combine(
   )
 );
 
-// Define format for file output (JSON for easier parsing)
+// Redact sensitive information in logs
+const redactSensitiveInfo = winston.format((info) => {
+  // Create a deep copy to avoid mutating the original object
+  const sanitizedInfo = JSON.parse(JSON.stringify(info));
+  
+  // Check if metadata exists
+  if (sanitizedInfo.meta) {
+    // Redact sensitive fields if they exist
+    if (sanitizedInfo.meta.password) sanitizedInfo.meta.password = '[REDACTED]';
+    if (sanitizedInfo.meta.passwordHash) sanitizedInfo.meta.passwordHash = '[REDACTED]';
+    if (sanitizedInfo.meta.token) sanitizedInfo.meta.token = '[REDACTED]';
+    
+    // Partial redaction of sensitive fields (show only parts)
+    if (sanitizedInfo.meta.email && typeof sanitizedInfo.meta.email === 'string') {
+      const parts = sanitizedInfo.meta.email.split('@');
+      if (parts.length === 2) {
+        sanitizedInfo.meta.email = `${parts[0].substring(0, 3)}***@${parts[1]}`;
+      }
+    }
+    
+    // Partial redaction of IP addresses (show only first part)
+    if (sanitizedInfo.meta.ipAddress && typeof sanitizedInfo.meta.ipAddress === 'string') {
+      const parts = sanitizedInfo.meta.ipAddress.split('.');
+      if (parts.length === 4) {
+        sanitizedInfo.meta.ipAddress = `${parts[0]}.${parts[1]}.***.***`;
+      }
+    }
+  }
+  
+  return sanitizedInfo;
+});
+
+// Define format for file output (JSON for easier parsing) with sensitive info redaction
 const fileFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+  redactSensitiveInfo(),
+  winston.format.json()
+);
+
+// Define security-specific format for authentication logs
+const authLogFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+  winston.format.label({ label: 'AUTH' }),
+  redactSensitiveInfo(),
   winston.format.json()
 );
 
@@ -168,6 +211,72 @@ logger.closeFileTransports = () => {
   });
   activeFileTransports = [];
   logger.info('Closed all file transports');
+};
+
+// Configure auth log transport for production
+if (process.env.NODE_ENV === 'production') {
+  const logsDir = path.join(process.cwd(), 'logs');
+  const authLogPath = path.join(logsDir, 'auth.log');
+  
+  // Create authentication-specific log file
+  const authTransport = new winston.transports.File({
+    filename: authLogPath,
+    format: authLogFormat,
+    maxsize: 5242880, // 5MB
+    maxFiles: 10, // Keep more auth logs for compliance
+  });
+  
+  transports.push(authTransport);
+  activeFileTransports.push(authTransport);
+  
+  logger.info(`Configured authentication logging to ${authLogPath}`);
+}
+
+/**
+ * Log authentication events with proper sanitization
+ * @param {string} event - The authentication event type
+ * @param {string} level - Log level (info, warn, error)
+ * @param {string} message - Event message
+ * @param {object} data - Additional event data (will be sanitized)
+ */
+logger.authEvent = (event, level, message, data = {}) => {
+  // Create structured log entry
+  const logEntry = {
+    auth_event: event,
+    message,
+    meta: { ...data, timestamp: new Date().toISOString() }
+  };
+  
+  // Log at the appropriate level
+  switch (level) {
+    case 'error':
+      logger.error(logEntry);
+      break;
+    case 'warn':
+      logger.warn(logEntry);
+      break;
+    case 'info':
+    default:
+      logger.info(logEntry);
+      break;
+  }
+};
+
+// Helper methods for common auth events
+logger.authSuccess = (userId, message, data = {}) => {
+  logger.authEvent('success', 'info', message, { userId, ...data });
+};
+
+logger.authFailure = (message, data = {}) => {
+  logger.authEvent('failure', 'warn', message, data);
+};
+
+logger.authError = (message, error, data = {}) => {
+  logger.authEvent('error', 'error', message, { 
+    ...data, 
+    errorMessage: error.message,
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+  });
 };
 
 module.exports = logger;
