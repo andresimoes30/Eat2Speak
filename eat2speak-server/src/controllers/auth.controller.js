@@ -222,8 +222,8 @@ const verifyAuth = async (req, res) => {
       // Try to get roles via direct query
       const roles = await db.sequelize.query(
         `SELECT r.roleId, r.description 
-         FROM Roles r 
-         JOIN UserRoles ur ON r.roleId = ur.roleId 
+         FROM Role r 
+         JOIN UserRole ur ON r.roleId = ur.roleId 
          WHERE ur.userId = :userId`,
         {
           replacements: { userId: user.userId },
