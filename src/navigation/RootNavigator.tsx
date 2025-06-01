@@ -1,6 +1,6 @@
 "use client"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../contexts/AuthContext"
 import AuthNavigator from "./AuthNavigator"
 import MainNavigator from "./MainNavigator"
@@ -16,6 +16,14 @@ export default function RootNavigator() {
   const [isNativeDirectAccess, setIsNativeDirectAccess] = useState(false)
   // State to track if user is using the direct restaurant login
   const [isRestauranteDirectAccess, setIsRestauranteDirectAccess] = useState(false)
+
+  // Reset direct access flags when user changes
+  useEffect(() => {
+    if (!user) {
+      setIsNativeDirectAccess(false)
+      setIsRestauranteDirectAccess(false)
+    }
+  }, [user])
 
   if (isLoading) {
     return <LoadingScreen />
@@ -51,15 +59,24 @@ export default function RootNavigator() {
     return <RestauranteNavigator />
   }
 
-  // Otherwise render normal navigator structure
+  // Render navigator structure based on authentication and user role
   return (
     <Stack.Navigator 
       screenOptions={{ headerShown: false }}
       screenListeners={screenListeners}
     >
       {user ? (
-        // Normal authenticated user
-        <Stack.Screen name="Main" component={MainNavigator} />
+        // Role-based navigation for authenticated users
+        user.roleId === 2 ? (
+          // Native user (roleId 2) - Navigate to Native screens
+          <Stack.Screen name="NativeMain" component={NativeNavigator} />
+        ) : user.roleId === 3 ? (
+          // Restaurant user (roleId 3) - Navigate to Restaurant screens
+          <Stack.Screen name="RestauranteMain" component={RestauranteNavigator} />
+        ) : (
+          // Student user (roleId 1) or default - Navigate to Student screens
+          <Stack.Screen name="Main" component={MainNavigator} />
+        )
       ) : (
         // Unauthenticated user
         <Stack.Screen name="Auth" component={AuthNavigator} />
