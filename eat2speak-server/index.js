@@ -41,20 +41,87 @@ const isProduction = NODE_ENV === 'production';
 
 logger.info(`Starting server in ${NODE_ENV} mode`);
 
-// Middleware
+// Security middleware - Enhanced for authentication security
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-})); // Security headers with cross-origin policy
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Adjust based on your needs
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true
+  }
+})); // Enhanced security headers
 
-// CORS configuration - optimized for production
+// CORS configuration - optimized for production with secure defaults
 app.use(cors({
-  // In production, you might want to restrict origins
+  // In production, restrict origins to known domains
   origin: isProduction ? 
     ['https://yourapp.com', 'https://www.yourapp.com'] : // Adjust with your actual domains
     '*', // Allow all origins in development
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // Allow cookies to be sent with requests
+  maxAge: 86400 // Cache preflight requests for 24 hours
 }));
+
+// Force HTTPS in production
+if (isProduction) {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https' && req.secure === false) {
+      // Redirect to HTTPS with 301 (permanent) redirect
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
+
+// Add cookie security settings
+app.use((req, res, next) => {
+  res.cookie('cookieName', 'cookieValue', {
+    httpOnly: true, // Prevent client-side JavaScript from accessing cookies
+    secure: isProduction, // Only send cookies over HTTPS in production
+    sameSite: 'strict', // Prevent CSRF attacks
+    maxAge: 3600000 // 1 hour expiry
+  });
+  next();
+});
+
+// Import rate limiter for API protection
+const rateLimit = require('express-rate-limit');
+
+// Global API rate limiter - prevents abuse
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: {
+    status: 429,
+    message: 'Too many requests, please try again later.'
+  },
+  // Log rate limit hits
+  handler: (req, res, next, options) => {
+    logger.warn(`Rate limit exceeded for IP: ${req.ip}`, { 
+      path: req.path,
+      method: req.method
+    });
+    res.status(options.message.status).json(options.message);
+  }
+});
+
+// Apply rate limiting to all requests
+app.use(apiLimiter);
 
 // Set default content type for all responses - helps with CloudLinux NodeJS Selector
 app.use((req, res, next) => {
@@ -72,11 +139,53 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add basic security headers
+// Enhanced security headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  
+  // Set Cache-Control to prevent sensitive information caching
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  
+  next();
+});
+
+// Security monitoring middleware - detect and log potential attacks
+app.use((req, res, next) => {
+  // Check for common attack patterns in URL
+  const url = req.url.toLowerCase();
+  const suspiciousPatterns = [
+    'union+select', 'concat(', 'group_concat', 'exec(', 'eval(', '<script',
+    '../', '..\\', '/etc/passwd', 'cmd.exe'
+  ];
+  
+  if (suspiciousPatterns.some(pattern => url.includes(pattern))) {
+    logger.warn(`Potential attack detected in URL: ${req.url}`, {
+      ip: req.ip,
+      method: req.method,
+      userAgent: req.headers['user-agent']
+    });
+  }
+  
+  // Check for suspicious headers that might indicate attacks
+  const suspiciousHeaders = ['user-agent', 'referer', 'x-forwarded-for'];
+  suspiciousHeaders.forEach(header => {
+    const headerValue = req.headers[header];
+    if (headerValue && typeof headerValue === 'string' && 
+        suspiciousPatterns.some(pattern => headerValue.toLowerCase().includes(pattern))) {
+      logger.warn(`Potential attack detected in ${header} header: ${headerValue}`, {
+        ip: req.ip,
+        method: req.method,
+        path: req.url
+      });
+    }
+  });
+  
   next();
 });
 
