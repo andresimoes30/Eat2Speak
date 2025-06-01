@@ -63,7 +63,7 @@ module.exports = (sequelize, DataTypes) => {
   Session.associate = (models) => {
     Session.belongsTo(models.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'User'
     });
   };
 
