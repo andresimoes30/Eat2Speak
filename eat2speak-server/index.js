@@ -75,44 +75,83 @@ app.use(cors({
   maxAge: 86400 // Cache preflight requests for 24 hours
 }));
 
-// Force HTTPS in production
+// Force HTTPS in production (cloud-friendly implementation)
 if (isProduction) {
   app.use((req, res, next) => {
-    if (req.headers['x-forwarded-proto'] !== 'https' && req.secure === false) {
-      // Redirect to HTTPS with 301 (permanent) redirect
-      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    // Check various cloud provider headers for HTTPS detection
+    const isSecure = req.secure || 
+                    req.headers['x-forwarded-proto'] === 'https' ||
+                    req.headers['x-forwarded-ssl'] === 'on' ||
+                    req.headers['x-arr-ssl'];
+                    
+    if (!isSecure) {
+      // Don't redirect if the request is from localhost or an internal IP
+      const ip = req.ip || req.connection.remoteAddress;
+      const isLocalOrInternal = ip === '127.0.0.1' || ip === '::1' || ip.startsWith('10.') || ip.startsWith('172.') || ip.startsWith('192.168.');
+      
+      if (!isLocalOrInternal) {
+        // Redirect to HTTPS with 301 (permanent) redirect
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        return res.redirect(301, `https://${host}${req.url}`);
+      }
     }
     next();
   });
 }
 
-// Add cookie security settings
+// Configure cookie settings but don't set a test cookie on every request
 app.use((req, res, next) => {
-  res.cookie('cookieName', 'cookieValue', {
+  // Override default cookie settings
+  const defaultCookieOptions = {
     httpOnly: true, // Prevent client-side JavaScript from accessing cookies
-    secure: isProduction, // Only send cookies over HTTPS in production
-    sameSite: 'strict', // Prevent CSRF attacks
-    maxAge: 3600000 // 1 hour expiry
-  });
+    // In cloud environments, detect HTTPS for secure cookies
+    secure: isProduction && (req.secure || 
+             req.headers['x-forwarded-proto'] === 'https' || 
+             req.headers['x-forwarded-ssl'] === 'on'),
+    sameSite: 'lax', // More permissive than 'strict' for better UX
+    maxAge: 86400000, // 24 hours expiry
+    path: '/' // Available on all paths
+  };
+  
+  // Create a function to set cookies with proper security defaults
+  res.secureCookie = function(name, value, options = {}) {
+    const cookieOptions = { ...defaultCookieOptions, ...options };
+    return this.cookie(name, value, cookieOptions);
+  };
+  
   next();
 });
 
 // Import rate limiter for API protection
 const rateLimit = require('express-rate-limit');
 
-// Global API rate limiter - prevents abuse
+// Global API rate limiter - prevents abuse with cloud-friendly configuration
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Use a cloud-friendly setting to get the proper client IP
+  // This handles proxy servers and cloud load balancers
+  trustProxy: true,
+  // Skip rate limiting for specific paths
+  skip: (req) => {
+    // Allow health checks and status endpoints without rate limiting
+    return req.path === '/health' || req.path === '/status' || req.path === '/ping';
+  },
   message: {
     status: 429,
     message: 'Too many requests, please try again later.'
   },
   // Log rate limit hits
   handler: (req, res, next, options) => {
-    logger.warn(`Rate limit exceeded for IP: ${req.ip}`, { 
+    // Try to get the real client IP from various headers
+    const clientIP = req.headers['x-forwarded-for'] || 
+                     req.headers['x-real-ip'] || 
+                     req.ip || 
+                     req.connection.remoteAddress;
+                     
+    logger.warn(`Rate limit exceeded for IP: ${clientIP}`, { 
       path: req.path,
       method: req.method
     });
