@@ -319,12 +319,11 @@ export const setAuthToken = (token) => {
   }
 };
 
-// Login function with fixed URL path
+// Login function with correct URL path
 export const login = async (email, password) => {
   try {
-    // IMPORTANT: The URL is '/auth/login' not '/api/auth/login' to avoid duplication
-    // since the baseURL already includes '/api'
-    const response = await api.post('/auth/login', { email, password });
+    // Use the full path to ensure it works correctly
+    const response = await api.post('/api/auth/login', { email, password });
     
     // Log successful login for debugging
     console.log('Login successful');
