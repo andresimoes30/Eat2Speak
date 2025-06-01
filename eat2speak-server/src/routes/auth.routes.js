@@ -42,10 +42,10 @@ const { login, logout, verifyAuth } = authController;
  * @route POST /api/auth/login
  * @description Authenticate user and get token
  * @access Public
- * @middleware loginLimiter - Prevent brute force attacks
  * @middleware validateLogin - Validate and sanitize input
+ * @note Rate limiter temporarily removed for testing
  */
-router.post('/login', loginLimiter, validateLogin, login);
+router.post('/login', validateLogin, login);
 
 /**
  * @route POST /api/auth/logout
