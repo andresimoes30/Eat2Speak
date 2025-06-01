@@ -56,16 +56,10 @@ export default function StudentLoginScreen() {
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = t("error.emailInvalid")
       isValid = false
-    } else if (email !== "admin@admin.com") {
-      newErrors.email = "Email incorrecto"
-      isValid = false
     }
 
     if (!password) {
       newErrors.password = t("error.passwordRequired")
-      isValid = false
-    } else if (password !== "admin123") {
-      newErrors.password = "Contraseña incorrecta"
       isValid = false
     }
 
@@ -77,6 +71,7 @@ export default function StudentLoginScreen() {
     if (!validate()) return
 
     setIsLoading(true)
+    setErrors({ email: "", password: "" }) // Clear any previous errors
 
     try {
       await signIn({
@@ -91,7 +86,21 @@ export default function StudentLoginScreen() {
       })
     } catch (error) {
       console.error("Login error:", error)
-      Alert.alert(t("error.loginFailed"), t("error.wrongCredentials"))
+      
+      // Handle specific error messages from API if available
+      if (error.message) {
+        if (error.message.toLowerCase().includes("email")) {
+          setErrors(prev => ({ ...prev, email: "Email incorrecto" }))
+        } else if (error.message.toLowerCase().includes("password") || 
+                   error.message.toLowerCase().includes("contraseña")) {
+          setErrors(prev => ({ ...prev, password: "Contraseña incorrecta" }))
+        } else {
+          // Generic error alert
+          Alert.alert(t("error.loginFailed"), error.message || t("error.wrongCredentials"))
+        }
+      } else {
+        Alert.alert(t("error.loginFailed"), t("error.wrongCredentials"))
+      }
     } finally {
       setIsLoading(false)
     }
