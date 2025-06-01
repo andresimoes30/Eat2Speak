@@ -55,7 +55,7 @@ async function loginUser({ email, password }, ipAddress, userAgent = 'API Login'
       attributes: ['userId', 'firstName', 'lastName', 'email', 'passwordHash', 'createdAt'],
       include: [{
         model: Role,
-        as: 'roles',
+        as: 'Roles', // Fix: Use the correct association alias as defined in the model
         attributes: ['roleId', 'description'],
         through: { attributes: [] } // Don't include the join table attributes
       }]
@@ -172,8 +172,8 @@ async function loginUser({ email, password }, ipAddress, userAgent = 'API Login'
     
     try {
       // If roles were included in the query and exist
-      if (user.roles && user.roles.length > 0) {
-        userRoles = user.roles.map(role => ({
+      if (user.Roles && user.Roles.length > 0) {
+        userRoles = user.Roles.map(role => ({
           id: role.roleId,
           type: role.description
         }));
