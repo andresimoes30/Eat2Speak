@@ -33,25 +33,21 @@ const CONNECTION_CONFIGS = {
     url: 'https://eat2speak.com', // Updated to production URL
     proxyPath: '/api',
   },
-  // Android emulator needs special IP for localhost (development only)
+  // Android emulator configuration
   android: {
-    url: 'https://eat2speak.com', // Updated to production URL
-    fallbacks: ['http://10.0.2.2:3000', 'http://localhost:3000']
+    url: 'https://eat2speak.com', // Only using production URL
   },
-  // iOS simulator and different device options (development only)
+  // iOS simulator configuration
   ios: {
-    url: 'https://eat2speak.com', // Updated to production URL
-    fallbacks: ['http://localhost:3000', 'http://127.0.0.1:3000']
+    url: 'https://eat2speak.com', // Only using production URL
   },
   // Physical device configuration
   physicalDevice: {
-    url: 'https://eat2speak.com', // Updated to production URL
-    fallbacks: ['https://eat2speak.com']
+    url: 'https://eat2speak.com', // Only using production URL
   },
-  // Expo environment
+  // Expo environment 
   expo: {
-    url: 'https://eat2speak.com', // Updated to production URL
-    fallbacks: ['https://eat2speak.com']
+    url: 'https://eat2speak.com', // Only using production URL
   }
 };
 
@@ -266,18 +262,8 @@ api.interceptors.response.use(
         const retryDelay = Math.pow(2, originalRequest.retryCount) * 1000; // Exponential backoff
         console.log(`Retrying request (${originalRequest.retryCount + 1}/3) after ${retryDelay}ms...`);
         
-        // If this is the first retry, maybe try a fallback URL
-        if (originalRequest.retryCount === 0) {
-          // Try a different baseURL based on the environment
-          const currentEnv = isPhysicalDevice() ? 'physicalDevice' : (Platform ? Platform.OS : 'web');
-          const fallbacks = CONNECTION_CONFIGS[currentEnv]?.fallbacks || [];
-          
-          if (fallbacks.length > 0) {
-            const fallbackURL = fallbacks[0];
-            console.log(`Trying fallback URL: ${fallbackURL}`);
-            originalRequest.baseURL = fallbackURL;
-          }
-        }
+        // No fallback URLs - only using https://eat2speak.com
+        console.log('Retrying with the same production URL: https://eat2speak.com');
         
         // Wait before retrying with exponential backoff
         return new Promise(resolve => {
