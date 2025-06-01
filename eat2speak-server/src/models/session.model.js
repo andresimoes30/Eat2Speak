@@ -5,57 +5,67 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true
     },
-    learnerUserId: {
+    userId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'userId'
+      }
     },
-    nativeUserId: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    restaurantId: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    sessionDate: {
-      type: DataTypes.DATEONLY,
-      allowNull: false
-    },
-    startTime: {
-      type: DataTypes.TIME,
-      allowNull: false
-    },
-    endTime: {
-      type: DataTypes.TIME,
-      allowNull: false
-    },
-    menuId: {
-      type: DataTypes.INTEGER,
+    token: {
+      type: DataTypes.STRING(500),
       allowNull: true
     },
-    totalPrice: {
-      type: DataTypes.DECIMAL(6, 2)
+    ipAddress: {
+      type: DataTypes.STRING(45),
+      allowNull: false
     },
-    tableSize: {
-      type: DataTypes.TINYINT.UNSIGNED
+    userAgent: {
+      type: DataTypes.STRING(255),
+      allowNull: true
     },
-    languageUsed: {
-      type: DataTypes.STRING(50)
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
     },
-    status: {
-      type: DataTypes.ENUM('pending', 'scheduled', 'completed', 'cancelled'),
-      defaultValue: 'pending'
+    lastActivity: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
     },
-    cancelReason: {
-      type: DataTypes.TEXT
+    expiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true
     },
-    cancelledAt: {
-      type: DataTypes.DATE
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'Session',
-    timestamps: false
+    tableName: 'Sessions',
+    timestamps: false,
+    indexes: [
+      {
+        name: 'idx_user_id',
+        fields: ['userId']
+      },
+      {
+        name: 'idx_token',
+        fields: ['token']
+      },
+      {
+        name: 'idx_is_active',
+        fields: ['isActive']
+      }
+    ]
   });
+
+  Session.associate = (models) => {
+    Session.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user'
+    });
+  };
 
   return Session;
 };
