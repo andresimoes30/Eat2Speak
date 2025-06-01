@@ -1,52 +1,8 @@
-const path = require('path');
-
-/**
- * Robust module loading function that handles different deployment environments
- * This solves the "Cannot find module" error in production
- * 
- * @param {string} modulePath - The path of the module to load
- * @returns {Object} - The loaded module
- */
-function loadModule(modulePath) {
-  const possiblePaths = [
-    // Standard relative path
-    modulePath,
-    // Absolute path using __dirname
-    path.resolve(__dirname, modulePath),
-    // Path with src/ prefix (common in production)
-    modulePath.replace('../', '../src/'),
-    // Production-specific path (based on error message)
-    `/home/oxiyveey/public_html/eat2speak/src/${modulePath.replace('../', '')}`
-  ];
-  
-  // Try each path until one works
-  let lastError = null;
-  for (const tryPath of possiblePaths) {
-    try {
-      return require(tryPath);
-    } catch (err) {
-      lastError = err;
-      // Only continue if it's a module not found error
-      if (err.code !== 'MODULE_NOT_FOUND') {
-        throw err;
-      }
-      // Otherwise continue to the next path
-    }
-  }
-  
-  // If we get here, all paths failed
-  console.error(`Failed to load module ${modulePath}. Tried paths:`, possiblePaths);
-  throw lastError || new Error(`Could not load module: ${modulePath}`);
-}
-
-// Load dependencies with robust module loading
-const authService = loadModule('../services/auth.service');
-const logger = loadModule('../utils/logger');
-const db = loadModule('../models');
+const { loginUser, logoutUser, verifySession, AuthError } = require('../services/auth.service');
+const logger = require('../utils/logger');
+// Import database models for role queries with correct associations
+const db = require('../models'); 
 const { Role } = db;
-
-// Extract service functions
-const { loginUser, logoutUser, verifySession, AuthError } = authService;
 
 /**
  * Get client IP address from request
@@ -263,34 +219,17 @@ const verifyAuth = async (req, res) => {
     let accountTypeName = 'Student';
     
     try {
-      // Try first to get roles via model association
-      const userWithRoles = await db.User.findByPk(user.userId, {
-        include: [{
-          model: Role,
-          as: 'Roles', // Using the correct alias as defined in the model
-          attributes: ['roleId', 'description'],
-          through: { attributes: [] }
-        }]
-      });
-      
-      let roles = [];
-      
-      // If roles were found via association
-      if (userWithRoles && userWithRoles.Roles && userWithRoles.Roles.length > 0) {
-        roles = userWithRoles.Roles;
-      } else {
-        // Fallback to direct query if association doesn't return results
-        roles = await db.sequelize.query(
-          `SELECT r.roleId, r.description 
-           FROM Roles r 
-           JOIN UserRoles ur ON r.roleId = ur.roleId 
-           WHERE ur.userId = :userId`,
-          {
-            replacements: { userId: user.userId },
-            type: db.sequelize.QueryTypes.SELECT
-          }
-        );
-      }
+      // Try to get roles via direct query
+      const roles = await db.sequelize.query(
+        `SELECT r.roleId, r.description 
+         FROM Roles r 
+         JOIN UserRoles ur ON r.roleId = ur.roleId 
+         WHERE ur.userId = :userId`,
+        {
+          replacements: { userId: user.userId },
+          type: db.sequelize.QueryTypes.SELECT
+        }
+      );
       
       if (roles && roles.length > 0) {
         accountType = roles[0].roleId;
