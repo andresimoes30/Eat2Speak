@@ -48,10 +48,18 @@ export default function ProfileScreen() {
         setIsLoading(true)
         setError(null)
         
-        // Try path without /api prefix since the API client might be adding it automatically
-        const response = await api.get('/user/me')
-        setProfileData(response.data)
-        console.log('Profile data loaded successfully:', response.data)
+        // Use the auth/verify endpoint which returns authenticated user data
+        const response = await api.get('/api/auth/verify')
+        
+        // The API returns user data in response.data.data.user
+        if (response.data?.data?.user) {
+          setProfileData(response.data.data.user)
+          console.log('Profile data loaded successfully:', response.data.data.user)
+        } else {
+          // If the structure is different, try to find user data
+          setProfileData(response.data?.user || response.data?.data || response.data)
+          console.log('Profile data structure unexpected:', response.data)
+        }
       } catch (err: any) {
         console.error('Error fetching profile data:', err)
         
@@ -61,22 +69,6 @@ export default function ProfileScreen() {
           // The request was made and the server responded with a status code
           errorMessage = `Server error: ${err.response.status}`
           console.log('Error response:', err.response.data)
-          
-          // Try a fallback endpoint if the first one failed with 404
-          if (err.response.status === 404) {
-            try {
-              console.log('Trying alternative endpoint...')
-              const fallbackResponse = await api.get('/user/profile')
-              setProfileData(fallbackResponse.data)
-              console.log('Profile data loaded from fallback endpoint:', fallbackResponse.data)
-              setError(null)
-              setIsLoading(false)
-              return
-            } catch (fallbackErr) {
-              console.error('Fallback endpoint also failed:', fallbackErr)
-              errorMessage = 'Could not find user profile endpoint'
-            }
-          }
         } else if (err.request) {
           // The request was made but no response was received
           errorMessage = 'No response from server'
