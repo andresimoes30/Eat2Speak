@@ -67,14 +67,19 @@ const login = async (req, res) => {
       ipAddress: ipAddress.split(',')[0].trim()
     });
     
-    // Return success response with token and user data
+    // Return success response with token, user data, and account type for redirection
     return res.status(200).json({
       status: 'success',
       code: 200,
       message: 'Authentication successful',
       data: {
         token: result.token,
-        user: result.user,
+        user: {
+          ...result.user,
+          // Ensure account type is prominently available
+          accountType: result.user.accountType || 1, // 1: Student, 2: Native, 3: Restaurant
+          accountTypeName: result.user.accountTypeName || 'Student'
+        },
         // Include expiration info but not the session ID for security
         expiresAt: result.session?.expiresAt
       }
@@ -199,11 +204,45 @@ const verifyAuth = async (req, res) => {
         res.clearCookie('sessionId');
       }
       
+    if (!isSessionValid) {
+      // Clear any session cookies
+      if (res.clearCookie) {
+        res.clearCookie('sessionId');
+      }
+      
       return res.status(401).json({
         status: 'error',
         code: 401,
         message: 'Session expired. Please log in again.'
       });
+    }
+    
+    // Try to get the user's roles for redirection purposes
+    let accountType = 1; // Default to Student
+    let accountTypeName = 'Student';
+    
+    try {
+      const roles = await db.sequelize.query(
+        `SELECT r.roleId, r.description 
+         FROM Roles r 
+         JOIN UserRoles ur ON r.roleId = ur.roleId 
+         WHERE ur.userId = :userId`,
+        {
+          replacements: { userId: user.userId },
+          type: db.sequelize.QueryTypes.SELECT
+        }
+      );
+      
+      if (roles && roles.length > 0) {
+        accountType = roles[0].roleId;
+        accountTypeName = roles[0].description;
+      }
+    } catch (error) {
+      logger.warn('Failed to retrieve role info during verification', {
+        userId: user.userId,
+        error: error.message
+      });
+      // Continue with default role
     }
     
     return res.status(200).json({
@@ -215,11 +254,12 @@ const verifyAuth = async (req, res) => {
           id: user.userId,
           email: user.email,
           firstName: user.firstName,
-          lastName: user.lastName
+          lastName: user.lastName,
+          accountType, // Add account type for redirection
+          accountTypeName // Add descriptive account type
         }
       }
     });
-  } catch (error) {
     logger.error('Auth verification error:', {
       error: error.message,
       stack: error.stack,
