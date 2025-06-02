@@ -318,7 +318,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
   const [restauranteSeleccionado, setRestauranteSeleccionado] = useState<RestaurantUI | null>(null)
   const [sessionType, setSessionType] = useState<SessionType>(SessionType.OneOnOne)
   const [idiomaSeleccionado, setIdiomaSeleccionado] = useState<string | null>(null)
-  const [menuSeleccionado, setMenuSeleccionado] = useState<Menu | null>(null)
+  const [menuSeleccionado, setMenuSeleccionado] = useState<MenuUI | null>(null)
   const [profesorSeleccionado, setProfesorSeleccionado] = useState<ProfessorUI | null>(null)
   const [fechaSeleccionada, setFechaSeleccionada] = useState<FechaDisponible | null>(null)
   const [horaSeleccionada, setHoraSeleccionada] = useState<HorarioDisponible | null>(null)
@@ -529,7 +529,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
   }
 
   // Función para seleccionar menú
-  const seleccionarMenu = (menu: Menu) => {
+  const seleccionarMenu = (menu: MenuUI) => {
     setMenuSeleccionado(menu)
     avanzarPaso()
   }
@@ -1496,6 +1496,58 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     )
   }
 
+  // Renderizar selección de duración
+  const renderizarSeleccionDuracion = () => {
+    return (
+      <>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>{t("session.selectDuration")}</Text>
+        <Text style={[styles.stepDescription, { color: colors.text + "80" }]}>
+          {t("session.selectDurationDesc")}
+        </Text>
+
+        <View style={styles.selectedInfo}>
+          <View style={styles.selectedDetails}>
+            <Text style={[styles.selectedTitle, { color: colors.text }]}>
+              {fechaSeleccionada?.fecha ? formatearFecha(fechaSeleccionada.fecha) : ""} • {horaSeleccionada?.hora}
+            </Text>
+            <Text style={[styles.selectedSubtitle, { color: colors.text + "80" }]}>
+              {menuSeleccionado?.nombre} • {profesorSeleccionado?.nombre} • {restauranteSeleccionado?.nombre}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.durationContainer}>
+          {[1, 2, 3].map((duracion) => (
+            <TouchableOpacity
+              key={duracion}
+              style={[
+                styles.durationCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: duracionSeleccionada === duracion ? colors.primary : colors.border,
+                },
+              ]}
+              onPress={() => seleccionarDuracion(duracion)}
+            >
+              <Text style={[styles.durationText, { color: colors.text }]}>{duracion} {t(duracion === 1 ? "session.hour" : "session.hours")}</Text>
+              <Text style={[styles.durationPrice, { color: colors.primary }]}>
+                {(menuSeleccionado ? menuSeleccionado.precio : 0) + TASA_SERVICIO * duracion}€
+              </Text>
+              <Text style={[styles.durationSubtext, { color: colors.text + "70" }]}>
+                {t("session.menuLabel")}: {menuSeleccionado ? menuSeleccionado.precio : 0}€ + {t("session.serviceLabel")}: {TASA_SERVICIO * duracion}€
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeTime")}</Text>
+        </TouchableOpacity>
+      </>
+    )
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
@@ -1514,6 +1566,20 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
           />
         ))}
       </View>
+
+      {/* Content */}
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+      >
+        <View style={styles.stepContainer}>{renderizarPaso()}</View>
+      </ScrollView>
+
+      {/* Modal de confirmación */}
+      {renderizarModalConfirmacion()}
+
       {/* Loading Overlay */}
       {cargando && (
         <View style={styles.loadingOverlay}>
