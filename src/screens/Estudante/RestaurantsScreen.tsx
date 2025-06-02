@@ -553,11 +553,17 @@ function RestaurantsScreen() {
 
   // Handle loading more data (pagination/infinite scroll)
   const handleLoadMore = useCallback(() => {
+    // Don't attempt pagination if we've detected server-side pagination issues
+    if (paginationBroken) {
+      console.log("Pagination is broken - not attempting to load more")
+      return
+    }
+    
     if (hasMore && !loadingMore && !refreshing) {
       setLoadingMore(true)
       fetchRestaurants(page + 1)
     }
-  }, [fetchRestaurants, hasMore, loadingMore, page, refreshing])
+  }, [fetchRestaurants, hasMore, loadingMore, page, refreshing, paginationBroken])
 
   // Handle filter changes
   const handleFilterChange = useCallback(
