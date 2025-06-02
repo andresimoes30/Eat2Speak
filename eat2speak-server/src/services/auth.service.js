@@ -337,6 +337,16 @@ async function logoutUser(userId, sessionId, ipAddress = 'unknown') {
     
     // If sessionId provided, invalidate specific session
     if (sessionId) {
+      // Ensure sessionId is converted to the correct type (INTEGER for database)
+      const parsedSessionId = typeof sessionId === 'string' ? parseInt(sessionId, 10) : sessionId;
+      
+      // Log conversion for debugging
+      logger.info('Logout attempt', { 
+        originalSessionId: sessionId,
+        parsedSessionId,
+        userId 
+      });
+      
       const result = await Session.update(
         { 
           isActive: false,
@@ -344,7 +354,7 @@ async function logoutUser(userId, sessionId, ipAddress = 'unknown') {
           token: null // Clear token for security
         },
         { 
-          where: { sessionId, userId },
+          where: { sessionId: parsedSessionId, userId },
           returning: true
         }
       );
