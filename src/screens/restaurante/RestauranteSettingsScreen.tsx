@@ -118,6 +118,9 @@ export default function RestauranteSettingsScreen() {
     Alert.alert("Éxito", "Capacidad por mesa actualizada correctamente")
   }
   
+  // State for tracking logout loading state
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  
   // Sign out
   const handleSignOut = () => {
     Alert.alert(
@@ -131,9 +134,26 @@ export default function RestauranteSettingsScreen() {
         {
           text: "Cerrar Sesión",
           style: "destructive",
-          onPress: () => {
-            // In a real app, this would call the signOut method from AuthContext
-            Alert.alert("Sesión cerrada", "Has cerrado sesión correctamente")
+          onPress: async () => {
+            try {
+              setIsLoggingOut(true)
+              await signOut()
+              // Navigate to login screen after successful logout
+              // Using reset to prevent going back to authenticated screens
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "RestaurantLogin" as never }]
+              })
+            } catch (error) {
+              console.error("Error signing out:", error)
+              setIsLoggingOut(false)
+              // Show error message to user
+              Alert.alert(
+                "Error",
+                "Hubo un problema al cerrar sesión. Por favor intenta de nuevo.",
+                [{ text: "OK" }]
+              )
+            }
           }
         }
       ]
