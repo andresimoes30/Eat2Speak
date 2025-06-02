@@ -334,37 +334,50 @@ export default function PersonalInfoScreen() {
     fetchUserProfile();
   }, []);
 
-  const fetchUserProfile = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const response = await api.get('/api/user/me');
-      
-      if (response && response.data) {
-        // Transform API data to match our UserData interface
-        const apiUser = response.data;
-        const transformedUserData: UserData = {
-          id: apiUser.userId?.toString() || authUser?.id || "",
-          firstName: apiUser.firstName || "",
-          lastName: apiUser.lastName || "",
-          email: apiUser.email || "",
-          phone: apiUser.phoneNumber?.replace(/^\+\d+\s*/, '') || "", // Remove country code if present
-          countryCode: getCountryCodeFromPhone(apiUser.phoneNumber) || "+34",
-          profileImage: apiUser.profileImage || "https://via.placeholder.com/150",
-          address: apiUser.address || "",
-          birthDate: apiUser.birthDate || "",
-          gender: apiUser.gender || "",
-          nationality: apiUser.nationality || "",
-          occupation: apiUser.occupation || "",
-          company: apiUser.company || "",
-          languages: apiUser.UserLanguages?.map((lang: any) => ({
-            language: `language.${lang.languageName.toLowerCase()}`,
-            level: mapProficiencyToLevel(lang.proficiencyLevel)
-          })) || [],
-          interests: apiUser.interests?.split(',').map((interest: string) => interest.trim()) || [],
-          bio: apiUser.bio || ""
-        };
+      const fetchUserProfile = async () => {
+        try {
+          setIsLoading(true);
+          setError(null);
+          
+          const response = await api.get('/api/user/me');
+          
+          if (response && response.data) {
+            // Transform API data to match our UserData interface
+            const apiUser = response.data;
+            
+            // Handle languages - check if UserLanguages exists and is not empty
+            let userLanguages: Language[] = [];
+            if (apiUser.UserLanguages && Array.isArray(apiUser.UserLanguages) && apiUser.UserLanguages.length > 0) {
+              userLanguages = apiUser.UserLanguages.map((lang: any) => ({
+                language: `language.${lang.languageName.toLowerCase()}`,
+                level: mapProficiencyToLevel(lang.proficiencyLevel)
+              }));
+            }
+            
+            // Handle interests - check if interests exists and is not empty
+            let userInterests: string[] = [];
+            if (apiUser.interests && typeof apiUser.interests === 'string' && apiUser.interests.trim() !== '') {
+              userInterests = apiUser.interests.split(',').map((interest: string) => interest.trim());
+            }
+            
+            const transformedUserData: UserData = {
+              id: apiUser.userId?.toString() || authUser?.id || "",
+              firstName: apiUser.firstName || "",
+              lastName: apiUser.lastName || "",
+              email: apiUser.email || "",
+              phone: apiUser.phoneNumber?.replace(/^\+\d+\s*/, '') || "", // Remove country code if present
+              countryCode: getCountryCodeFromPhone(apiUser.phoneNumber) || "+34",
+              profileImage: apiUser.profileImage || "https://via.placeholder.com/150",
+              address: apiUser.address || "",
+              birthDate: apiUser.birthDate || "",
+              gender: apiUser.gender || "",
+              nationality: apiUser.nationality || "",
+              occupation: apiUser.occupation || "",
+              company: apiUser.company || "",
+              languages: userLanguages,
+              interests: userInterests,
+              bio: apiUser.bio || ""
+            };
         
         setUserData(transformedUserData);
         setEditedUser(transformedUserData);
@@ -424,7 +437,7 @@ export default function PersonalInfoScreen() {
       setError(null);
       
       // Prepare data for API
-      const updateData = {
+      const updateData: any = {
         firstName: editedUser.firstName,
         lastName: editedUser.lastName,
         email: editedUser.email,
@@ -434,13 +447,21 @@ export default function PersonalInfoScreen() {
         nationality: editedUser.nationality,
         occupation: editedUser.occupation,
         company: editedUser.company,
-        bio: editedUser.bio,
-        languages: editedUser.languages.map(lang => ({
+        bio: editedUser.bio
+      };
+      
+      // Only include languages if they exist
+      if (editedUser.languages && editedUser.languages.length > 0) {
+        updateData.languages = editedUser.languages.map(lang => ({
           languageName: lang.language.replace('language.', ''),
           proficiencyLevel: mapLevelToProficiency(lang.level)
-        })),
-        interests: editedUser.interests.join(',')
-      };
+        }));
+      }
+      
+      // Only include interests if they exist
+      if (editedUser.interests && editedUser.interests.length > 0) {
+        updateData.interests = editedUser.interests.join(',');
+      }
       
       // Make API call to update user profile
       await api.put('/api/user/me', updateData);
@@ -907,7 +928,29 @@ export default function PersonalInfoScreen() {
         <Card style={styles.infoCard}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.languages")}</Text>
 
-          {editedUser.languages.map((item, index) => (
+          {editedUser.languages.length > 0 ? (
+            editedUser.languages.map((item, index) => (
+              <View key={index} style={styles.languageItem}>
+                <View style={styles.languageInfo}>
+                  <Text style={[styles.languageName, { color: colors.text }]}>
+                    {item.language.startsWith("language.") ? t(item.language) : item.language}
+                  </Text>
+                  <Text style={[styles.languageLevel, { color: colors.text + "80" }]}>
+                    {item.level.startsWith("level.") ? t(item.level) : item.level}
+                  </Text>
+                </View>
+                {isEditing && (
+                  <TouchableOpacity onPress={() => handleRemoveLanguage(index)}>
+                    <Ionicons name="trash-outline" size={20} color={colors.error} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={{ color: colors.text + "80", fontStyle: "italic", marginBottom: 12 }}>
+              {t("personalInfo.noLanguagesAdded")}
+            </Text>
+          )}
             <View key={index} style={styles.languageItem}>
               <View style={styles.languageInfo}>
                 <Text style={[styles.languageName, { color: colors.text }]}>
@@ -940,7 +983,34 @@ export default function PersonalInfoScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.interests")}</Text>
 
           <View style={styles.interestsContainer}>
-            {editedUser.interests.map((interest, index) => (
+            {editedUser.interests.length > 0 ? (
+              editedUser.interests.map((interest, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.interestTag,
+                    {
+                      backgroundColor: colors.blue[50],
+                      borderColor: colors.blue[200],
+                    },
+                  ]}
+                >
+                  <Text style={[styles.interestText, { color: colors.blue[700] }]}>{interest}</Text>
+                  {isEditing && (
+                    <TouchableOpacity 
+                      style={styles.removeInterestButton}
+                      onPress={() => handleRemoveInterest(index)}
+                    >
+                      <Ionicons name="close" size={16} color={colors.blue[700]} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))
+            ) : (
+              <Text style={{ color: colors.text + "80", fontStyle: "italic", marginBottom: 12 }}>
+                {t("personalInfo.noInterestsAdded")}
+              </Text>
+            )}
               <View
                 key={index}
                 style={[
