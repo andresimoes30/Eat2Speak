@@ -170,6 +170,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true)
 
+      // Call the logout API endpoint to invalidate the session on the server
+      try {
+        // Import the logout function from the API service
+        const { logout } = require("../../services/api")
+        await logout()
+        console.log("Server session invalidated")
+      } catch (error) {
+        console.error("Error during logout API call:", error)
+        // Continue with local cleanup even if the API call fails
+      }
+
       // Remove user and token from state and AsyncStorage
       setUser(null)
       await AsyncStorage.removeItem("user")
