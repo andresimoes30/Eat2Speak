@@ -619,7 +619,8 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     }
     
     // Check if user is logged in
-    if (!user || !(user as User).userId) {
+    // Type guard to check if user has userId property
+    if (!user || !user.userId) {
       setError('Debe iniciar sesión para realizar una reserva.');
       return;
     }
