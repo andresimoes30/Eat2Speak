@@ -951,22 +951,6 @@ export default function PersonalInfoScreen() {
               {t("personalInfo.noLanguagesAdded")}
             </Text>
           )}
-            <View key={index} style={styles.languageItem}>
-              <View style={styles.languageInfo}>
-                <Text style={[styles.languageName, { color: colors.text }]}>
-                  {item.language.startsWith("language.") ? t(item.language) : item.language}
-                </Text>
-                <Text style={[styles.languageLevel, { color: colors.text + "80" }]}>
-                  {item.level.startsWith("level.") ? t(item.level) : item.level}
-                </Text>
-              </View>
-              {isEditing && (
-                <TouchableOpacity onPress={() => handleRemoveLanguage(index)}>
-                  <Ionicons name="trash-outline" size={20} color={colors.error} />
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
 
           {isEditing && (
             <TouchableOpacity 
@@ -1011,27 +995,6 @@ export default function PersonalInfoScreen() {
                 {t("personalInfo.noInterestsAdded")}
               </Text>
             )}
-              <View
-                key={index}
-                style={[
-                  styles.interestTag,
-                  {
-                    backgroundColor: colors.blue[50],
-                    borderColor: colors.blue[200],
-                  },
-                ]}
-              >
-                <Text style={[styles.interestText, { color: colors.blue[700] }]}>{interest}</Text>
-                {isEditing && (
-                  <TouchableOpacity 
-                    style={styles.removeInterestButton}
-                    onPress={() => handleRemoveInterest(index)}
-                  >
-                    <Ionicons name="close" size={16} color={colors.blue[700]} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
 
             {isEditing && (
               <TouchableOpacity
