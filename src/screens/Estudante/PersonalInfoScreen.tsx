@@ -1,12 +1,14 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, FlatList } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, FlatList, ActivityIndicator, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useLanguage } from "../../contexts/LanguageContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { Card } from "../../components/Card"
+import api from "../../../services/api"
 
 // Country codes with flags
 const countryCodes = [
@@ -149,36 +151,37 @@ interface UserData {
   bio: string;
 }
 
-// Datos ficticios del usuario
-const userData: UserData = {
-  id: "123456",
-  firstName: "Carlos",
-  lastName: "Rodríguez",
-  email: "carlos.rodriguez@example.com",
-  phone: "612 345 678",
-  countryCode: "+34",
-  profileImage: "https://via.placeholder.com/150",
-  address: "Calle Gran Vía 28, Madrid, España",
-  birthDate: "15/04/1988",
-  gender: "gender.male",
-  nationality: "nationality.spanish",
-  occupation: "Ingeniero de Software",
-  company: "TechSolutions S.L.",
-  languages: [
-    { language: "language.spanish", level: "level.native" },
-    { language: "language.english", level: "level.c1" },
-    { language: "language.french", level: "level.b1" },
-  ],
-  interests: ["Gastronomía", "Viajes", "Idiomas", "Tecnología"],
-  bio: "Apasionado por los idiomas y la gastronomía. Me encanta viajar y conocer nuevas culturas a través de su comida. Trabajo como ingeniero de software y utilizo LEWET para mejorar mi nivel de francés mientras disfruto de buena comida.",
+// Default empty user data structure
+const emptyUserData: UserData = {
+  id: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  countryCode: "+34", // Default
+  profileImage: "https://via.placeholder.com/150", // Default placeholder
+  address: "",
+  birthDate: "",
+  gender: "gender.preferNotToSay", // Default
+  nationality: "nationality.spanish", // Default
+  occupation: "",
+  company: "",
+  languages: [],
+  interests: [],
+  bio: "",
 }
 
 export default function PersonalInfoScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t, language } = useLanguage();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData>(emptyUserData);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editedUser, setEditedUser] = useState<UserData>(userData);
+  const [editedUser, setEditedUser] = useState<UserData>(emptyUserData);
   
   // Modals
   const [showCountryCodeModal, setShowCountryCodeModal] = useState<boolean>(false);
@@ -326,9 +329,136 @@ export default function PersonalInfoScreen() {
     return t(key);
   };
 
-  const handleSave = () => {
-    // Aquí iría la lógica para guardar los cambios
-    setIsEditing(false);
+  // Fetch user data from API
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Get user data from auth/verify endpoint
+        const response = await api.get('/api/auth/verify');
+        
+        // Extract user data from response
+        let apiUserData;
+        if (response.data?.data?.user) {
+          apiUserData = response.data.data.user;
+        } else if (response.data?.user) {
+          apiUserData = response.data.user;
+        } else {
+          apiUserData = response.data?.data || response.data;
+        }
+        
+        console.log('API User Data:', apiUserData);
+        
+        // Map API data to our UserData interface
+        if (apiUserData) {
+          const mappedData: UserData = {
+            id: apiUserData.id || user.id || "",
+            firstName: apiUserData.firstName || user.firstName || "",
+            lastName: apiUserData.lastName || user.lastName || "",
+            email: apiUserData.email || user.email || "",
+            phone: apiUserData.phoneNumber || apiUserData.phone || "",
+            countryCode: apiUserData.countryCode || "+34", // Default if not available
+            profileImage: apiUserData.profileImage || "https://via.placeholder.com/150",
+            address: apiUserData.address || "",
+            birthDate: apiUserData.birthDate || "",
+            gender: apiUserData.gender || "gender.preferNotToSay",
+            nationality: apiUserData.nationality || "nationality.spanish", // Default
+            occupation: apiUserData.occupation || "",
+            company: apiUserData.company || "",
+            languages: apiUserData.languages || [],
+            interests: apiUserData.interests || [],
+            bio: apiUserData.bio || "",
+          };
+          
+          setUserData(mappedData);
+          setEditedUser(mappedData);
+        }
+      } catch (err: any) {
+        console.error('Error fetching user data:', err);
+        
+        // Set a helpful error message
+        setError(err.response?.status 
+          ? `Server error: ${err.response.status}` 
+          : 'Failed to load user data');
+          
+        // If we have user data from AuthContext, use it as fallback
+        if (user) {
+          const fallbackData: UserData = {
+            ...emptyUserData,
+            id: user.id || "",
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            email: user.email || "",
+            // Other fields remain as defaults
+          };
+          
+          setUserData(fallbackData);
+          setEditedUser(fallbackData);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserData();
+  }, [user]);
+
+  const handleSave = async () => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      // Prepare data for API
+      const updatedData = {
+        firstName: editedUser.firstName,
+        lastName: editedUser.lastName,
+        email: editedUser.email,
+        phoneNumber: editedUser.phone,
+        countryCode: editedUser.countryCode,
+        address: editedUser.address,
+        birthDate: editedUser.birthDate,
+        gender: editedUser.gender,
+        nationality: editedUser.nationality,
+        occupation: editedUser.occupation,
+        company: editedUser.company,
+        languages: editedUser.languages,
+        interests: editedUser.interests,
+        bio: editedUser.bio
+      };
+      
+      // Update user profile via API
+      const response = await api.put('/api/user/me', updatedData);
+      
+      console.log('Profile update response:', response.data);
+      
+      // Update local state with the changes
+      setUserData(editedUser);
+      setIsEditing(false);
+      
+      // Show success message
+      Alert.alert(
+        t("personalInfo.updateSuccess"),
+        t("personalInfo.profileUpdated"),
+        [{ text: "OK" }]
+      );
+    } catch (err: any) {
+      console.error('Error updating profile:', err);
+      
+      // Show error message
+      Alert.alert(
+        t("personalInfo.updateError"),
+        err.response?.data?.message || t("personalInfo.updateFailed"),
+        [{ text: "OK" }]
+      );
+      
+      // Don't exit edit mode on error so user can try again
+    } finally {
+      setIsSubmitting(false);
+    }
   }
   
   // Helper function to format date as DD/MM/YYYY
@@ -480,26 +610,54 @@ export default function PersonalInfoScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background, paddingTop: 30 }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("personalInfo.title")}</Text>
-        <TouchableOpacity style={styles.editButton} onPress={() => (isEditing ? handleSave() : setIsEditing(true))}>
-          <Text style={[styles.editButtonText, { color: colors.primary }]}>
-            {isEditing ? t("personalInfo.save") : t("personalInfo.edit")}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.photoContainer}>
-        <View style={styles.profileImageContainer}>
-          <Image source={{ uri: userData.profileImage }} style={styles.profileImage} />
-          <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: "white" }]}>
-            <Ionicons name="camera" size={20} color={colors.primary} />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>{t("personalInfo.loading") || "Loading..."}</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          <TouchableOpacity 
+            style={[styles.retryButton, { backgroundColor: colors.primary }]}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.retryButtonText}>{t("personalInfo.goBack") || "Go Back"}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      ) : (
+        <>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={colors.primary} />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>{t("personalInfo.title")}</Text>
+            <TouchableOpacity 
+              style={styles.editButton} 
+              onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={[styles.editButtonText, { color: colors.primary }]}>
+                  {isEditing ? t("personalInfo.save") : t("personalInfo.edit")}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.photoContainer}>
+            <View style={styles.profileImageContainer}>
+              <Image source={{ uri: editedUser.profileImage }} style={styles.profileImage} />
+              {isEditing && (
+                <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: "white" }]}>
+                  <Ionicons name="camera" size={20} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
       
       <View style={styles.content}>
 
@@ -1310,6 +1468,39 @@ export default function PersonalInfoScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 300,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 300,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
   // Added new styles for dropdown menu
   dropdownMenu: {
     position: 'absolute',
