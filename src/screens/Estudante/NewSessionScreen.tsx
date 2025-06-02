@@ -90,6 +90,11 @@ interface RestaurantUI {
   tipo: string
   calificacion: number
   idiomas: string[]
+  owner?: {
+    id: string
+    name: string
+    email: string
+  }
 }
 
 interface MenuUI {
