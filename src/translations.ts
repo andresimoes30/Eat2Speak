@@ -1446,6 +1446,30 @@ export const translations: TranslationsType = {
     "payments.tabLabel": "Pagamentos",
     "payments.withdraw": "Retirar",
     
+    // Security related descriptions
+    "security.changePasswordDescription": "Altere sua senha regularmente para aumentar a segurança da sua conta",
+    "security.sessionManagementDescription": "Gerencie sessões ativas em diferentes dispositivos e encerre sessões remotamente",
+    "security.authorizedDevicesDescription": "Visualize e gerencie dispositivos autorizados a acessar sua conta",
+
+    // Privacy related descriptions
+    "privacy.settingsDescription": "Controle quais informações são visíveis para outros usuários e como seus dados são utilizados",
+
+    // Support related translations
+    "support.helpAndSupport": "Ajuda e Suporte",
+    "support.searchHelp": "Pesquisar ajuda",
+    "support.quickContact": "Contato Rápido",
+    "support.supportEmail": "Email de suporte",
+    "support.phone": "Telefone",
+    "support.whatsapp": "WhatsApp",
+    "support.liveChat": "Chat ao vivo",
+    "support.helpCenter": "Central de Ajuda",
+    "support.visitHelpWebsite": "Visitar site de ajuda",
+    "support.frequentlyAskedQuestions": "Perguntas Frequentes",
+    "support.sendSupportMessage": "Enviar mensagem de suporte",
+    "support.detailedMessageInstructions": "Forneça detalhes sobre seu problema para que possamos ajudá-lo melhor",
+    "support.describeYourProblem": "Descreva seu problema",
+    "support.sendMessage": "Enviar mensagem",
+    
     // Common missing translations
     "common.cancel": "Cancelar",
     "common.reset": "Redefinir",
