@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo, Component, ReactNode } from "react"
 import {
   View,
   Text,
@@ -286,6 +286,64 @@ interface FormErrors {
   duration?: string;
   sessionType?: string;
   professor?: string;
+}
+
+// Error Boundary Component
+class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}> {
+  constructor(props: {children: ReactNode}) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_: Error) {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log the error to an error reporting service
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // You can render any custom fallback UI
+      return (
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+          backgroundColor: '#fff'
+        }}>
+          <Ionicons name="alert-circle" size={50} color="red" />
+          <Text style={{
+            marginTop: 20,
+            fontSize: 18,
+            color: '#333',
+            textAlign: 'center'
+          }}>
+            Algo salió mal. Por favor intente nuevamente.
+          </Text>
+          <TouchableOpacity
+            style={{
+              marginTop: 20,
+              padding: 12,
+              backgroundColor: '#0066cc',
+              borderRadius: 8
+            }}
+            onPress={() => this.setState({ hasError: false })}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>
+              Reintentar
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 // Component
