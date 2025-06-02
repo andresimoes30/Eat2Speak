@@ -3574,6 +3574,8 @@ export const translations: TranslationsType = {
     "restaurant.available": "Disponibile",
     "common.yes": "Sì",
     "common.save": "Salva",
+    "common.edit": "Modifica",
+    "common.delete": "Elimina",
     
     // Session
     "session.newSession": "Nuova Sessione",
