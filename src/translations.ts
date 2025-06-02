@@ -1497,6 +1497,7 @@ export const translations: TranslationsType = {
     "common.cancel": "Cancelar",
     "common.reset": "Redefinir",
     "common.success": "Sucesso",
+    "common.of": "de",
     "common.firstName": "Nome",
     "common.lastName": "Sobrenome",
     "common.email": "Email",
