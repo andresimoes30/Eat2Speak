@@ -1491,29 +1491,6 @@ export const translations: TranslationsType = {
     
     "restaurant.faq.manageTables.question": "Como gerencio as mesas disponíveis?",
     "restaurant.faq.manageTables.answer": "Na seção 'Disponibilidade', você pode gerenciar o número de mesas disponíveis para estudantes, bem como os horários em que seu restaurante está aberto para reservas através do aplicativo. Você pode ajustar essa configuração de acordo com suas necessidades e a ocupação do seu estabelecimento.",
-    "support.noResultsFound": "Nenhum resultado encontrado para",
-    "support.tryDifferentWords": "Tente palavras diferentes ou verifique a ortografia",
-    "support.messageSent": "Mensagem enviada com sucesso! Nossa equipe entrará em contato em breve.",
-    "support.pleaseWriteMessage": "Por favor, escreva uma mensagem antes de enviar.",
-    
-    // Restaurant-specific FAQ translations
-    "restaurant.faq.moreStudents.question": "Como posso receber mais estudantes no meu restaurante?",
-    "restaurant.faq.moreStudents.answer": "Para atrair mais estudantes, complete seu perfil com fotos atraentes, uma descrição detalhada do seu restaurante e do tipo de culinária que oferece. Mantenha seu horário de disponibilidade atualizado e ofereça um ambiente acolhedor para conversações. Restaurantes com boas avaliações aparecem com mais destaque nos resultados de busca.",
-    
-    "restaurant.faq.commissions.question": "Como funcionam as comissões?",
-    "restaurant.faq.commissions.answer": "Para cada reserva concluída através do aplicativo, é aplicada uma comissão de 15% sobre o preço do menu ou consumo. Esta comissão é descontada automaticamente do pagamento que você recebe. Você pode ver um detalhamento completo de seus ganhos e comissões na seção 'Finanças' do seu perfil.",
-    
-    "restaurant.faq.noShow.question": "O que acontece se um estudante não comparecer?",
-    "restaurant.faq.noShow.answer": "Se um estudante não comparecer a uma reserva confirmada, você deve marcá-la como 'Não compareceu' no aplicativo dentro de 24 horas. Você receberá uma compensação parcial pela reserva. Se isso ocorrer frequentemente com o mesmo estudante, você pode reportá-lo à nossa equipe de suporte.",
-    
-    "restaurant.faq.rejectBooking.question": "Posso recusar uma reserva?",
-    "restaurant.faq.rejectBooking.answer": "Sim, você pode recusar reservas, mas recomendamos fazê-lo com antecedência para manter uma boa classificação. Recusar reservas frequentemente pode afetar a visibilidade do seu restaurante na plataforma. Procure manter seu calendário de disponibilidade atualizado para evitar solicitações em momentos inconvenientes.",
-    
-    "restaurant.faq.updateMenu.question": "Como atualizo o cardápio e os preços?",
-    "restaurant.faq.updateMenu.answer": "Você pode atualizar seu cardápio e preços na seção 'Menu' do seu perfil. Recomendamos manter essas informações atualizadas e adicionar fotos dos pratos para torná-los mais atrativos. As alterações serão refletidas imediatamente em seu perfil público.",
-    
-    "restaurant.faq.manageTables.question": "Como gerencio as mesas disponíveis?",
-    "restaurant.faq.manageTables.answer": "Na seção 'Disponibilidade', você pode gerenciar o número de mesas disponíveis para estudantes, bem como os horários em que seu restaurante está aberto para reservas através do aplicativo. Você pode ajustar essa configuração de acordo com suas necessidades e a ocupação do seu estabelecimento.",
     
     // Common missing translations
     "common.cancel": "Cancelar",
