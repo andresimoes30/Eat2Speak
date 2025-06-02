@@ -269,15 +269,30 @@ function RestaurantsScreen() {
     [t]
   )
 
-  // Function to fetch restaurants from the API
+  // Debounce delay for filter changes (milliseconds)
+  const FILTER_DEBOUNCE_DELAY = 800
+  const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Function to fetch restaurants from the API with request queue
   const fetchRestaurants = useCallback(
     async (pageNum = 1, refresh = false) => {
+      // If we're rate limited, don't make another request until the timeout has passed
+      if (isRateLimited && retryAfter > 0) {
+        console.log(`Skipping request due to rate limiting. Will retry in ${retryAfter} seconds.`)
+        return
+      }
+      
+      // If there's already a request in progress, queue this one instead of sending it
+      if (isRequestPendingRef.current) {
+        console.log(`Request already in progress. Queuing page ${pageNum}, refresh: ${refresh}`)
+        pendingRequestParamsRef.current = { page: pageNum, refresh }
+        return
+      }
+      
+      // Mark that we're starting a request
+      isRequestPendingRef.current = true
+      
       try {
-        // If we're rate limited, don't make another request until the timeout has passed
-        if (isRateLimited && retryAfter > 0) {
-          return
-        }
-
         // Clear any existing retry timeouts
         if (retryTimeoutRef.current) {
           clearTimeout(retryTimeoutRef.current)
@@ -293,9 +308,26 @@ function RestaurantsScreen() {
           cacheTimestamp.current &&
           now - cacheTimestamp.current < CACHE_EXPIRATION
         ) {
+          console.log("Using cached restaurant data from", new Date(cacheTimestamp.current).toLocaleTimeString())
           setRestaurants(cachedRestaurants.current)
           setLoading(false)
           setRefreshing(false)
+          isRequestPendingRef.current = false
+          
+          // Process any queued requests
+          if (pendingRequestParamsRef.current) {
+            const { page, refresh } = pendingRequestParamsRef.current
+            pendingRequestParamsRef.current = null
+            console.log(`Processing queued request: page ${page}, refresh: ${refresh}`)
+            
+            // Only process the queued request if it's different from what we just did
+            if (page !== pageNum || refresh !== false) {
+              // Small delay to prevent immediate re-request
+              setTimeout(() => {
+                fetchRestaurants(page, refresh)
+              }, 100)
+            }
+          }
           return
         }
 
@@ -310,6 +342,10 @@ function RestaurantsScreen() {
           lastAppliedFilters.current = { ...filters }
         }
 
+        // Log what we're fetching for debugging
+        console.log(`Fetching restaurants: page ${pageNum}, refresh: ${refresh}, filters:`, 
+          JSON.stringify(filters, null, 2).substring(0, 100) + "...")
+
         // Prepare query parameters
         const queryParams = new URLSearchParams({
           page: pageNum.toString(),
@@ -322,8 +358,36 @@ function RestaurantsScreen() {
         if (filters.search) queryParams.append("search", filters.search)
         if (filters.cuisine) queryParams.append("cuisine", filters.cuisine)
 
-        // Make API request
-        const response = await api.get<RestaurantsResponse>(`/api/restaurants?${queryParams.toString()}`)
+        // Add a cache-busting parameter to avoid browser caching
+        queryParams.append("_t", Date.now().toString())
+
+        // Make API request with exponential backoff
+        let attempt = 0
+        const maxAttempts = 3
+        let response = null
+        
+        while (attempt < maxAttempts && !response) {
+          if (attempt > 0) {
+            // Exponential backoff - wait longer between each retry
+            const backoffDelay = Math.pow(2, attempt) * 1000
+            console.log(`Retry attempt ${attempt}/${maxAttempts}, waiting ${backoffDelay}ms`)
+            await new Promise(resolve => setTimeout(resolve, backoffDelay))
+          }
+          
+          try {
+            response = await api.get<RestaurantsResponse>(`/api/restaurants?${queryParams.toString()}`)
+          } catch (backoffErr: any) {
+            attempt++
+            if (backoffErr.response?.status === 429) {
+              // Don't keep retrying on rate limit errors - we'll handle these separately
+              throw backoffErr
+            }
+            if (attempt >= maxAttempts) {
+              throw backoffErr
+            }
+            console.log(`Request failed (attempt ${attempt}/${maxAttempts}): ${backoffErr.message}`)
+          }
+        }
 
         // Reset rate limiting if we were previously rate limited
         if (isRateLimited) {
@@ -343,6 +407,7 @@ function RestaurantsScreen() {
           // Update cache for first page
           cachedRestaurants.current = enhancedRestaurants
           cacheTimestamp.current = Date.now()
+          console.log("Updated cache at", new Date(cacheTimestamp.current).toLocaleTimeString())
         } else {
           setRestaurants((prev) => [...prev, ...enhancedRestaurants])
         }
@@ -354,27 +419,42 @@ function RestaurantsScreen() {
 
         // Clear any existing errors
         setError(null)
+        
+        console.log(`Successfully fetched ${enhancedRestaurants.length} restaurants for page ${pageNum}`)
       } catch (err: any) {
         // Handle rate limiting (429 Too Many Requests)
         if (err.response && err.response.status === 429) {
-          // Get retry-after header or default to 30 seconds
+          // Get retry-after header or default to 60 seconds
           const retryAfterHeader = err.response.headers?.["retry-after"]
-          const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 30
+          const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60
           
-          console.log(`Rate limited. Retrying after ${retryAfterSeconds} seconds`)
+          console.log(`Rate limited detected. API suggests waiting ${retryAfterSeconds} seconds`)
+          console.log("Rate limited detected, but ignoring for testing")
           
           // Set rate limiting state
           setIsRateLimited(true)
           setRetryAfter(retryAfterSeconds)
-          setError(`Rate limited. Please try again in ${retryAfterSeconds} seconds`)
           
-          // Schedule automatic retry
+          // Use cached data if available
+          if (cachedRestaurants.current.length > 0) {
+            console.log("Using cached data due to rate limiting")
+            setRestaurants(cachedRestaurants.current)
+            setError("Rate limited. Using cached data.")
+          } else {
+            setError(`Rate limited. Please try again in ${retryAfterSeconds} seconds`)
+          }
+          
+          // Schedule automatic retry with a longer delay than suggested
+          // to ensure we don't hit rate limits again
+          const actualRetryDelay = retryAfterSeconds * 1500 // 1.5x the suggested wait time
+          console.log(`Will retry automatically after ${actualRetryDelay/1000} seconds`)
+          
           retryTimeoutRef.current = setTimeout(() => {
-            console.log("Retrying after rate limit cooldown")
+            console.log("Attempting retry after rate limit cooldown")
             setIsRateLimited(false)
             setRetryAfter(0)
             fetchRestaurants(pageNum, refresh)
-          }, retryAfterSeconds * 1000)
+          }, actualRetryDelay)
         } else {
           // Handle other errors
           const apiError = err as ApiError
@@ -383,7 +463,10 @@ function RestaurantsScreen() {
           setError(errorMessage)
 
           // If this is not the first page, we still keep previous results
-          if (pageNum === 1) {
+          if (pageNum === 1 && cachedRestaurants.current.length > 0) {
+            console.log("Using cached data due to API error")
+            setRestaurants(cachedRestaurants.current)
+          } else if (pageNum === 1) {
             setRestaurants([])
           }
         }
@@ -391,6 +474,21 @@ function RestaurantsScreen() {
         setLoading(false)
         setRefreshing(false)
         setLoadingMore(false)
+        
+        // Mark that the request is complete
+        isRequestPendingRef.current = false
+        
+        // Process any queued requests
+        if (pendingRequestParamsRef.current) {
+          const { page, refresh } = pendingRequestParamsRef.current
+          pendingRequestParamsRef.current = null
+          console.log(`Processing queued request after completion: page ${page}, refresh: ${refresh}`)
+          
+          // Small delay to prevent immediate re-request
+          setTimeout(() => {
+            fetchRestaurants(page, refresh)
+          }, 300)
+        }
       }
     },
     [filters, enhanceRestaurantData, isRateLimited, retryAfter]
