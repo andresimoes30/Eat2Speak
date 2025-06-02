@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import {
   View,
   Text,
@@ -319,7 +319,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
   const [sessionType, setSessionType] = useState<SessionType>(SessionType.OneOnOne)
   const [idiomaSeleccionado, setIdiomaSeleccionado] = useState<string | null>(null)
   const [menuSeleccionado, setMenuSeleccionado] = useState<Menu | null>(null)
-  const [profesorSeleccionado, setProfesorSeleccionado] = useState<Profesor | null>(null)
+  const [profesorSeleccionado, setProfesorSeleccionado] = useState<ProfessorUI | null>(null)
   const [fechaSeleccionada, setFechaSeleccionada] = useState<FechaDisponible | null>(null)
   const [horaSeleccionada, setHoraSeleccionada] = useState<HorarioDisponible | null>(null)
   const [duracionSeleccionada, setDuracionSeleccionada] = useState<number>(1) // Duración en horas (mínimo 1)
@@ -497,7 +497,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
   }
 
   // Función para seleccionar restaurante
-  const seleccionarRestaurante = (restaurante: Restaurante) => {
+  const seleccionarRestaurante = (restaurante: RestaurantUI) => {
     setRestauranteSeleccionado(restaurante)
     setIdiomaSeleccionado(null) // Resetear idioma al cambiar de restaurante
     setProfesorSeleccionado(null) // Resetear profesor al cambiar de restaurante
@@ -553,7 +553,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
   }
 
   // Function to select professor
-  const seleccionarProfesor = (profesor: Profesor) => {
+  const seleccionarProfesor = (profesor: ProfessorUI) => {
     setProfesorSeleccionado(profesor);
     avanzarPaso();
   }
@@ -1514,6 +1514,17 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
           />
         ))}
       </View>
+      {/* Loading Overlay */}
+      {cargando && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )}
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
   professorCard: {
     flexDirection: "row",
     borderRadius: 12,
@@ -1589,15 +1600,6 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     fontSize: 14,
     textAlign: "center",
   },
-      {/* Content */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={true}
-      >
-        <View style={styles.stepContainer}>{renderizarPaso()}</View>
-      </ScrollView>
   paymentMethods: {
     flexDirection: "row",
     marginTop: 8,
@@ -1614,8 +1616,6 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     fontSize: 14,
     marginLeft: 6,
   },
-      {/* Modal de confirmación */}
-      {renderizarModalConfirmacion()}
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1639,17 +1639,6 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     marginLeft: 8,
     flex: 1,
   },
-      {/* Loading Overlay */}
-      {cargando && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
-    </View>
-  )
-}
-
-const styles = StyleSheet.create({
   menuCard: {
     flexDirection: "row",
     borderRadius: 12,
