@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import type { ReactNode } from "react"
 import {
   View,
@@ -21,19 +21,226 @@ import { useTheme } from "../../contexts/ThemeContext"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 
-// Languages for native selection
+// Languages for native selection with 20 languages from the database
 const languages = [
-  "Inglés",
-  "Español",
-  "Francés",
-  "Alemán",
-  "Italiano",
-  "Japonés",
-  "Mandarín",
-  "Portugués",
-  "Ruso",
+  "Inglês",
+  "Mandarim",
+  "Hindi",
+  "Espanhol",
+  "Francês",
   "Árabe",
+  "Bengali",
+  "Português",
+  "Russo",
+  "Urdu",
+  "Indonésio",
+  "Alemão",
+  "Japonês",
+  "Marata",
+  "Telugu",
+  "Turco",
+  "Tâmil",
+  "Vietnamita",
+  "Coreano",
+  "Italiano"
 ]
+
+// Countries with flag emojis for the nationality dropdown
+const countries = [
+  { name: "Afghanistan", flag: "🇦🇫" },
+  { name: "Albania", flag: "🇦🇱" },
+  { name: "Algeria", flag: "🇩🇿" },
+  { name: "Andorra", flag: "🇦🇩" },
+  { name: "Angola", flag: "🇦🇴" },
+  { name: "Antigua and Barbuda", flag: "🇦🇬" },
+  { name: "Argentina", flag: "🇦🇷" },
+  { name: "Armenia", flag: "🇦🇲" },
+  { name: "Australia", flag: "🇦🇺" },
+  { name: "Austria", flag: "🇦🇹" },
+  { name: "Azerbaijan", flag: "🇦🇿" },
+  { name: "Bahamas", flag: "🇧🇸" },
+  { name: "Bahrain", flag: "🇧🇭" },
+  { name: "Bangladesh", flag: "🇧🇩" },
+  { name: "Barbados", flag: "🇧🇧" },
+  { name: "Belarus", flag: "🇧🇾" },
+  { name: "Belgium", flag: "🇧🇪" },
+  { name: "Belize", flag: "🇧🇿" },
+  { name: "Benin", flag: "🇧🇯" },
+  { name: "Bhutan", flag: "🇧🇹" },
+  { name: "Bolivia", flag: "🇧🇴" },
+  { name: "Bosnia and Herzegovina", flag: "🇧🇦" },
+  { name: "Botswana", flag: "🇧🇼" },
+  { name: "Brazil", flag: "🇧🇷" },
+  { name: "Brunei", flag: "🇧🇳" },
+  { name: "Bulgaria", flag: "🇧🇬" },
+  { name: "Burkina Faso", flag: "🇧🇫" },
+  { name: "Burundi", flag: "🇧🇮" },
+  { name: "Cabo Verde", flag: "🇨🇻" },
+  { name: "Cambodia", flag: "🇰🇭" },
+  { name: "Cameroon", flag: "🇨🇲" },
+  { name: "Canada", flag: "🇨🇦" },
+  { name: "Central African Republic", flag: "🇨🇫" },
+  { name: "Chad", flag: "🇹🇩" },
+  { name: "Chile", flag: "🇨🇱" },
+  { name: "China", flag: "🇨🇳" },
+  { name: "Colombia", flag: "🇨🇴" },
+  { name: "Comoros", flag: "🇰🇲" },
+  { name: "Congo", flag: "🇨🇬" },
+  { name: "Costa Rica", flag: "🇨🇷" },
+  { name: "Croatia", flag: "🇭🇷" },
+  { name: "Cuba", flag: "🇨🇺" },
+  { name: "Cyprus", flag: "🇨🇾" },
+  { name: "Czech Republic", flag: "🇨🇿" },
+  { name: "Denmark", flag: "🇩🇰" },
+  { name: "Djibouti", flag: "🇩🇯" },
+  { name: "Dominica", flag: "🇩🇲" },
+  { name: "Dominican Republic", flag: "🇩🇴" },
+  { name: "Ecuador", flag: "🇪🇨" },
+  { name: "Egypt", flag: "🇪🇬" },
+  { name: "El Salvador", flag: "🇸🇻" },
+  { name: "Equatorial Guinea", flag: "🇬🇶" },
+  { name: "Eritrea", flag: "🇪🇷" },
+  { name: "Estonia", flag: "🇪🇪" },
+  { name: "Eswatini", flag: "🇸🇿" },
+  { name: "Ethiopia", flag: "🇪🇹" },
+  { name: "Fiji", flag: "🇫🇯" },
+  { name: "Finland", flag: "🇫🇮" },
+  { name: "France", flag: "🇫🇷" },
+  { name: "Gabon", flag: "🇬🇦" },
+  { name: "Gambia", flag: "🇬🇲" },
+  { name: "Georgia", flag: "🇬🇪" },
+  { name: "Germany", flag: "🇩🇪" },
+  { name: "Ghana", flag: "🇬🇭" },
+  { name: "Greece", flag: "🇬🇷" },
+  { name: "Grenada", flag: "🇬🇩" },
+  { name: "Guatemala", flag: "🇬🇹" },
+  { name: "Guinea", flag: "🇬🇳" },
+  { name: "Guinea-Bissau", flag: "🇬🇼" },
+  { name: "Guyana", flag: "🇬🇾" },
+  { name: "Haiti", flag: "🇭🇹" },
+  { name: "Honduras", flag: "🇭🇳" },
+  { name: "Hungary", flag: "🇭🇺" },
+  { name: "Iceland", flag: "🇮🇸" },
+  { name: "India", flag: "🇮🇳" },
+  { name: "Indonesia", flag: "🇮🇩" },
+  { name: "Iran", flag: "🇮🇷" },
+  { name: "Iraq", flag: "🇮🇶" },
+  { name: "Ireland", flag: "🇮🇪" },
+  { name: "Israel", flag: "🇮🇱" },
+  { name: "Italy", flag: "🇮🇹" },
+  { name: "Jamaica", flag: "🇯🇲" },
+  { name: "Japan", flag: "🇯🇵" },
+  { name: "Jordan", flag: "🇯🇴" },
+  { name: "Kazakhstan", flag: "🇰🇿" },
+  { name: "Kenya", flag: "🇰🇪" },
+  { name: "Kiribati", flag: "🇰🇮" },
+  { name: "Korea, North", flag: "🇰🇵" },
+  { name: "Korea, South", flag: "🇰🇷" },
+  { name: "Kuwait", flag: "🇰🇼" },
+  { name: "Kyrgyzstan", flag: "🇰🇬" },
+  { name: "Laos", flag: "🇱🇦" },
+  { name: "Latvia", flag: "🇱🇻" },
+  { name: "Lebanon", flag: "🇱🇧" },
+  { name: "Lesotho", flag: "🇱🇸" },
+  { name: "Liberia", flag: "🇱🇷" },
+  { name: "Libya", flag: "🇱🇾" },
+  { name: "Liechtenstein", flag: "🇱🇮" },
+  { name: "Lithuania", flag: "🇱🇹" },
+  { name: "Luxembourg", flag: "🇱🇺" },
+  { name: "Madagascar", flag: "🇲🇬" },
+  { name: "Malawi", flag: "🇲🇼" },
+  { name: "Malaysia", flag: "🇲🇾" },
+  { name: "Maldives", flag: "🇲🇻" },
+  { name: "Mali", flag: "🇲🇱" },
+  { name: "Malta", flag: "🇲🇹" },
+  { name: "Marshall Islands", flag: "🇲🇭" },
+  { name: "Mauritania", flag: "🇲🇷" },
+  { name: "Mauritius", flag: "🇲🇺" },
+  { name: "Mexico", flag: "🇲🇽" },
+  { name: "Micronesia", flag: "🇫🇲" },
+  { name: "Moldova", flag: "🇲🇩" },
+  { name: "Monaco", flag: "🇲🇨" },
+  { name: "Mongolia", flag: "🇲🇳" },
+  { name: "Montenegro", flag: "🇲🇪" },
+  { name: "Morocco", flag: "🇲🇦" },
+  { name: "Mozambique", flag: "🇲🇿" },
+  { name: "Myanmar", flag: "🇲🇲" },
+  { name: "Namibia", flag: "🇳🇦" },
+  { name: "Nauru", flag: "🇳🇷" },
+  { name: "Nepal", flag: "🇳🇵" },
+  { name: "Netherlands", flag: "🇳🇱" },
+  { name: "New Zealand", flag: "🇳🇿" },
+  { name: "Nicaragua", flag: "🇳🇮" },
+  { name: "Niger", flag: "🇳🇪" },
+  { name: "Nigeria", flag: "🇳🇬" },
+  { name: "North Macedonia", flag: "🇲🇰" },
+  { name: "Norway", flag: "🇳🇴" },
+  { name: "Oman", flag: "🇴🇲" },
+  { name: "Pakistan", flag: "🇵🇰" },
+  { name: "Palau", flag: "🇵🇼" },
+  { name: "Panama", flag: "🇵🇦" },
+  { name: "Papua New Guinea", flag: "🇵🇬" },
+  { name: "Paraguay", flag: "🇵🇾" },
+  { name: "Peru", flag: "🇵🇪" },
+  { name: "Philippines", flag: "🇵🇭" },
+  { name: "Poland", flag: "🇵🇱" },
+  { name: "Portugal", flag: "🇵🇹" },
+  { name: "Qatar", flag: "🇶🇦" },
+  { name: "Romania", flag: "🇷🇴" },
+  { name: "Russia", flag: "🇷🇺" },
+  { name: "Rwanda", flag: "🇷🇼" },
+  { name: "Saint Kitts and Nevis", flag: "🇰🇳" },
+  { name: "Saint Lucia", flag: "🇱🇨" },
+  { name: "Saint Vincent and the Grenadines", flag: "🇻🇨" },
+  { name: "Samoa", flag: "🇼🇸" },
+  { name: "San Marino", flag: "🇸🇲" },
+  { name: "Sao Tome and Principe", flag: "🇸🇹" },
+  { name: "Saudi Arabia", flag: "🇸🇦" },
+  { name: "Senegal", flag: "🇸🇳" },
+  { name: "Serbia", flag: "🇷🇸" },
+  { name: "Seychelles", flag: "🇸🇨" },
+  { name: "Sierra Leone", flag: "🇸🇱" },
+  { name: "Singapore", flag: "🇸🇬" },
+  { name: "Slovakia", flag: "🇸🇰" },
+  { name: "Slovenia", flag: "🇸🇮" },
+  { name: "Solomon Islands", flag: "🇸🇧" },
+  { name: "Somalia", flag: "🇸🇴" },
+  { name: "South Africa", flag: "🇿🇦" },
+  { name: "South Sudan", flag: "🇸🇸" },
+  { name: "Spain", flag: "🇪🇸" },
+  { name: "Sri Lanka", flag: "🇱🇰" },
+  { name: "Sudan", flag: "🇸🇩" },
+  { name: "Suriname", flag: "🇸🇷" },
+  { name: "Sweden", flag: "🇸🇪" },
+  { name: "Switzerland", flag: "🇨🇭" },
+  { name: "Syria", flag: "🇸🇾" },
+  { name: "Taiwan", flag: "🇹🇼" },
+  { name: "Tajikistan", flag: "🇹🇯" },
+  { name: "Tanzania", flag: "🇹🇿" },
+  { name: "Thailand", flag: "🇹🇭" },
+  { name: "Timor-Leste", flag: "🇹🇱" },
+  { name: "Togo", flag: "🇹🇬" },
+  { name: "Tonga", flag: "🇹🇴" },
+  { name: "Trinidad and Tobago", flag: "🇹🇹" },
+  { name: "Tunisia", flag: "🇹🇳" },
+  { name: "Turkey", flag: "🇹🇷" },
+  { name: "Turkmenistan", flag: "🇹🇲" },
+  { name: "Tuvalu", flag: "🇹🇻" },
+  { name: "Uganda", flag: "🇺🇬" },
+  { name: "Ukraine", flag: "🇺🇦" },
+  { name: "United Arab Emirates", flag: "🇦🇪" },
+  { name: "United Kingdom", flag: "🇬🇧" },
+  { name: "United States", flag: "🇺🇸" },
+  { name: "Uruguay", flag: "🇺🇾" },
+  { name: "Uzbekistan", flag: "🇺🇿" },
+  { name: "Vanuatu", flag: "🇻🇺" },
+  { name: "Vatican City", flag: "🇻🇦" },
+  { name: "Venezuela", flag: "🇻🇪" },
+  { name: "Vietnam", flag: "🇻🇳" },
+  { name: "Yemen", flag: "🇾🇪" },
+  { name: "Zambia", flag: "🇿🇲" },
+  { name: "Zimbabwe", flag: "🇿🇼" }
+];
 
 // Define proper types for the API based on database schema and backend expectations
 interface BaseUserData {
@@ -90,7 +297,8 @@ export default function RegisterScreen() {
     cuisineType: "",
     address: "",
     nationality: "",
-    gender: ""
+    gender: "",
+    customGender: ""
   })
 
   // UI state
@@ -99,6 +307,33 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
+  const [showGenderDropdown, setShowGenderDropdown] = useState(false)
+  const [showNationalityDropdown, setShowNationalityDropdown] = useState(false)
+  const [nationalitySearch, setNationalitySearch] = useState("")
+  
+  // Filtered countries for nationality dropdown
+  const filteredCountries = useMemo(() => {
+    return countries.filter(country => 
+      country.name.toLowerCase().includes(nationalitySearch.toLowerCase())
+    );
+  }, [nationalitySearch]);
+  
+  // Filtered languages for native language dropdown
+  const [languageSearch, setLanguageSearch] = useState("")
+  const filteredLanguages = useMemo(() => {
+    return languages.filter(language => 
+      language.toLowerCase().includes(languageSearch.toLowerCase())
+    );
+  }, [languageSearch]);
+
+  // Gender options
+  const genderOptions = [
+    "Masculino",
+    "Feminino", 
+    "Não binário", 
+    "Prefiro não dizer", 
+    "Outro"
+  ]
 
   // Validation errors
   const [errors, setErrors] = useState({
@@ -114,6 +349,7 @@ export default function RegisterScreen() {
     address: "",
     nationality: "",
     gender: "",
+    customGender: ""
   })
 
   // Handle form input changes
@@ -152,6 +388,7 @@ export default function RegisterScreen() {
       address: "",
       nationality: "",
       gender: "",
+      customGender: "",
     });
     setApiError("");
   }, [userType]);
@@ -171,6 +408,7 @@ export default function RegisterScreen() {
       address: "",
       nationality: "",
       gender: "",
+      customGender: "",
     }
 
     // Reset API error
@@ -235,6 +473,14 @@ export default function RegisterScreen() {
       newErrors.gender = t("auth.register.genderRequired")
       isValid = false
     }
+    
+    // Validate custom gender if "Outro" is selected
+    if ((userType === "student" || userType === "native") && 
+        form.gender === "Outro" && 
+        !form.customGender.trim()) {
+      newErrors.customGender = t("auth.register.customGenderRequired") || "Por favor, especifique seu gênero"
+      isValid = false
+    }
 
     if (form.password !== form.confirmPassword) {
       newErrors.confirmPassword = t("auth.register.passwordsDoNotMatch")
@@ -284,8 +530,8 @@ export default function RegisterScreen() {
     setIsLoading(true);
     setApiError("");
 
-    try {
-      // Create base user data object with only fields from the form - keeping it minimal
+  try {
+      // Create base user data object with required fields
       const baseUserData: BaseUserData = {
         firstName: form.firstName,
         lastName: form.lastName,
@@ -293,55 +539,115 @@ export default function RegisterScreen() {
         password: form.password,
         phoneNumber: form.phone,
         address: form.address,
-        userTypes: userType, // Changed from userType to userTypes to match backend expectations
+        userTypes: userType, // This field name matches backend expectations
       };
 
       let userData: UserData = baseUserData;
 
-      // Add fields based on user type - only include required fields
+      // Add fields based on user type - include all required fields for each type
       if (userType === "student") {
         userData = {
           ...baseUserData,
           nationality: form.nationality,
-          gender: form.gender,
+          gender: form.gender === "Outro" ? form.customGender : form.gender,
         } as StudentNativeUserData;
       } else if (userType === "native") {
         userData = {
           ...baseUserData,
           nationality: form.nationality,
-          gender: form.gender,
+          gender: form.gender === "Outro" ? form.customGender : form.gender,
           languageName: form.nativeLanguage,
         } as NativeUserData;
       } else if (userType === "restaurant") {
-        // For restaurant, use restaurantName instead of name
         userData = {
           ...baseUserData,
-          restaurantName: form.restaurantName, // Use restaurantName as expected by backend
+          restaurantName: form.restaurantName,
           cuisineType: form.cuisineType,
         } as RestaurantUserData;
       }
 
       console.log("Submitting registration data:", userData);
 
-      // Call the register API
-      const response = await register(userData)
+      // Use the register function
+      const response = await register(userData);
       
-      // On success, navigate to confirmation or login screen
-      Alert.alert(
-        "Registration Successful",
-        "Your account has been created successfully. Please log in.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate(getLoginScreenName()),
-          },
-        ]
-      )
+      // Success handling - store success message for the login screen
+      const successMessage = response.message || "Your account has been created successfully. Please log in.";
+      
+      // Show brief success message
+      Alert.alert("Registration Successful", successMessage);
+      
+      // Automatically navigate to login screen after a brief delay
+      // This ensures the user sees the success message before navigation
+      setIsLoading(false);
+      
+      // Get the correct login screen name based on user type
+      const loginScreen = getLoginScreenName();
+      
+      // Direct navigation to login screen with success message
+      setTimeout(() => {
+        navigation.navigate(loginScreen, { 
+          registrationSuccess: true, 
+          message: successMessage 
+        });
+      }, 800); // Short delay for user to see success message
+      
+      // Return early to prevent the finally block from executing
+      return;
     } catch (error: any) {
-      // Handle registration errors
-      const errorMessage = error?.message || "Registration failed. Please try again."
-      setApiError(errorMessage)
-      Alert.alert("Registration Failed", errorMessage)
+      // Enhanced error handling with specific guidance for connectivity issues
+      let errorMessage = "Registration failed. Please try again.";
+      let alertTitle = "Registration Failed";
+      
+      // Check for server connectivity issues
+      if (error?.code === 'SERVER_UNAVAILABLE' || error?.code === 'NETWORK_ERROR') {
+        alertTitle = "Server Connection Error";
+        errorMessage = error.message || "Cannot connect to server. Please ensure the server is running.";
+        
+        // Show more detailed instructions for developers
+        if (__DEV__) {
+          errorMessage += "\n\nDeveloper Note: Start the server with:\ncd server && node start.js";
+        }
+      } 
+      // Check if there's a specific field error
+      else if (error?.field) {
+        // Map field names to user-friendly names
+        const fieldNames: {[key: string]: string} = {
+          email: "Email",
+          password: "Password",
+          firstName: "First Name",
+          lastName: "Last Name",
+          phoneNumber: "Phone Number",
+          restaurantName: "Restaurant Name",
+          cuisineType: "Cuisine Type",
+          address: "Address",
+          nationality: "Nationality",
+          gender: "Gender",
+          languageName: "Native Language"
+        };
+        
+        const fieldName = fieldNames[error.field] || error.field;
+        errorMessage = `${fieldName}: ${error.message || "Invalid value"}`;
+        
+        // Update the specific field error
+        setErrors(prev => ({
+          ...prev,
+          [error.field]: error.message
+        }));
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      setApiError(errorMessage);
+      
+      // Show alert with actionable guidance
+      Alert.alert(
+        alertTitle, 
+        errorMessage,
+        error?.code === 'SERVER_UNAVAILABLE' || error?.code === 'NETWORK_ERROR'
+          ? [{ text: "OK" }]
+          : [{ text: "OK" }]
+      );
     } finally {
       setIsLoading(false)
     }
@@ -634,58 +940,81 @@ export default function RegisterScreen() {
                 ]}
                 onPress={() => setShowLanguageDropdown(!showLanguageDropdown)}
               >
-                <Ionicons name="language-outline" size={20} color={colors.text} style={styles.inputIcon} />
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    {
-                      color: form.nativeLanguage ? colors.text : colors.text + "80",
-                    },
-                  ]}
-                >
-                  {form.nativeLanguage || t("auth.register.native.selectLanguage")}
-                </Text>
-                <Ionicons
-                  name={showLanguageDropdown ? "chevron-up" : "chevron-down"}
-                  size={20}
-                  color={colors.text}
-                  style={styles.dropdownIcon}
-                />
-              </TouchableOpacity>
+            <Ionicons name="language-outline" size={20} color={colors.text} style={styles.inputIcon} />
+            <Text
+              style={[
+                styles.dropdownText,
+                {
+                  color: form.nativeLanguage ? colors.text : colors.text + "80",
+                },
+              ]}
+            >
+              {form.nativeLanguage || t("auth.register.native.selectLanguage") || "Select your native language"}
+            </Text>
+            <Ionicons
+              name={showLanguageDropdown ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={colors.text}
+              style={styles.dropdownIcon}
+            />
+          </TouchableOpacity>
 
-              {showLanguageDropdown && (
-                <View
-                  style={[
-                    styles.dropdown,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
-                    {languages.map((language) => (
-                      <TouchableOpacity
-                        key={language}
-                        style={[
-                          styles.dropdownItem,
-                          form.nativeLanguage === language && {
-                            backgroundColor: colors.primary + "20",
-                          },
-                        ]}
-                        onPress={() => {
-                          handleChange("nativeLanguage", language)
-                          setShowLanguageDropdown(false)
-                        }}
-                      >
-                        <Text style={{ color: colors.text }}>{language}</Text>
-                        {form.nativeLanguage === language && (
-                          <Ionicons name="checkmark" size={18} color={colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
+          {showLanguageDropdown && (
+            <View
+              style={[
+                styles.dropdown,
+                styles.languageDropdown,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+              accessible={true}
+              accessibilityLabel="Language options"
+            >
+              <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color={colors.text} style={styles.searchIcon} />
+                <TextInput
+                  style={[styles.searchInput, { color: colors.text }]}
+                  placeholder="Search languages..."
+                  placeholderTextColor={colors.text + "80"}
+                  value={languageSearch}
+                  onChangeText={setLanguageSearch}
+                  autoFocus={true}
+                />
+                {languageSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => setLanguageSearch("")}>
+                    <Ionicons name="close-circle" size={20} color={colors.text} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                {filteredLanguages.map((language) => (
+                  <TouchableOpacity
+                    key={language}
+                    style={[
+                      styles.dropdownItem,
+                      form.nativeLanguage === language && {
+                        backgroundColor: colors.primary + "20",
+                      },
+                    ]}
+                    onPress={() => {
+                      handleChange("nativeLanguage", language)
+                      setShowLanguageDropdown(false)
+                    }}
+                    accessible={true}
+                    accessibilityLabel={language}
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ color: colors.text }}>{language}</Text>
+                    {form.nativeLanguage === language && (
+                      <Ionicons name="checkmark" size={18} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
               )}
 
               {errors.nativeLanguage ? (
@@ -726,7 +1055,7 @@ export default function RegisterScreen() {
           {(userType === "student" || userType === "native") && (
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.text }]}>{t("auth.register.nationality") || "Nationality"}</Text>
-              <View
+              <TouchableOpacity
                 style={[
                   styles.inputContainer,
                   {
@@ -734,16 +1063,94 @@ export default function RegisterScreen() {
                     backgroundColor: colors.card,
                   },
                 ]}
+                onPress={() => setShowNationalityDropdown(!showNationalityDropdown)}
+                accessible={true}
+                accessibilityLabel="Select nationality"
+                accessibilityHint="Opens a dropdown menu to select your nationality"
+                accessibilityRole="button"
               >
                 <Ionicons name="flag-outline" size={20} color={colors.text} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder={t("auth.register.nationalityPlaceholder") || "Enter your nationality"}
-                  placeholderTextColor={colors.text + "80"}
-                  value={form.nationality}
-                  onChangeText={(text) => handleChange("nationality", text)}
+                <Text
+                  style={[
+                    styles.dropdownText,
+                    {
+                      color: form.nationality ? colors.text : colors.text + "80",
+                    },
+                  ]}
+                >
+                  {form.nationality ? 
+                    countries.find(c => c.name === form.nationality)?.flag + " " + form.nationality : 
+                    t("auth.register.nationalityPlaceholder") || "Select your nationality"}
+                </Text>
+                <Ionicons
+                  name={showNationalityDropdown ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={colors.text}
+                  style={styles.dropdownIcon}
                 />
-              </View>
+              </TouchableOpacity>
+
+              {showNationalityDropdown && (
+                <View
+                  style={[
+                    styles.dropdown,
+                    styles.nationalityDropdown,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  accessible={true}
+                  accessibilityLabel="Nationality options"
+                >
+                  <View style={styles.searchContainer}>
+                    <Ionicons name="search" size={20} color={colors.text} style={styles.searchIcon} />
+                    <TextInput
+                      style={[styles.searchInput, { color: colors.text }]}
+                      placeholder="Search countries..."
+                      placeholderTextColor={colors.text + "80"}
+                      value={nationalitySearch}
+                      onChangeText={setNationalitySearch}
+                      autoFocus={true}
+                    />
+                    {nationalitySearch.length > 0 && (
+                      <TouchableOpacity onPress={() => setNationalitySearch("")}>
+                        <Ionicons name="close-circle" size={20} color={colors.text} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  
+                  <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                    {filteredCountries.map((country) => (
+                        <TouchableOpacity
+                          key={country.name}
+                          style={[
+                            styles.dropdownItem,
+                            form.nationality === country.name && {
+                              backgroundColor: colors.primary + "20",
+                            },
+                          ]}
+                          onPress={() => {
+                            handleChange("nationality", country.name);
+                            setShowNationalityDropdown(false);
+                          }}
+                          accessible={true}
+                          accessibilityLabel={country.name}
+                          accessibilityRole="button"
+                        >
+                          <View style={styles.countryItem}>
+                            <Text style={{ fontSize: 20, marginRight: 8 }}>{country.flag}</Text>
+                            <Text style={{ color: colors.text }}>{country.name}</Text>
+                          </View>
+                          {form.nationality === country.name && (
+                            <Ionicons name="checkmark" size={18} color={colors.primary} />
+                          )}
+                        </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               {errors.nationality ? (
                 <Text style={[styles.errorText, { color: colors.error }]}>{errors.nationality}</Text>
               ) : null}
@@ -753,8 +1160,8 @@ export default function RegisterScreen() {
           {/* Gender field for student and native */}
           {(userType === "student" || userType === "native") && (
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>{t("auth.register.gender") || "Gender"}</Text>
-              <View
+              <Text style={[styles.label, { color: colors.text }]}>{t("auth.register.gender") || "Gênero"}</Text>
+              <TouchableOpacity
                 style={[
                   styles.inputContainer,
                   {
@@ -762,18 +1169,93 @@ export default function RegisterScreen() {
                     backgroundColor: colors.card,
                   },
                 ]}
+                onPress={() => setShowGenderDropdown(!showGenderDropdown)}
               >
                 <Ionicons name="person-outline" size={20} color={colors.text} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder={t("auth.register.genderPlaceholder") || "Enter your gender"}
-                  placeholderTextColor={colors.text + "80"}
-                  value={form.gender}
-                  onChangeText={(text) => handleChange("gender", text)}
+                <Text
+                  style={[
+                    styles.dropdownText,
+                    {
+                      color: form.gender ? colors.text : colors.text + "80",
+                    },
+                  ]}
+                >
+                  {form.gender || t("auth.register.genderPlaceholder") || "Selecione seu gênero"}
+                </Text>
+                <Ionicons
+                  name={showGenderDropdown ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={colors.text}
+                  style={styles.dropdownIcon}
                 />
-              </View>
+              </TouchableOpacity>
+
+              {showGenderDropdown && (
+                <View
+                  style={[
+                    styles.dropdown,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                    {genderOptions.map((genderOption) => (
+                      <TouchableOpacity
+                        key={genderOption}
+                        style={[
+                          styles.dropdownItem,
+                          form.gender === genderOption && {
+                            backgroundColor: colors.primary + "20",
+                          },
+                        ]}
+                        onPress={() => {
+                          handleChange("gender", genderOption)
+                          setShowGenderDropdown(false)
+                        }}
+                      >
+                        <Text style={{ color: colors.text }}>{genderOption}</Text>
+                        {form.gender === genderOption && (
+                          <Ionicons name="checkmark" size={18} color={colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
               {errors.gender ? (
                 <Text style={[styles.errorText, { color: colors.error }]}>{errors.gender}</Text>
+              ) : null}
+            </View>
+          )}
+
+          {/* Custom Gender field when "Outro" is selected */}
+          {(userType === "student" || userType === "native") && form.gender === "Outro" && (
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                {t("auth.register.customGender") || "Especifique seu gênero"}
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    borderColor: errors.customGender ? colors.error : colors.border,
+                    backgroundColor: colors.card,
+                  },
+                ]}
+              >
+                <Ionicons name="create-outline" size={20} color={colors.text} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder={t("auth.register.customGenderPlaceholder") || "Informe seu gênero"}
+                  placeholderTextColor={colors.text + "80"}
+                  value={form.customGender}
+                  onChangeText={(text) => handleChange("customGender", text)}
+                />
+              </View>
+              {errors.customGender ? (
+                <Text style={[styles.errorText, { color: colors.error }]}>{errors.customGender}</Text>
               ) : null}
             </View>
           )}
@@ -862,6 +1344,7 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
 
+
           {/* Login Link */}
           <View style={styles.loginContainer}>
             <Text style={[styles.loginText, { color: colors.text }]}>{t("auth.register.alreadyHaveAccount")} </Text>
@@ -876,6 +1359,32 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 36,
+    fontSize: 14,
+  },
+  nationalityDropdown: {
+    maxHeight: 300,
+  },
+  languageDropdown: {
+    maxHeight: 300,
+  },
+  countryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   errorContainer: {
     backgroundColor: "#FFEEEE",
     padding: 12,

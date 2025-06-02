@@ -71,6 +71,7 @@ export default function StudentLoginScreen() {
     if (!validate()) return
 
     setIsLoading(true)
+    setErrors({ email: "", password: "" }) // Clear any previous errors
 
     try {
       await signIn({
@@ -85,7 +86,28 @@ export default function StudentLoginScreen() {
       })
     } catch (error) {
       console.error("Login error:", error)
-      Alert.alert(t("error.loginFailed"), t("error.wrongCredentials"))
+      
+      // Properly type the error object
+      const errorObj = error as Error | { message?: string } | any;
+      const errorMessage = typeof errorObj === 'object' && errorObj !== null 
+        ? errorObj.message || t("error.wrongCredentials")
+        : t("error.wrongCredentials");
+      
+      // Handle specific error messages from API if available
+      if (errorMessage) {
+        const errorLower = errorMessage.toLowerCase();
+        if (errorLower.includes("email")) {
+          setErrors(prev => ({ ...prev, email: "Email incorrecto" }))
+        } else if (errorLower.includes("password") || 
+                   errorLower.includes("contraseña")) {
+          setErrors(prev => ({ ...prev, password: "Contraseña incorrecta" }))
+        } else {
+          // Generic error alert
+          Alert.alert(t("error.loginFailed"), errorMessage)
+        }
+      } else {
+        Alert.alert(t("error.loginFailed"), t("error.wrongCredentials"))
+      }
     } finally {
       setIsLoading(false)
     }

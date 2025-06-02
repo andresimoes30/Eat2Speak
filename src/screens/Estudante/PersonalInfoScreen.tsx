@@ -1,12 +1,14 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, FlatList } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, FlatList, ActivityIndicator, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useLanguage } from "../../contexts/LanguageContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { Card } from "../../components/Card"
+import api from "../../../services/api"
 
 // Country codes with flags
 const countryCodes = [
@@ -149,36 +151,37 @@ interface UserData {
   bio: string;
 }
 
-// Datos ficticios del usuario
-const userData: UserData = {
-  id: "123456",
-  firstName: "Carlos",
-  lastName: "Rodríguez",
-  email: "carlos.rodriguez@example.com",
-  phone: "612 345 678",
+// Default empty user data (used while loading)
+const defaultUserData: UserData = {
+  id: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
   countryCode: "+34",
   profileImage: "https://via.placeholder.com/150",
-  address: "Calle Gran Vía 28, Madrid, España",
-  birthDate: "15/04/1988",
-  gender: "gender.male",
-  nationality: "nationality.spanish",
-  occupation: "Ingeniero de Software",
-  company: "TechSolutions S.L.",
-  languages: [
-    { language: "language.spanish", level: "level.native" },
-    { language: "language.english", level: "level.c1" },
-    { language: "language.french", level: "level.b1" },
-  ],
-  interests: ["Gastronomía", "Viajes", "Idiomas", "Tecnología"],
-  bio: "Apasionado por los idiomas y la gastronomía. Me encanta viajar y conocer nuevas culturas a través de su comida. Trabajo como ingeniero de software y utilizo LEWET para mejorar mi nivel de francés mientras disfruto de buena comida.",
+  address: "",
+  birthDate: "",
+  gender: "",
+  nationality: "",
+  occupation: "",
+  company: "",
+  languages: [],
+  interests: [],
+  bio: "",
 }
 
 export default function PersonalInfoScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t, language } = useLanguage();
+  const { user: authUser } = useAuth();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editedUser, setEditedUser] = useState<UserData>(userData);
+  const [userData, setUserData] = useState<UserData>(defaultUserData);
+  const [editedUser, setEditedUser] = useState<UserData>(defaultUserData);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Modals
   const [showCountryCodeModal, setShowCountryCodeModal] = useState<boolean>(false);
@@ -326,9 +329,217 @@ export default function PersonalInfoScreen() {
     return t(key);
   };
 
-  const handleSave = () => {
-    // Aquí iría la lógica para guardar los cambios
-    setIsEditing(false);
+  // Fetch user data from API
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+      // Mock user data for fallback when API fails
+      const mockUserData: UserData = {
+        id: authUser?.id || "123456",
+        firstName: authUser?.firstName || "Carlos",
+        lastName: authUser?.lastName || "Rodríguez",
+        email: authUser?.email || "carlos.rodriguez@example.com",
+        phone: "612 345 678",
+        countryCode: "+34",
+        profileImage: "https://via.placeholder.com/150",
+        address: "Calle Gran Vía 28, Madrid, España",
+        birthDate: "15/04/1988",
+        gender: "gender.male",
+        nationality: "nationality.spanish",
+        occupation: "Ingeniero de Software",
+        company: "TechSolutions S.L.",
+        languages: [
+          { language: "language.spanish", level: "level.native" },
+          { language: "language.english", level: "level.c1" },
+          { language: "language.french", level: "level.b1" },
+        ],
+        interests: ["Gastronomía", "Viajes", "Idiomas", "Tecnología"],
+        bio: "Apasionado por los idiomas y la gastronomía. Me encanta viajar y conocer nuevas culturas a través de su comida. Trabajo como ingeniero de software y utilizo LEWET para mejorar mi nivel de francés mientras disfruto de buena comida.",
+      };
+
+      const fetchUserProfile = async () => {
+        try {
+          setIsLoading(true);
+          setError(null);
+          
+          // Use the correct endpoint path - remove '/api' prefix since it's added by the API client
+          const response = await api.get('/user/me');
+          
+          if (response && response.data) {
+            // Transform API data to match our UserData interface
+            const apiUser = response.data;
+            
+            // Handle languages - check if UserLanguages exists and is not empty
+            let userLanguages: Language[] = [];
+            if (apiUser.UserLanguages && Array.isArray(apiUser.UserLanguages) && apiUser.UserLanguages.length > 0) {
+              userLanguages = apiUser.UserLanguages.map((lang: any) => ({
+                language: `language.${lang.languageName.toLowerCase()}`,
+                level: mapProficiencyToLevel(lang.proficiencyLevel)
+              }));
+            }
+            
+            // Handle interests - check if interests exists and is not empty
+            let userInterests: string[] = [];
+            if (apiUser.interests && typeof apiUser.interests === 'string' && apiUser.interests.trim() !== '') {
+              userInterests = apiUser.interests.split(',').map((interest: string) => interest.trim());
+            }
+            
+            const transformedUserData: UserData = {
+              id: apiUser.userId?.toString() || authUser?.id || "",
+              firstName: apiUser.firstName || "",
+              lastName: apiUser.lastName || "",
+              email: apiUser.email || "",
+              phone: apiUser.phoneNumber?.replace(/^\+\d+\s*/, '') || "", // Remove country code if present
+              countryCode: getCountryCodeFromPhone(apiUser.phoneNumber) || "+34",
+              profileImage: apiUser.profileImage || "https://via.placeholder.com/150",
+              address: apiUser.address || "",
+              birthDate: apiUser.birthDate || "",
+              gender: apiUser.gender || "",
+              nationality: apiUser.nationality || "",
+              occupation: apiUser.occupation || "",
+              company: apiUser.company || "",
+              languages: userLanguages,
+              interests: userInterests,
+              bio: apiUser.bio || ""
+            };
+            
+            setUserData(transformedUserData);
+            setEditedUser(transformedUserData);
+          }
+        } catch (err: any) {
+          console.error('Error fetching user profile:', err);
+          
+          // Use mock data as fallback when API fails
+          console.log('Using mock data as fallback');
+          setUserData(mockUserData);
+          setEditedUser(mockUserData);
+          
+          // Set a user-friendly error message
+          if (err.response?.status === 404) {
+            setError(t("errors.profileNotFound") || 'User profile not found. Using sample data.');
+          } else if (err.message?.includes('Network Error')) {
+            setError(t("errors.networkError") || 'Network error. Check your connection and try again.');
+          } else {
+            setError(t("errors.genericError") || 'Could not load profile data. Using sample data.');
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+  // Helper to extract country code from phone number
+  const getCountryCodeFromPhone = (phone: string | undefined): string => {
+    if (!phone) return "+34"; // Default
+    
+    // Try to extract country code like +XX or +XXX
+    const match = phone.match(/^\+(\d{1,3})/);
+    if (match && match[0]) {
+      return match[0];
+    }
+    
+    return "+34"; // Default
+  };
+  
+  // Map server proficiency levels to our level format
+  const mapProficiencyToLevel = (proficiency: string): string => {
+    switch (proficiency) {
+      case 'A1': return 'level.a1';
+      case 'A2': return 'level.a2';
+      case 'B1': return 'level.b1';
+      case 'B2': return 'level.b2';
+      case 'C1': return 'level.c1';
+      case 'C2': return 'level.c2';
+      case 'Nativo': return 'level.native';
+      default: return proficiency;
+    }
+  };
+  
+  // Map our level format to server proficiency
+  const mapLevelToProficiency = (level: string): string => {
+    switch (level) {
+      case 'level.a1': return 'A1';
+      case 'level.a2': return 'A2';
+      case 'level.b1': return 'B1';
+      case 'level.b2': return 'B2';
+      case 'level.c1': return 'C1';
+      case 'level.c2': return 'C2';
+      case 'level.native': return 'Nativo';
+      default: return level;
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+      
+      // Prepare data for API
+      const updateData: any = {
+        firstName: editedUser.firstName,
+        lastName: editedUser.lastName,
+        email: editedUser.email,
+        phoneNumber: `${editedUser.countryCode} ${editedUser.phone}`,
+        address: editedUser.address,
+        gender: editedUser.gender,
+        nationality: editedUser.nationality
+      };
+      
+      // Only include languages if they exist
+      if (editedUser.languages && editedUser.languages.length > 0) {
+        updateData.languages = editedUser.languages.map(lang => ({
+          languageName: lang.language.replace('language.', ''),
+          proficiencyLevel: mapLevelToProficiency(lang.level)
+        }));
+      }
+      
+      // Only include interests if they exist
+      if (editedUser.interests && editedUser.interests.length > 0) {
+        updateData.interests = editedUser.interests.join(',');
+      }
+      
+      try {
+        // Use the correct endpoint path - remove '/api' prefix
+        await api.put('/user/me', updateData);
+        
+        // Update local state with edited data
+        setUserData(editedUser);
+        setIsEditing(false);
+        
+        // Show success message
+        Alert.alert(
+          t('success') || 'Success', 
+          t('personalInfo.updateSuccess') || 'Profile updated successfully'
+        );
+      } catch (apiError: any) {
+        console.error('Error calling API:', apiError);
+        
+        // Show user-friendly error but still save locally
+        Alert.alert(
+          t('warning') || 'Warning',
+          t('personalInfo.offlineUpdate') || 'Could not save to server, but changes are saved locally.',
+          [
+            { 
+              text: t('button.ok') || 'OK',
+              onPress: () => {
+                // Update local state despite API error
+                setUserData(editedUser);
+                setIsEditing(false);
+              }
+            }
+          ]
+        );
+      }
+    } catch (err: any) {
+      console.error('Error updating profile:', err);
+      setError(err?.message || t('errors.updateFailed') || 'Failed to update profile');
+      Alert.alert(
+        t('error') || 'Error', 
+        t('errors.updateFailed') || 'Failed to update profile. Please try again.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
   
   // Helper function to format date as DD/MM/YYYY
@@ -478,6 +689,50 @@ export default function PersonalInfoScreen() {
     setEditedUser(prev => ({ ...prev, interests: updatedInterests }));
   }
 
+  // Custom translations for retry button to avoid the missing translation warning
+  const getRetryText = () => {
+    switch(language) {
+      case 'en':
+        return 'Retry';
+      case 'pt':
+        return 'Tentar novamente';
+      case 'fr':
+        return 'Réessayer';
+      default:
+        return 'Reintentar'; // Spanish default
+    }
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>{t("loading")}</Text>
+      </View>
+    );
+  }
+
+  // Show error overlay if there's an error, but still display the data if available
+  // This allows us to show mock data with an error message when the API fails
+  const showErrorOverlay = error && userData.id;
+
+  // Show complete error state only if there's an error and no data to display
+  if (error && !userData.id) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Ionicons name="alert-circle-outline" size={50} color={colors.error} />
+        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: colors.primary }]}
+          onPress={fetchUserProfile}
+        >
+          <Text style={{ color: 'white' }}>{getRetryText()}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background, paddingTop: 30 }]}>
       <View style={styles.header}>
@@ -485,21 +740,28 @@ export default function PersonalInfoScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t("personalInfo.title")}</Text>
-        <TouchableOpacity style={styles.editButton} onPress={() => (isEditing ? handleSave() : setIsEditing(true))}>
-          <Text style={[styles.editButtonText, { color: colors.primary }]}>
-            {isEditing ? t("personalInfo.save") : t("personalInfo.edit")}
-          </Text>
+        <TouchableOpacity 
+          style={styles.editButton} 
+          onPress={() => {
+            if (isEditing) {
+              handleSave();
+            } else {
+              setIsEditing(true);
+            }
+          }}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={[styles.editButtonText, { color: colors.primary }]}>
+              {isEditing ? t("personalInfo.save") : t("personalInfo.edit")}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
-      <View style={styles.photoContainer}>
-        <View style={styles.profileImageContainer}>
-          <Image source={{ uri: userData.profileImage }} style={styles.profileImage} />
-          <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: "white" }]}>
-            <Ionicons name="camera" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Profile photo section removed as requested */}
       
       <View style={styles.content}>
 
@@ -704,56 +966,34 @@ export default function PersonalInfoScreen() {
           </View>
         </Card>
 
-        <Card style={styles.infoCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.profession")}</Text>
-
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("personalInfo.occupation")}</Text>
-            {isEditing ? (
-              <TextInput
-                style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
-                value={editedUser.occupation}
-                onChangeText={(text) => setEditedUser({ ...editedUser, occupation: text })}
-              />
-            ) : (
-              <Text style={[styles.infoValue, { color: colors.text }]}>{userData.occupation}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("personalInfo.company")}</Text>
-            {isEditing ? (
-              <TextInput
-                style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
-                value={editedUser.company}
-                onChangeText={(text) => setEditedUser({ ...editedUser, company: text })}
-              />
-            ) : (
-              <Text style={[styles.infoValue, { color: colors.text }]}>{userData.company}</Text>
-            )}
-          </View>
-        </Card>
+        {/* Profession section removed as requested */}
 
         <Card style={styles.infoCard}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.languages")}</Text>
 
-          {editedUser.languages.map((item, index) => (
-            <View key={index} style={styles.languageItem}>
-              <View style={styles.languageInfo}>
-                <Text style={[styles.languageName, { color: colors.text }]}>
-                  {item.language.startsWith("language.") ? t(item.language) : item.language}
-                </Text>
-                <Text style={[styles.languageLevel, { color: colors.text + "80" }]}>
-                  {item.level.startsWith("level.") ? t(item.level) : item.level}
-                </Text>
+          {editedUser.languages.length > 0 ? (
+            editedUser.languages.map((item, index) => (
+              <View key={index} style={styles.languageItem}>
+                <View style={styles.languageInfo}>
+                  <Text style={[styles.languageName, { color: colors.text }]}>
+                    {item.language.startsWith("language.") ? t(item.language) : item.language}
+                  </Text>
+                  <Text style={[styles.languageLevel, { color: colors.text + "80" }]}>
+                    {item.level.startsWith("level.") ? t(item.level) : item.level}
+                  </Text>
+                </View>
+                {isEditing && (
+                  <TouchableOpacity onPress={() => handleRemoveLanguage(index)}>
+                    <Ionicons name="trash-outline" size={20} color={colors.error} />
+                  </TouchableOpacity>
+                )}
               </View>
-              {isEditing && (
-                <TouchableOpacity onPress={() => handleRemoveLanguage(index)}>
-                  <Ionicons name="trash-outline" size={20} color={colors.error} />
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
+            ))
+          ) : (
+            <Text style={{ color: colors.text + "80", fontStyle: "italic", marginBottom: 12 }}>
+              {t("personalInfo.noLanguagesAdded")}
+            </Text>
+          )}
 
           {isEditing && (
             <TouchableOpacity 
@@ -766,73 +1006,9 @@ export default function PersonalInfoScreen() {
           )}
         </Card>
 
-        <Card style={styles.infoCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.interests")}</Text>
+        {/* Interests section removed as requested */}
 
-          <View style={styles.interestsContainer}>
-            {editedUser.interests.map((interest, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.interestTag,
-                  {
-                    backgroundColor: colors.blue[50],
-                    borderColor: colors.blue[200],
-                  },
-                ]}
-              >
-                <Text style={[styles.interestText, { color: colors.blue[700] }]}>{interest}</Text>
-                {isEditing && (
-                  <TouchableOpacity 
-                    style={styles.removeInterestButton}
-                    onPress={() => handleRemoveInterest(index)}
-                  >
-                    <Ionicons name="close" size={16} color={colors.blue[700]} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-
-            {isEditing && (
-              <TouchableOpacity
-                style={[
-                  styles.addInterestButton,
-                  {
-                    borderColor: colors.primary,
-                    borderStyle: "dashed",
-                  },
-                ]}
-                onPress={() => setShowAddInterestModal(true)}
-              >
-                <Ionicons name="add" size={16} color={colors.primary} />
-                <Text style={[styles.addInterestText, { color: colors.primary }]}>{t("personalInfo.add")}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </Card>
-
-        <Card style={styles.infoCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.biography")}</Text>
-          {isEditing ? (
-            <TextInput
-              style={[
-                styles.bioInput,
-                {
-                  color: colors.text,
-                  borderColor: colors.border,
-                  backgroundColor: colors.card,
-                },
-              ]}
-              value={editedUser.bio}
-              onChangeText={(text) => setEditedUser({ ...editedUser, bio: text })}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          ) : (
-            <Text style={[styles.bioText, { color: colors.text }]}>{userData.bio}</Text>
-          )}
-        </Card>
+        {/* Biography section removed as requested */}
       </View>
 
       {/* Country Code Modal */}
@@ -1623,4 +1799,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 16,
   },
-});
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+})

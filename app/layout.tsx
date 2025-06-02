@@ -2,8 +2,9 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "../components/theme-provider"
 import { SidebarProvider } from "@/components/sidebar-provider"
+import { ToastProvider } from "@/hooks/use-toast"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -21,7 +22,9 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light">
-          <SidebarProvider>{children}</SidebarProvider>
+          <ToastProvider>
+            <SidebarProvider>{children}</SidebarProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
