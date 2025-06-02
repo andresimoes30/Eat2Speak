@@ -34,7 +34,7 @@ db.User.hasMany(db.UserLanguage, { foreignKey: 'userId' });
 db.UserLanguage.belongsTo(db.User, { foreignKey: 'userId' });
 
 db.User.hasMany(db.Restaurant, { foreignKey: 'ownerUserId' });
-db.Restaurant.belongsTo(db.User, { foreignKey: 'ownerUserId' });
+db.Restaurant.belongsTo(db.User, { foreignKey: 'ownerUserId', as: 'owner' });
 
 db.Restaurant.hasMany(db.Menu, { foreignKey: 'restaurantId' });
 db.Menu.belongsTo(db.Restaurant, { foreignKey: 'restaurantId' });
