@@ -3322,6 +3322,10 @@ export const translations: TranslationsType = {
   it: {
     "tab.home": "Home",
     "native.payments.sessionWith": "Sessione con {name}",
+    "dashboard.participants": "Partecipanti",
+    "restaurants.viewAll": "Visualizza tutti i {count} ristoranti",
+    "dashboard.recentNotifications": "Notifiche recenti",
+    "dashboard.importantMessages": "Messaggi importanti",
     "native.payments.withdrawal": "Prelievo di fondi",
     "native.payments.date": "{day} {month}, {year}",
     "payments.balanceAmount": "{amount}",
