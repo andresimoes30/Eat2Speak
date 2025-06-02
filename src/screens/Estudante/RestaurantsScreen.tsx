@@ -538,8 +538,8 @@ function RestaurantsScreen() {
     []
   )
 
-  // Debounce filter timeoutId ref
-  const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Debounce filter timeoutId ref - support both browser (number) and Node.js (Timeout) environments
+  const filterTimeoutRef = useRef<number | NodeJS.Timeout | null>(null);
   
   // Longer debounce delay for search to prevent API spamming
   const DEBOUNCE_DELAY = 1500; // 1.5 seconds
