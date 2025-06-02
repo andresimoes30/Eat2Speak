@@ -535,17 +535,49 @@ function RestaurantsScreen() {
     []
   )
 
-  // Apply filters (for performance optimization, debounce search)
+  // Debounce filter timeoutId ref
+  const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Longer debounce delay for search to prevent API spamming
+  const DEBOUNCE_DELAY = 1500; // 1.5 seconds
+  
+  // Apply filters with debouncing to prevent API spamming
   const applyFilters = useCallback(() => {
-    setLoading(true)
-    fetchRestaurants(1)
-  }, [fetchRestaurants])
+    if (filterTimeoutRef.current) {
+      clearTimeout(filterTimeoutRef.current);
+    }
+    
+    // Don't set loading immediately to prevent UI flicker on rapid typing
+    // Only set loading if we actually make an API call
+    filterTimeoutRef.current = setTimeout(() => {
+      // Check if we already have cached data that matches these filters
+      if (
+        page === 1 &&
+        cacheTimestamp.current &&
+        Date.now() - cacheTimestamp.current < CACHE_EXPIRATION &&
+        JSON.stringify(lastAppliedFilters.current) === JSON.stringify(filters)
+      ) {
+        console.log("Using cached data for filter change - filters match last applied filters");
+        return;
+      }
+      
+      // If we get here, we need to make a new API call
+      setLoading(true);
+      fetchRestaurants(1);
+      filterTimeoutRef.current = null;
+    }, DEBOUNCE_DELAY);
+  }, [fetchRestaurants, filters, page]);
 
-  // Apply filters when they change
+  // Apply filters when they change, with cleanup
   useEffect(() => {
-    const timeoutId = setTimeout(applyFilters, 500) // Debounce for better UX
-    return () => clearTimeout(timeoutId)
-  }, [filters, applyFilters])
+    applyFilters();
+    // Cleanup timeout on unmount or when filters change
+    return () => {
+      if (filterTimeoutRef.current) {
+        clearTimeout(filterTimeoutRef.current);
+      }
+    };
+  }, [filters, applyFilters]);
 
   // Filter restaurants client-side for price and language (these aren't supported by the API)
   const filteredRestaurants = restaurants.filter((restaurant) => {
