@@ -3556,6 +3556,25 @@ export const translations: TranslationsType = {
     "Select Country Code": "Seleziona prefisso internazionale",
     "Add Interest": "Aggiungi interesse",
     
+    // Restaurant Menu
+    "restaurant.menu": "Menu",
+    "restaurant.addDish": "Aggiungi piatto",
+    "restaurant.searchDishes": "Cerca piatti",
+    "common.all": "Tutti",
+    "restaurant.noDishesAvailable": "Nessun piatto disponibile",
+    "restaurant.addDishesToMenu": "Aggiungi piatti al menu",
+    "restaurant.addNewDish": "Aggiungi nuovo piatto",
+    "restaurant.name": "Nome",
+    "restaurant.dishNamePlaceholder": "Nome del piatto",
+    "restaurant.description": "Descrizione",
+    "restaurant.dishDescriptionPlaceholder": "Descrizione del piatto",
+    "restaurant.price": "Prezzo",
+    "restaurant.dishPricePlaceholder": "es. 15€",
+    "restaurant.category": "Categoria",
+    "restaurant.available": "Disponibile",
+    "common.yes": "Sì",
+    "common.save": "Salva",
+    
     // Session
     "session.newSession": "Nuova Sessione",
     "session.changeRestaurant": "Cambia ristorante",
