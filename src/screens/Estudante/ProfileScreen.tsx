@@ -10,6 +10,7 @@ import { useLanguage } from "../../contexts/LanguageContext"
 import { Card } from "../../components/Card"
 import { Language } from "../../translations"
 import api from "../../../services/api"
+import api from "../../../services/api"
 
 // Language options with names and flags
 const languages = [
