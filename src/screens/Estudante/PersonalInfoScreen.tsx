@@ -1009,28 +1009,7 @@ export default function PersonalInfoScreen() {
 
         {/* Interests section removed as requested */}
 
-        <Card style={styles.infoCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.biography")}</Text>
-          {isEditing ? (
-            <TextInput
-              style={[
-                styles.bioInput,
-                {
-                  color: colors.text,
-                  borderColor: colors.border,
-                  backgroundColor: colors.card,
-                },
-              ]}
-              value={editedUser.bio}
-              onChangeText={(text) => setEditedUser({ ...editedUser, bio: text })}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          ) : (
-            <Text style={[styles.bioText, { color: colors.text }]}>{userData.bio}</Text>
-          )}
-        </Card>
+        {/* Biography section removed as requested */}
       </View>
 
       {/* Country Code Modal */}
