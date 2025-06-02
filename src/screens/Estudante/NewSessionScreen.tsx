@@ -11,15 +11,78 @@ import {
   Modal,
   TextInput,
   ScrollView,
+  Alert,
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useLanguage } from "../../contexts/LanguageContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { Card } from "../../components/Card"
+import api from "../../../services/api"
 
-// Definir interfaces para os tipos de dados
-interface Restaurante {
+// API response interfaces
+interface APIError {
+  status: string
+  message: string
+  error?: string
+}
+
+interface APIResponse<T> {
+  status: string
+  message?: string
+  data: T
+}
+
+// Database-aligned interfaces
+interface Restaurant {
+  restaurantId: string
+  ownerUserId: string
+  name: string
+  cuisineType: string
+  address: string
+  commissionPercent: number
+}
+
+interface Menu {
+  menuId: string
+  restaurantId: string
+  menuCode: string
+  price: number
+  description?: string 
+  image?: string
+}
+
+interface User {
+  userId: string
+  firstName: string
+  lastName: string
+  email: string
+  phoneNumber?: string
+}
+
+interface Language {
+  languageId: string
+  languageName: string
+}
+
+interface Session {
+  sessionId?: string
+  learnerUserId: string
+  nativeUserId: string
+  restaurantId: string
+  menuId?: string
+  sessionDate: string
+  startTime: string
+  endTime: string
+  tableSize: number
+  languageUsed: string
+  totalPrice: number
+  status: 'pending' | 'scheduled' | 'completed' | 'cancelled' | 'rejected'
+}
+
+// UI interfaces
+interface RestaurantUI {
   id: string
   nombre: string
   imagen: string
@@ -29,7 +92,7 @@ interface Restaurante {
   idiomas: string[]
 }
 
-interface Menu {
+interface MenuUI {
   id: string
   nombre: string
   descripcion: string
@@ -38,7 +101,7 @@ interface Menu {
   categoria: string
 }
 
-interface Profesor {
+interface ProfessorUI {
   id: string
   nombre: string
   imagen: string
@@ -60,425 +123,355 @@ interface HorarioDisponible {
   disponible: boolean
 }
 
-// Dados ficticios para restaurantes
-const restaurantesData: Restaurante[] = [
-  {
-    id: "1",
-    nombre: "La Pasta Italiana",
-    imagen: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=300",
-    direccion: "Calle Principal 123",
-    tipo: "Italiana",
-    calificacion: 4.7,
-    idiomas: ["Italiano", "Español", "Inglés"],
-  },
-  {
-    id: "2",
-    nombre: "Sushi Koi",
-    imagen: "https://images.unsplash.com/photo-1579027989536-b7b1f875659b?q=80&w=300",
-    direccion: "Avenida Sakura 45",
-    tipo: "Japonesa",
-    calificacion: 4.9,
-    idiomas: ["Japonés", "Inglés"],
-  },
-  {
-    id: "3",
-    nombre: "Le Petit Bistro",
-    imagen: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=300",
-    direccion: "Rue de Paris 78",
-    tipo: "Francesa",
-    calificacion: 4.5,
-    idiomas: ["Francés", "Español", "Inglés"],
-  },
-  {
-    id: "4",
-    nombre: "El Taco Loco",
-    imagen: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=300",
-    direccion: "Calle México 56",
-    tipo: "Mexicana",
-    calificacion: 4.6,
-    idiomas: ["Español", "Inglés"],
-  },
-  {
-    id: "5",
-    nombre: "Beijing House",
-    imagen: "https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=300",
-    direccion: "Avenida Oriental 89",
-    tipo: "China",
-    calificacion: 4.4,
-    idiomas: ["Mandarín", "Inglés"],
-  },
-]
-
-// Datos ficticios para profesores
-const profesoresData: Record<string, Profesor[]> = {
-  Italiano: [
-    {
-      id: "1",
-      nombre: "Maria Rossi",
-      imagen: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300",
-      experiencia: "5 años",
-      calificacion: 4.8,
-      disponibilidad: ["Lunes", "Miércoles", "Viernes"],
-      descripcion: "Profesora nativa de italiano con experiencia en enseñanza a todos los niveles.",
-    },
-    {
-      id: "2",
-      nombre: "Antonio Bianchi",
-      imagen: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300",
-      experiencia: "8 años",
-      calificacion: 4.9,
-      disponibilidad: ["Martes", "Jueves", "Sábado"],
-      descripcion: "Chef y profesor de italiano, especializado en vocabulario culinario.",
-    },
-  ],
-  Japonés: [
-    {
-      id: "3",
-      nombre: "Yuki Tanaka",
-      imagen: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=300",
-      experiencia: "6 años",
-      calificacion: 4.7,
-      disponibilidad: ["Lunes", "Martes", "Jueves"],
-      descripcion: "Profesora nativa de japonés con enfoque en conversación práctica.",
-    },
-    {
-      id: "4",
-      nombre: "Hiroshi Yamamoto",
-      imagen: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=300",
-      experiencia: "10 años",
-      calificacion: 4.9,
-      disponibilidad: ["Miércoles", "Viernes", "Domingo"],
-      descripcion: "Chef de sushi y profesor de japonés, experto en terminología culinaria.",
-    },
-  ],
-  Francés: [
-    {
-      id: "5",
-      nombre: "Sophie Dubois",
-      imagen: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=300",
-      experiencia: "7 años",
-      calificacion: 4.6,
-      disponibilidad: ["Lunes", "Miércoles", "Viernes"],
-      descripcion: "Profesora nativa de francés especializada en francés cotidiano y de negocios.",
-    },
-    {
-      id: "6",
-      nombre: "Pierre Moreau",
-      imagen: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=300",
-      experiencia: "9 años",
-      calificacion: 4.8,
-      disponibilidad: ["Martes", "Jueves", "Sábado"],
-      descripcion: "Chef francés y profesor, experto en vocabulario gastronómico.",
-    },
-  ],
-  Español: [
-    {
-      id: "7",
-      nombre: "Carmen Rodríguez",
-      imagen: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=300",
-      experiencia: "6 años",
-      calificacion: 4.7,
-      disponibilidad: ["Lunes", "Miércoles", "Viernes"],
-      descripcion: "Profesora nativa de español con experiencia en todos los niveles.",
-    },
-    {
-      id: "8",
-      nombre: "Javier López",
-      imagen: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=300",
-      experiencia: "8 años",
-      calificacion: 4.8,
-      disponibilidad: ["Martes", "Jueves", "Domingo"],
-      descripcion: "Chef español y profesor, especializado en terminología culinaria.",
-    },
-  ],
-  Mandarín: [
-    {
-      id: "9",
-      nombre: "Li Wei",
-      imagen: "https://images.unsplash.com/photo-1589571894960-20bbe2828d0a?q=80&w=300",
-      experiencia: "7 años",
-      calificacion: 4.6,
-      disponibilidad: ["Lunes", "Miércoles", "Sábado"],
-      descripcion: "Profesora nativa de mandarín con enfoque en conversación práctica.",
-    },
-    {
-      id: "10",
-      nombre: "Zhang Min",
-      imagen: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
-      experiencia: "9 años",
-      calificacion: 4.8,
-      disponibilidad: ["Martes", "Jueves", "Domingo"],
-      descripcion: "Chef chino y profesor de mandarín, experto en terminología culinaria.",
-    },
-  ],
-  Inglés: [
-    {
-      id: "11",
-      nombre: "Emma Johnson",
-      imagen: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300",
-      experiencia: "8 años",
-      calificacion: 4.7,
-      disponibilidad: ["Lunes", "Miércoles", "Viernes"],
-      descripcion: "Profesora nativa de inglés con experiencia en todos los niveles.",
-    },
-    {
-      id: "12",
-      nombre: "James Smith",
-      imagen: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=300",
-      experiencia: "10 años",
-      calificacion: 4.9,
-      disponibilidad: ["Martes", "Jueves", "Sábado"],
-      descripcion: "Chef británico y profesor de inglés, especializado en terminología culinaria.",
-    },
-  ],
+// Session type options
+enum SessionType {
+  OneOnOne = 'one_on_one',
+  Group = 'group',
+  Conversation = 'conversation'
 }
 
-// Datos ficticios para menús de restaurantes
-const menusData: Record<string, Menu[]> = {
-  Italiana: [
-    {
-      id: "1",
-      nombre: "Menú Toscana",
-      descripcion: "Incluye antipasto mixto, pasta al pesto y tiramisú",
-      precio: 25,
-      imagen: "https://images.unsplash.com/photo-1533777324565-a040eb52facd?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "2",
-      nombre: "Menú Roma",
-      descripcion: "Incluye bruschetta, lasaña tradicional y panna cotta",
-      precio: 30,
-      imagen: "https://images.unsplash.com/photo-1498579150354-977475b7ea0b?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "3",
-      nombre: "Menú Pizza",
-      descripcion: "Pizza margherita artesanal y ensalada caprese",
-      precio: 18,
-      imagen: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=300",
-      categoria: "Ligero",
-    },
-  ],
-  Japonesa: [
-    {
-      id: "4",
-      nombre: "Menú Tokio",
-      descripcion: "Surtido de nigiri, maki variado y postre de té verde",
-      precio: 35,
-      imagen: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "5",
-      nombre: "Menú Bento",
-      descripcion: "Bento tradicional con tempura, arroz y encurtidos",
-      precio: 22,
-      imagen: "https://images.unsplash.com/photo-1535140728325-a4d3707eee61?q=80&w=300",
-      categoria: "Individual",
-    },
-    {
-      id: "6",
-      nombre: "Menú Ramen",
-      descripcion: "Ramen tonkotsu con gyoza y edamame",
-      precio: 20,
-      imagen: "https://images.unsplash.com/photo-1557872943-16a5ac26437e?q=80&w=300",
-      categoria: "Ligero",
-    },
-  ],
-  Francesa: [
-    {
-      id: "7",
-      nombre: "Menú Paris",
-      descripcion: "Sopa de cebolla, coq au vin y crème brûlée",
-      precio: 40,
-      imagen: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "8",
-      nombre: "Menú Provence",
-      descripcion: "Quiche lorraine, ratatouille y mousse de chocolate",
-      precio: 32,
-      imagen: "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "9",
-      nombre: "Menú Bistro",
-      descripcion: "Croque monsieur con ensalada y éclair de café",
-      precio: 24,
-      imagen: "https://images.unsplash.com/photo-1608855238293-a8853e7f7c98?q=80&w=300",
-      categoria: "Ligero",
-    },
-  ],
-  Mexicana: [
-    {
-      id: "10",
-      nombre: "Menú Jalisco",
-      descripcion: "Guacamole, tacos variados y flan de cajeta",
-      precio: 28,
-      imagen: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "11",
-      nombre: "Menú Oaxaca",
-      descripcion: "Quesadillas, mole con pollo y arroz con leche",
-      precio: 26,
-      imagen: "https://images.unsplash.com/photo-1613514785940-daed07799d9b?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "12",
-      nombre: "Menú Street Food",
-      descripcion: "Surtido de tacos callejeros y agua fresca",
-      precio: 20,
-      imagen: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?q=80&w=300",
-      categoria: "Ligero",
-    },
-  ],
-  China: [
-    {
-      id: "13",
-      nombre: "Menú Imperial",
-      descripcion: "Rollitos primavera, pato pekinés y lichis en almíbar",
-      precio: 38,
-      imagen: "https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "14",
-      nombre: "Menú Szechuan",
-      descripcion: "Tofu picante, pollo kung pao y helado de té",
-      precio: 30,
-      imagen: "https://images.unsplash.com/photo-1541696490-8744a5dc0228?q=80&w=300",
-      categoria: "Completo",
-    },
-    {
-      id: "15",
-      nombre: "Menú Dim Sum",
-      descripcion: "Selección variada de dim sum y té chino",
-      precio: 25,
-      imagen: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?q=80&w=300",
-      categoria: "Ligero",
-    },
-  ],
-}
+// API service functions
+const fetchRestaurants = async (): Promise<RestaurantUI[]> => {
+  try {
+    const response = await api.get<APIResponse<Restaurant[]>>('/api/restaurants');
+    
+    // Map API response to UI format
+    return response.data.data.map(restaurant => ({
+      id: restaurant.restaurantId,
+      nombre: restaurant.name,
+      imagen: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=300", // Default image
+      direccion: restaurant.address,
+      tipo: restaurant.cuisineType,
+      calificacion: 4.5, // Default rating
+      idiomas: ["Inglés", "Español"], // Default languages
+    }));
+  } catch (error) {
+    console.error('Error fetching restaurants:', error);
+    throw error;
+  }
+};
 
-// Horarios disponibles ficticios
-const horariosDisponibles: HorarioDisponible[] = [
-  { id: "1", hora: "10:00", disponible: true },
-  { id: "2", hora: "11:00", disponible: false },
-  { id: "3", hora: "12:00", disponible: true },
-  { id: "4", hora: "13:00", disponible: true },
-  { id: "5", hora: "16:00", disponible: true },
-  { id: "6", hora: "17:00", disponible: false },
-  { id: "7", hora: "18:00", disponible: true },
-  { id: "8", hora: "19:00", disponible: true },
-  { id: "9", hora: "20:00", disponible: true },
-]
+const fetchLanguages = async (): Promise<Language[]> => {
+  try {
+    const response = await api.get<APIResponse<{languages: Language[]}>>('/api/languages');
+    return response.data.data.languages;
+  } catch (error) {
+    console.error('Error fetching languages:', error);
+    throw error;
+  }
+};
 
-// Fechas disponibles ficticias (próximos 7 días)
+const fetchRestaurantLanguages = async (restaurantId: string): Promise<string[]> => {
+  try {
+    const response = await api.get<APIResponse<{languages: string[]}>>(`/api/restaurants/${restaurantId}/languages`);
+    return response.data.data.languages;
+  } catch (error) {
+    console.error('Error fetching restaurant languages:', error);
+    // Fallback with basic languages
+    return ["Inglés", "Español"];
+  }
+};
+
+const fetchMenus = async (restaurantId: string): Promise<MenuUI[]> => {
+  try {
+    const response = await api.get<APIResponse<{menus: Menu[]}>>(`/api/restaurants/${restaurantId}/menu`);
+    
+    // Map API response to UI format
+    return response.data.data.menus.map(menu => ({
+      id: menu.menuId,
+      nombre: menu.menuCode, // Use menu code as name if name not available
+      descripcion: menu.description || "Menú especial del restaurante",
+      precio: menu.price,
+      imagen: menu.image || "https://images.unsplash.com/photo-1533777324565-a040eb52facd?q=80&w=300",
+      categoria: "Completo",
+    }));
+  } catch (error) {
+    console.error('Error fetching menus:', error);
+    throw error;
+  }
+};
+
+const fetchNativeSpeakers = async (language: string): Promise<ProfessorUI[]> => {
+  try {
+    const response = await api.get<APIResponse<{nativeSpeakers: User[]}>>(`/api/languages/native?language=${encodeURIComponent(language)}`);
+    
+    // Map API response to UI format
+    return response.data.data.nativeSpeakers.map(user => ({
+      id: user.userId,
+      nombre: `${user.firstName} ${user.lastName}`,
+      imagen: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300", // Default image
+      experiencia: "5 años", // Default experience
+      calificacion: 4.8, // Default rating
+      disponibilidad: ["Lunes", "Miércoles", "Viernes"], // Default availability
+      descripcion: "Profesor nativo con experiencia en enseñanza a todos los niveles." // Default description
+    }));
+  } catch (error) {
+    console.error('Error fetching native speakers:', error);
+    throw error;
+  }
+};
+
+const createSession = async (sessionData: Omit<Session, 'sessionId' | 'status'>): Promise<Session> => {
+  try {
+    const response = await api.post<APIResponse<{session: Session}>>('/api/sessions', sessionData);
+    return response.data.data.session;
+  } catch (error: any) {
+    console.error('Error creating session:', error);
+    
+    // Handle specific error cases
+    if (error.response?.status === 400) {
+      throw new Error(error.response.data.message || 'Datos de sesión inválidos');
+    } else if (error.response?.status === 401) {
+      throw new Error('Debe iniciar sesión para reservar');
+    } else if (error.response?.status === 403) {
+      throw new Error('No tiene permisos para crear esta sesión');
+    } else if (error.response?.status === 404) {
+      throw new Error('El restaurante o profesor no existe');
+    } else {
+      throw new Error('Error al crear la sesión. Por favor intente nuevamente.');
+    }
+  }
+};
+
+const processSessionPayment = async (sessionId: string, paymentMethod: string): Promise<any> => {
+  try {
+    const response = await api.post<APIResponse<{payment: any}>>(`/api/payments/session/${sessionId}`, {
+      paymentMethod
+    });
+    return response.data.data.payment;
+  } catch (error) {
+    console.error('Error processing payment:', error);
+    throw new Error('Error al procesar el pago. Por favor intente nuevamente.');
+  }
+};
+
+// Function to generate available dates
 const generarFechasDisponibles = (): FechaDisponible[] => {
-  const fechas: FechaDisponible[] = []
-  const hoy = new Date()
+  const fechas: FechaDisponible[] = [];
+  const hoy = new Date();
 
   for (let i = 1; i <= 14; i++) {
-    const fecha = new Date(hoy)
-    fecha.setDate(hoy.getDate() + i)
+    const fecha = new Date(hoy);
+    fecha.setDate(hoy.getDate() + i);
 
     fechas.push({
       id: i.toString(),
       fecha: fecha,
-      disponible: Math.random() > 0.3, // 70% de probabilidad de estar disponible
-    })
+      disponible: Math.random() > 0.3, // 70% probability of availability
+    });
   }
 
-  return fechas
+  return fechas;
 }
 
-const fechasDisponibles = generarFechasDisponibles()
-
-// Tipo para la navegación
+// Navigation type
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void
   goBack: () => void
 }
 
-// Tipo para los parámetros de ruta
+// Route parameters type
 type RouteParams = {
   restaurantId?: string;
   restaurantName?: string;
 }
 
-// Componente principal
+// Form validation error interface
+interface FormErrors {
+  restaurant?: string;
+  language?: string;
+  menu?: string;
+  date?: string;
+  time?: string;
+  duration?: string;
+  sessionType?: string;
+  professor?: string;
+}
+
+// Component
 export default function NewSessionScreen({ route }: { route: { params?: RouteParams } }) {
   const navigation = useNavigation<NavigationProp>()
   const { colors } = useTheme()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const scrollViewRef = useRef<ScrollView>(null)
   const params = route.params || {}
 
-  // Estados para el proceso de selección
-  const [paso, setPaso] = useState(params.restaurantId ? 2 : 1) // Comenzar en paso 2 si se proporciona un restaurante
-  const [restauranteSeleccionado, setRestauranteSeleccionado] = useState<Restaurante | null>(null)
+  // Restaurants state
+  const [restaurants, setRestaurants] = useState<RestaurantUI[]>([])
+  const [loadingRestaurants, setLoadingRestaurants] = useState(false)
   
-  // Inicializar restaurante seleccionado desde los parámetros de ruta
-  useEffect(() => {
-    if (params.restaurantId) {
-      // Guarda restaurantId en una variable local para evitar advertencias de TypeScript
-      const restaurantId = params.restaurantId;
-      console.log("Buscando restaurante con ID:", restaurantId, "tipo:", typeof restaurantId)
-      console.log("Restaurantes disponibles:", restaurantesData.map(r => `${r.id} (${typeof r.id}): ${r.nombre}`))
-      
-      // Intentar diferentes formas de encontrar el restaurante
-      const foundRestaurant = restaurantesData.find(
-        (restaurante) => restaurante.id === restaurantId.toString() || 
-                         restaurante.id === String(restaurantId) ||
-                         Number(restaurante.id) === Number(restaurantId)
-      )
-      
-      if (foundRestaurant) {
-        console.log("¡Restaurante encontrado!:", foundRestaurant.nombre)
-        console.log("Idiomas disponibles:", foundRestaurant.idiomas)
-        setRestauranteSeleccionado(foundRestaurant)
-      } else {
-        console.log("Error: No se encontró el restaurante con ID:", params.restaurantId)
-        console.log("IDs disponibles:", restaurantesData.map(r => r.id))
-        
-        // Si hay restaurantes, seleccionar el primero como fallback
-        if (restaurantesData.length > 0) {
-          console.log("Usando primer restaurante como fallback:", restaurantesData[0].nombre)
-          setRestauranteSeleccionado(restaurantesData[0])
-        }
-      }
-    }
-  }, [params.restaurantId])
+  // Languages state
+  const [availableLanguages, setAvailableLanguages] = useState<Language[]>([])
+  const [loadingLanguages, setLoadingLanguages] = useState(false)
+
+  // Menus state
+  const [menus, setMenus] = useState<MenuUI[]>([])
+  const [loadingMenus, setLoadingMenus] = useState(false)
+
+  // Professors state
+  const [professors, setProfessors] = useState<ProfessorUI[]>([])
+  const [loadingProfessors, setLoadingProfessors] = useState(false)
+  
+  // Selection states
+  const [paso, setPaso] = useState(params.restaurantId ? 2 : 1) // Start at step 2 if restaurant provided
+  const [restauranteSeleccionado, setRestauranteSeleccionado] = useState<RestaurantUI | null>(null)
+  const [sessionType, setSessionType] = useState<SessionType>(SessionType.OneOnOne)
   const [idiomaSeleccionado, setIdiomaSeleccionado] = useState<string | null>(null)
   const [menuSeleccionado, setMenuSeleccionado] = useState<Menu | null>(null)
   const [profesorSeleccionado, setProfesorSeleccionado] = useState<Profesor | null>(null)
   const [fechaSeleccionada, setFechaSeleccionada] = useState<FechaDisponible | null>(null)
   const [horaSeleccionada, setHoraSeleccionada] = useState<HorarioDisponible | null>(null)
   const [duracionSeleccionada, setDuracionSeleccionada] = useState<number>(1) // Duración en horas (mínimo 1)
+  
+  // UI states
   const [cargando, setCargando] = useState(false)
+  const [creandoSession, setCreandoSession] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [reservaExitosa, setReservaExitosa] = useState(false)
   const [comentarios, setComentarios] = useState("")
+  const [paymentMethod, setPaymentMethod] = useState<string>("credit_card")
+  const [sessionCreated, setSessionCreated] = useState<Session | null>(null)
+  const [formErrors, setFormErrors] = useState<FormErrors>({})
+  const [error, setError] = useState<string | null>(null)
 
-  // Constantes
-  const TASA_SERVICIO = 5 // Tasa de servicio en euros
+  // Time slots
+  const [horariosDisponibles, setHorariosDisponibles] = useState<HorarioDisponible[]>([
+    { id: "1", hora: "10:00", disponible: true },
+    { id: "2", hora: "11:00", disponible: false },
+    { id: "3", hora: "12:00", disponible: true },
+    { id: "4", hora: "13:00", disponible: true },
+    { id: "5", hora: "16:00", disponible: true },
+    { id: "6", hora: "17:00", disponible: false },
+    { id: "7", hora: "18:00", disponible: true },
+    { id: "8", hora: "19:00", disponible: true },
+    { id: "9", hora: "20:00", disponible: true },
+  ])
 
-  // Filtrar idiomas disponibles según el restaurante seleccionado
-  const idiomasDisponibles = restauranteSeleccionado ? restauranteSeleccionado.idiomas : []
+  // Available dates
+  const [fechasDisponibles, setFechasDisponibles] = useState<FechaDisponible[]>(generarFechasDisponibles())
 
-  // Filtrar menús disponibles según el tipo de restaurante
-  const menusDisponibles = restauranteSeleccionado ? menusData[restauranteSeleccionado.tipo] || [] : []
-  
-  // Filtrar profesores disponibles según el idioma seleccionado
-  const profesoresDisponibles = idiomaSeleccionado ? profesoresData[idiomaSeleccionado] || [] : []
+  // Constants
+  const TASA_SERVICIO = 5 // Service fee in euros
 
+  // Fetch restaurants on component mount
+  useEffect(() => {
+    const loadRestaurants = async () => {
+      if (restaurants.length === 0) {
+        setLoadingRestaurants(true);
+        try {
+          const fetchedRestaurants = await fetchRestaurants();
+          setRestaurants(fetchedRestaurants);
+        } catch (error) {
+          console.error('Error loading restaurants:', error);
+          setError('No se pudieron cargar los restaurantes. Por favor intente nuevamente.');
+        } finally {
+          setLoadingRestaurants(false);
+        }
+      }
+    };
+
+    loadRestaurants();
+  }, []);
+
+  // Fetch languages on component mount
+  useEffect(() => {
+    const loadLanguages = async () => {
+      setLoadingLanguages(true);
+      try {
+        const languages = await fetchLanguages();
+        setAvailableLanguages(languages);
+      } catch (error) {
+        console.error('Error loading languages:', error);
+        setError('No se pudieron cargar los idiomas. Por favor intente nuevamente.');
+      } finally {
+        setLoadingLanguages(false);
+      }
+    };
+
+    loadLanguages();
+  }, []);
+
+  // Initialize selected restaurant from route params
+  useEffect(() => {
+    if (params.restaurantId && restaurants.length > 0) {
+      const restaurantId = params.restaurantId;
+      console.log("Searching for restaurant with ID:", restaurantId);
+      
+      const foundRestaurant = restaurants.find(
+        (restaurante) => restaurante.id === restaurantId.toString() || 
+                         restaurante.id === String(restaurantId) ||
+                         Number(restaurante.id) === Number(restaurantId)
+      );
+      
+      if (foundRestaurant) {
+        console.log("Restaurant found:", foundRestaurant.nombre);
+        setRestauranteSeleccionado(foundRestaurant);
+        
+        // Load menus for this restaurant
+        loadMenusForRestaurant(foundRestaurant.id);
+      } else {
+        console.log("Error: Restaurant not found with ID:", params.restaurantId);
+        
+        // Use first restaurant as fallback if available
+        if (restaurants.length > 0) {
+          console.log("Using first restaurant as fallback:", restaurants[0].nombre);
+          setRestauranteSeleccionado(restaurants[0]);
+          
+          // Load menus for this restaurant
+          loadMenusForRestaurant(restaurants[0].id);
+        }
+      }
+    }
+  }, [params.restaurantId, restaurants]);
+
+  // Load menus for selected restaurant
+  const loadMenusForRestaurant = async (restaurantId: string) => {
+    setLoadingMenus(true);
+    try {
+      const fetchedMenus = await fetchMenus(restaurantId);
+      setMenus(fetchedMenus);
+    } catch (error) {
+      console.error('Error loading menus:', error);
+      setError('No se pudieron cargar los menús del restaurante.');
+    } finally {
+      setLoadingMenus(false);
+    }
+  };
+
+  // Filter available languages based on selected restaurant
+  const idiomasDisponibles = useMemo(() => {
+    if (!restauranteSeleccionado) return [];
+    
+    return availableLanguages
+      .filter(lang => restauranteSeleccionado.idiomas.includes(lang.languageName))
+      .map(lang => lang.languageName);
+  }, [restauranteSeleccionado, availableLanguages]);
+
+  // Load professors when language is selected
+  useEffect(() => {
+    const loadProfessors = async () => {
+      if (idiomaSeleccionado) {
+        setLoadingProfessors(true);
+        try {
+          const fetchedProfessors = await fetchNativeSpeakers(idiomaSeleccionado);
+          setProfessors(fetchedProfessors);
+        } catch (error) {
+          console.error('Error loading professors:', error);
+          setError('No se pudieron cargar los profesores para este idioma.');
+        } finally {
+          setLoadingProfessors(false);
+        }
+      }
+    };
+
+    if (idiomaSeleccionado) {
+      loadProfessors();
+    }
+  }, [idiomaSeleccionado]);
+    // Clear any previous errors
+    setError(null);
+    setFormErrors({});
   // Función para avanzar al siguiente paso
   const avanzarPaso = () => {
     setCargando(true)
@@ -491,7 +484,9 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       }
     }, 500)
   }
-
+    // Clear any previous errors
+    setError(null);
+    setFormErrors({});
   // Función para retroceder al paso anterior
   const retrocederPaso = () => {
     setPaso(paso - 1)
@@ -506,24 +501,36 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     setRestauranteSeleccionado(restaurante)
     setIdiomaSeleccionado(null) // Resetear idioma al cambiar de restaurante
     setProfesorSeleccionado(null) // Resetear profesor al cambiar de restaurante
-    avanzarPaso()
+    
+    // Load menus for this restaurant
+    loadMenusForRestaurant(restaurante.id);
+    
+    avanzarPaso();
+  }
+
+  // Function to select session type
+  const seleccionarSessionType = (type: SessionType) => {
+    setSessionType(type);
+    avanzarPaso();
   }
 
   // Función para seleccionar idioma
   const seleccionarIdioma = (idioma: string) => {
-    setIdiomaSeleccionado(idioma)
-    setProfesorSeleccionado(null) // Resetear profesor al cambiar de idioma
-    avanzarPaso()
+    setIdiomaSeleccionado(idioma);
+    setProfesorSeleccionado(null); // Reset professor when changing language
+    
+    // Validate if we have professors available for this language
+    if (professors.length === 0) {
+      setError(`No hay profesores disponibles para el idioma ${idioma}`);
+      return;
+    }
+    
+    avanzarPaso();
   }
 
   // Función para seleccionar menú
   const seleccionarMenu = (menu: Menu) => {
     setMenuSeleccionado(menu)
-    // Seleccionar profesor aleatorio para este idioma
-    if (idiomaSeleccionado && profesoresDisponibles.length > 0) {
-      const indiceAleatorio = Math.floor(Math.random() * profesoresDisponibles.length)
-      setProfesorSeleccionado(profesoresDisponibles[indiceAleatorio])
-    }
     avanzarPaso()
   }
   
@@ -545,14 +552,132 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     avanzarPaso()
   }
 
+  // Function to select professor
+  const seleccionarProfesor = (profesor: Profesor) => {
+    setProfesorSeleccionado(profesor);
+    avanzarPaso();
+  }
+
+  // Validate current step before proceeding
+  const validateCurrentStep = (): boolean => {
+    const newErrors: FormErrors = {};
+    
+    switch (paso) {
+      case 1: // Restaurant selection
+        if (!restauranteSeleccionado) {
+          newErrors.restaurant = 'Debe seleccionar un restaurante';
+        }
+        break;
+      case 2: // Session type selection
+        if (!sessionType) {
+          newErrors.sessionType = 'Debe seleccionar un tipo de sesión';
+        }
+        break;
+      case 3: // Language selection
+        if (!idiomaSeleccionado) {
+          newErrors.language = 'Debe seleccionar un idioma';
+        }
+        break;
+      case 4: // Professor selection
+        if (!profesorSeleccionado) {
+          newErrors.professor = 'Debe seleccionar un profesor';
+        }
+        break;
+      case 5: // Menu selection
+        if (!menuSeleccionado) {
+          newErrors.menu = 'Debe seleccionar un menú';
+        }
+        break;
+      case 6: // Date selection
+        if (!fechaSeleccionada) {
+          newErrors.date = 'Debe seleccionar una fecha';
+        }
+        break;
+      case 7: // Time selection
+        if (!horaSeleccionada) {
+          newErrors.time = 'Debe seleccionar una hora';
+        }
+        break;
+      case 8: // Duration selection
+        if (!duracionSeleccionada) {
+          newErrors.duration = 'Debe seleccionar una duración';
+        }
+        break;
+    }
+    
+    setFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
   // Función para confirmar reserva
-  const confirmarReserva = () => {
-    setCargando(true)
-    setTimeout(() => {
-      setCargando(false)
-      setReservaExitosa(true)
-      setModalVisible(true)
-    }, 1500)
+  const confirmarReserva = async () => {
+    // Validate all required data
+    if (!restauranteSeleccionado || !idiomaSeleccionado || !profesorSeleccionado || 
+        !fechaSeleccionada || !horaSeleccionada || !duracionSeleccionada) {
+      setError('Faltan datos necesarios para completar la reserva.');
+      return;
+    }
+    
+    // Check if user is logged in
+    if (!user || !user.userId) {
+      setError('Debe iniciar sesión para realizar una reserva.');
+      return;
+    }
+    
+    setCargando(true);
+    setCreandoSession(true);
+    
+    try {
+      // Calculate end time
+      const startTime = horaSeleccionada.hora;
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const endHours = hours + duracionSeleccionada;
+      const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      
+      // Format date for API
+      const formattedDate = fechaSeleccionada.fecha.toISOString().split('T')[0];
+      
+      // Create session data
+      const sessionData: Omit<Session, 'sessionId' | 'status'> = {
+        learnerUserId: user.userId,
+        nativeUserId: profesorSeleccionado.id,
+        restaurantId: restauranteSeleccionado.id,
+        menuId: menuSeleccionado?.id,
+        sessionDate: formattedDate,
+        startTime,
+        endTime,
+        tableSize: sessionType === SessionType.Group ? 4 : 2,
+        languageUsed: idiomaSeleccionado,
+        totalPrice: (menuSeleccionado ? menuSeleccionado.precio : 0) + TASA_SERVICIO * duracionSeleccionada
+      };
+      
+      // Create session
+      const session = await createSession(sessionData);
+      
+      // Store the created session
+      setSessionCreated(session);
+      
+      // Process payment if session was created successfully
+      if (session && session.sessionId) {
+        try {
+          const payment = await processSessionPayment(session.sessionId, paymentMethod);
+          console.log('Payment processed:', payment);
+        } catch (error) {
+          console.error('Payment processing error:', error);
+          // We can still continue with the booking even if payment fails
+          // The user can pay later
+        }
+      }
+      
+      setCargando(false);
+      setReservaExitosa(true);
+      setModalVisible(true);
+    } catch (error: any) {
+      setCargando(false);
+      setError(error.message || 'Error al crear la sesión');
+    } finally {
+      setCreandoSession(false);
+    }
   }
 
   // Función para formatear fecha
@@ -572,7 +697,24 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
           {t("session.selectRestaurantDesc")}
         </Text>
 
-        {restaurantesData.map((item) => (
+        {/* Show loading indicator while fetching restaurants */}
+        {loadingRestaurants && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.text }]}>Cargando restaurantes...</Text>
+          </View>
+        )}
+
+        {/* Show error message if any */}
+        {error && (
+          <View style={[styles.errorContainer, { borderColor: colors.error }]}>
+            <Ionicons name="alert-circle" size={24} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
+
+        {/* List of restaurants */}
+        {!loadingRestaurants && restaurants.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={[
@@ -611,7 +753,103 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     )
   }
 
-  // Renderizar selección de idioma
+  // Render session type selection
+  const renderizarSeleccionSessionType = () => {
+    return (
+      <>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>{t("session.selectSessionType")}</Text>
+        <Text style={[styles.stepDescription, { color: colors.text + "80" }]}>
+          {t("session.selectSessionTypeDesc").replace("{restaurant}", restauranteSeleccionado?.nombre || "")}
+        </Text>
+
+        <View style={styles.selectedInfo}>
+          <Image source={{ uri: restauranteSeleccionado?.imagen }} style={styles.selectedImage} />
+          <View style={styles.selectedDetails}>
+            <Text style={[styles.selectedTitle, { color: colors.text }]}>{restauranteSeleccionado?.nombre}</Text>
+            <Text style={[styles.selectedSubtitle, { color: colors.text + "80" }]}>
+              {restauranteSeleccionado?.tipo} • {restauranteSeleccionado?.direccion}
+            </Text>
+          </View>
+        </View>
+
+        {/* Session types */}
+        <View style={styles.sessionTypes}>
+          <TouchableOpacity
+            style={[
+              styles.sessionTypeCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: sessionType === SessionType.OneOnOne ? colors.primary : colors.border,
+              },
+            ]}
+            onPress={() => seleccionarSessionType(SessionType.OneOnOne)}
+          >
+            <Ionicons 
+              name="person" 
+              size={40} 
+              color={sessionType === SessionType.OneOnOne ? colors.primary : colors.text} 
+              style={styles.sessionTypeIcon}
+            />
+            <Text style={[styles.sessionTypeName, { color: colors.text }]}>One-on-One</Text>
+            <Text style={[styles.sessionTypeDesc, { color: colors.text + "80" }]}>
+              Sesión personalizada con un profesor nativo, enfocada en tus necesidades específicas.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.sessionTypeCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: sessionType === SessionType.Group ? colors.primary : colors.border,
+              },
+            ]}
+            onPress={() => seleccionarSessionType(SessionType.Group)}
+          >
+            <Ionicons 
+              name="people" 
+              size={40} 
+              color={sessionType === SessionType.Group ? colors.primary : colors.text} 
+              style={styles.sessionTypeIcon}
+            />
+            <Text style={[styles.sessionTypeName, { color: colors.text }]}>Grupo</Text>
+            <Text style={[styles.sessionTypeDesc, { color: colors.text + "80" }]}>
+              Sesión en grupo pequeño (2-4 personas), ideal para practicar en un ambiente social.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.sessionTypeCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: sessionType === SessionType.Conversation ? colors.primary : colors.border,
+              },
+            ]}
+            onPress={() => seleccionarSessionType(SessionType.Conversation)}
+          >
+            <Ionicons 
+              name="chatbubbles" 
+              size={40} 
+              color={sessionType === SessionType.Conversation ? colors.primary : colors.text} 
+              style={styles.sessionTypeIcon}
+            />
+            <Text style={[styles.sessionTypeName, { color: colors.text }]}>Conversación</Text>
+            <Text style={[styles.sessionTypeDesc, { color: colors.text + "80" }]}>
+              Práctica de conversación casual enfocada en fluidez y expresión natural.
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeRestaurant")}</Text>
+        </TouchableOpacity>
+      </>
+    );
+  };
+
+  // Render language selection
   const renderizarSeleccionIdioma = () => {
     return (
       <>
@@ -630,7 +868,27 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
           </View>
         </View>
 
+        {/* Show loading indicator while fetching languages */}
+        {loadingLanguages && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.text }]}>Cargando idiomas...</Text>
+          </View>
+        )}
+
+        {/* Show error message if any */}
+        {error && (
+          <View style={[styles.errorContainer, { borderColor: colors.error }]}>
+            <Ionicons name="alert-circle" size={24} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
+
+        {/* Language list */}
         <View style={styles.optionsList}>
+          {formErrors.language && (
+            <Text style={[styles.errorText, { color: colors.error, marginBottom: 10 }]}>{formErrors.language}</Text>
+          )}
           {idiomasDisponibles.map((idioma, index) => (
             <TouchableOpacity
               key={index}
@@ -646,7 +904,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
               <View style={styles.optionContent}>
                 <Text style={[styles.optionTitle, { color: colors.text }]}>{idioma}</Text>
                 <Text style={[styles.optionDescription, { color: colors.text + "80" }]}>
-                  {profesoresData[idioma]?.length || 0} profesores disponibles
+                  {t("session.teachersAvailable", { count: professors.length })}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color={colors.text + "40"} />
@@ -656,7 +914,90 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
 
         <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
-          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeRestaurant")}</Text>
+          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeSessionType")}</Text>
+        </TouchableOpacity>
+      </>
+    )
+  }
+
+  // Render professor selection
+  const renderizarSeleccionProfesor = () => {
+    return (
+      <>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>{t("session.selectProfessor")}</Text>
+        <Text style={[styles.stepDescription, { color: colors.text + "80" }]}>
+          {t("session.selectProfessorDesc").replace("{language}", idiomaSeleccionado || "")}
+        </Text>
+
+        <View style={styles.selectedInfo}>
+          <View style={styles.selectedDetails}>
+            <Text style={[styles.selectedTitle, { color: colors.text }]}>
+              {restauranteSeleccionado?.nombre} • {idiomaSeleccionado}
+            </Text>
+            <Text style={[styles.selectedSubtitle, { color: colors.text + "80" }]}>
+              {sessionType === SessionType.OneOnOne ? "Sesión individual" : 
+               sessionType === SessionType.Group ? "Sesión en grupo" : "Sesión de conversación"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Show loading indicator while fetching professors */}
+        {loadingProfessors && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.text }]}>Cargando profesores...</Text>
+          </View>
+        )}
+
+        {/* Show error message if any */}
+        {error && (
+          <View style={[styles.errorContainer, { borderColor: colors.error }]}>
+            <Ionicons name="alert-circle" size={24} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
+
+        {/* Professor list */}
+        {professors.map((profesor) => (
+          <TouchableOpacity
+            key={profesor.id}
+            style={[
+              styles.professorCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: profesorSeleccionado?.id === profesor.id ? colors.primary : colors.border,
+              },
+            ]}
+            onPress={() => seleccionarProfesor(profesor)}
+          >
+            <Image source={{ uri: profesor.imagen }} style={styles.professorImage} />
+            <View style={styles.professorInfo}>
+              <Text style={[styles.professorName, { color: colors.text }]}>{profesor.nombre}</Text>
+              <View style={styles.professorMeta}>
+                <Ionicons name="star" size={14} color={colors.gold ? colors.gold[500] : "#FFD700"} />
+                <Text style={[styles.professorRating, { color: colors.text + "80" }]}>{profesor.calificacion}</Text>
+                <Text style={[styles.professorExperience, { color: colors.text + "80" }]}>• {profesor.experiencia}</Text>
+              </View>
+              <Text style={[styles.professorDescription, { color: colors.text + "80" }]}>
+                {profesor.descripcion}
+              </Text>
+              <View style={styles.availabilityContainer}>
+                <Text style={[styles.availabilityLabel, { color: colors.text + "70" }]}>Disponibilidad:</Text>
+                <View style={styles.availabilityDays}>
+                  {profesor.disponibilidad.map((day, index) => (
+                    <Text key={index} style={[styles.availabilityDay, { color: colors.text + "80" }]}>
+                      {day}{index < profesor.disponibilidad.length - 1 ? ", " : ""}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeLanguage")}</Text>
         </TouchableOpacity>
       </>
     )
@@ -668,18 +1009,35 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       <>
         <Text style={[styles.stepTitle, { color: colors.text }]}>{t("session.selectMenu")}</Text>
         <Text style={[styles.stepDescription, { color: colors.text + "80" }]}>
-          {t("session.selectMenuDesc").replace("{language}", idiomaSeleccionado || "")}
+          {t("session.selectMenuDesc").replace("{professor}", profesorSeleccionado?.nombre || "")}
         </Text>
 
         <View style={styles.selectedInfo}>
           <View style={styles.selectedDetails}>
             <Text style={[styles.selectedTitle, { color: colors.text }]}>
-              {restauranteSeleccionado?.nombre} • {idiomaSeleccionado}
+              {restauranteSeleccionado?.nombre} • {idiomaSeleccionado} • {profesorSeleccionado?.nombre}
             </Text>
           </View>
         </View>
 
-        {menusDisponibles.map((item) => (
+        {/* Show loading indicator while fetching menus */}
+        {loadingMenus && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.text }]}>Cargando menús...</Text>
+          </View>
+        )}
+
+        {/* Show error message if any */}
+        {error && (
+          <View style={[styles.errorContainer, { borderColor: colors.error }]}>
+            <Ionicons name="alert-circle" size={24} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
+
+        {/* Menu list */}
+        {menus.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={[
@@ -708,63 +1066,12 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
 
         <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
-          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeLanguage")}</Text>
+          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeProfessor")}</Text>
         </TouchableOpacity>
       </>
     )
   }
 
-  // Renderizar selección de duración
-  const renderizarSeleccionDuracion = () => {
-    return (
-      <>
-        <Text style={[styles.stepTitle, { color: colors.text }]}>{t("session.selectDuration")}</Text>
-        <Text style={[styles.stepDescription, { color: colors.text + "80" }]}>
-          {t("session.selectDurationDesc")}
-        </Text>
-
-        <View style={styles.selectedInfo}>
-          <View style={styles.selectedDetails}>
-            <Text style={[styles.selectedTitle, { color: colors.text }]}>
-              {fechaSeleccionada?.fecha ? formatearFecha(fechaSeleccionada.fecha) : ""} • {horaSeleccionada?.hora}
-            </Text>
-            <Text style={[styles.selectedSubtitle, { color: colors.text + "80" }]}>
-              {menuSeleccionado?.nombre} • {restauranteSeleccionado?.nombre}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.durationContainer}>
-          {[1, 2, 3].map((duracion) => (
-            <TouchableOpacity
-              key={duracion}
-              style={[
-                styles.durationCard,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: duracionSeleccionada === duracion ? colors.primary : colors.border,
-                },
-              ]}
-              onPress={() => seleccionarDuracion(duracion)}
-            >
-              <Text style={[styles.durationText, { color: colors.text }]}>{duracion} {t(duracion === 1 ? "session.hour" : "session.hours")}</Text>
-              <Text style={[styles.durationPrice, { color: colors.primary }]}>
-                {(menuSeleccionado ? menuSeleccionado.precio : 0) + TASA_SERVICIO * duracion}€
-              </Text>
-              <Text style={[styles.durationSubtext, { color: colors.text + "70" }]}>
-                {t("session.menuLabel")}: {menuSeleccionado ? menuSeleccionado.precio : 0}€ + {t("session.serviceLabel")}: {TASA_SERVICIO * duracion}€
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
-          <Ionicons name="arrow-back" size={20} color={colors.text} />
-          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeTime")}</Text>
-        </TouchableOpacity>
-      </>
-    )
-  }
 
   // Renderizar selección de fecha
   const renderizarSeleccionFecha = () => {
@@ -780,7 +1087,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
           <View style={styles.selectedDetails}>
             <Text style={[styles.selectedTitle, { color: colors.text }]}>{menuSeleccionado?.nombre}</Text>
             <Text style={[styles.selectedSubtitle, { color: colors.text + "80" }]}>
-              {idiomaSeleccionado} • {restauranteSeleccionado?.nombre}
+              {idiomaSeleccionado} • {profesorSeleccionado?.nombre} • {restauranteSeleccionado?.nombre}
             </Text>
           </View>
         </View>
@@ -838,11 +1145,22 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
               {fechaSeleccionada?.fecha ? formatearFecha(fechaSeleccionada.fecha) : ""}
             </Text>
             <Text style={[styles.selectedSubtitle, { color: colors.text + "80" }]}>
-              {menuSeleccionado?.nombre} • {restauranteSeleccionado?.nombre}
+              {menuSeleccionado?.nombre} • {profesorSeleccionado?.nombre} • {restauranteSeleccionado?.nombre}
             </Text>
           </View>
         </View>
-
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryIconContainer}>
+              <Ionicons name="people-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.summaryContent}>
+              <Text style={[styles.summaryLabel, { color: colors.text + "80" }]}>{t("session.sessionType")}</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>
+                {sessionType === SessionType.OneOnOne ? "Sesión individual" : 
+                 sessionType === SessionType.Group ? "Sesión en grupo" : "Sesión de conversación"}
+              </Text>
+            </View>
+          </View>
         <View style={styles.timeGrid}>
           {horariosDisponibles.map((horario) => (
             <TouchableOpacity
@@ -869,7 +1187,61 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
             </TouchableOpacity>
           ))}
         </View>
-
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryIconContainer}>
+              <Ionicons name="card-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.summaryContent}>
+              <Text style={[styles.summaryLabel, { color: colors.text + "80" }]}>{t("session.paymentMethod")}</Text>
+              <View style={styles.paymentMethods}>
+                <TouchableOpacity 
+                  style={[
+                    styles.paymentMethodOption, 
+                    { 
+                      backgroundColor: paymentMethod === 'credit_card' ? colors.primary + '20' : 'transparent',
+                      borderColor: paymentMethod === 'credit_card' ? colors.primary : colors.border,
+                    }
+                  ]}
+                  onPress={() => setPaymentMethod('credit_card')}
+                >
+                  <Ionicons 
+                    name="card" 
+                    size={16} 
+                    color={paymentMethod === 'credit_card' ? colors.primary : colors.text + "60"} 
+                  />
+                  <Text style={[
+                    styles.paymentMethodText, 
+                    { color: paymentMethod === 'credit_card' ? colors.primary : colors.text + "60" }
+                  ]}>
+                    Tarjeta
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.paymentMethodOption, 
+                    { 
+                      backgroundColor: paymentMethod === 'paypal' ? colors.primary + '20' : 'transparent',
+                      borderColor: paymentMethod === 'paypal' ? colors.primary : colors.border,
+                    }
+                  ]}
+                  onPress={() => setPaymentMethod('paypal')}
+                >
+                  <Ionicons 
+                    name="logo-paypal" 
+                    size={16} 
+                    color={paymentMethod === 'paypal' ? colors.primary : colors.text + "60"} 
+                  />
+                  <Text style={[
+                    styles.paymentMethodText, 
+                    { color: paymentMethod === 'paypal' ? colors.primary : colors.text + "60" }
+                  ]}>
+                    PayPal
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
           <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeDate")}</Text>
@@ -877,7 +1249,13 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       </>
     )
   }
-
+        {/* Show error message if any */}
+        {error && (
+          <View style={[styles.errorContainer, { borderColor: colors.error, marginBottom: 16 }]}>
+            <Ionicons name="alert-circle" size={24} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
   // Renderizar confirmación
   const renderizarConfirmacion = () => {
     return (
@@ -1008,7 +1386,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
           <TouchableOpacity
             style={[styles.confirmButton, { backgroundColor: colors.primary }]}
             onPress={confirmarReserva}
-            disabled={cargando}
+            disabled={cargando || creandoSession}
           >
             {cargando ? (
               <ActivityIndicator color="white" size="small" />
@@ -1030,22 +1408,31 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       case 1:
         return renderizarSeleccionRestaurante()
       case 2:
-        return renderizarSeleccionIdioma()
+        return renderizarSeleccionSessionType()
       case 3:
-        return renderizarSeleccionMenu()
+        return renderizarSeleccionIdioma()
       case 4:
-        return renderizarSeleccionFecha()
+        return renderizarSeleccionProfesor()
       case 5:
-        return renderizarSeleccionHora()
+        return renderizarSeleccionMenu()
       case 6:
-        return renderizarSeleccionDuracion()
+        return renderizarSeleccionFecha()
       case 7:
+        return renderizarSeleccionHora()
+      case 8:
+        return renderizarSeleccionDuracion()
+      case 9:
         return renderizarConfirmacion()
       default:
         return null
     }
   }
-
+                  <View style={styles.modalDetailRow}>
+                    <Ionicons name="cash-outline" size={20} color={colors.primary} />
+                    <Text style={[styles.modalDetailText, { color: colors.text }]}>
+                      {(menuSeleccionado ? menuSeleccionado.precio : 0) + TASA_SERVICIO * duracionSeleccionada}€ • {paymentMethod === 'credit_card' ? 'Tarjeta' : 'PayPal'}
+                    </Text>
+                  </View>
   // Renderizar modal de confirmación
   const renderizarModalConfirmacion = () => {
     return (
@@ -1114,20 +1501,94 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
 
       {/* Progress Bar */}
       <View style={styles.progressBar}>
-        {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
           <View
             key={step}
             style={[
               styles.progressStep,
               {
                 backgroundColor: step <= paso ? colors.primary : colors.border,
-                width: `${100 / 7 - 2}%`,
+                width: `${100 / 9 - 1}%`,
               },
             ]}
           />
         ))}
       </View>
-
+  professorCard: {
+    flexDirection: "row",
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 12,
+  },
+  professorImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginRight: 12,
+  },
+  professorInfo: {
+    flex: 1,
+  },
+  professorName: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  professorMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  professorRating: {
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  professorExperience: {
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  professorDescription: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  availabilityContainer: {
+    marginTop: 4,
+  },
+  availabilityLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  availabilityDays: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  availabilityDay: {
+    fontSize: 14,
+  },
+  sessionTypes: {
+    marginBottom: 24,
+  },
+  sessionTypeCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sessionTypeIcon: {
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  sessionTypeName: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  sessionTypeDesc: {
+    fontSize: 14,
+    textAlign: "center",
+  },
       {/* Content */}
       <ScrollView
         ref={scrollViewRef}
@@ -1137,10 +1598,47 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       >
         <View style={styles.stepContainer}>{renderizarPaso()}</View>
       </ScrollView>
-
+  paymentMethods: {
+    flexDirection: "row",
+    marginTop: 8,
+  },
+  paymentMethodOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 12,
+  },
+  paymentMethodText: {
+    fontSize: 14,
+    marginLeft: 6,
+  },
       {/* Modal de confirmación */}
       {renderizarModalConfirmacion()}
-
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'rgba(255, 0, 0, 0.08)',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  errorText: {
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
       {/* Loading Overlay */}
       {cargando && (
         <View style={styles.loadingOverlay}>
