@@ -186,10 +186,14 @@ function RestaurantsScreen() {
   // Ref for FlatList to scroll to top when filters change
   const flatListRef = useRef<FlatList>(null)
 
-  // Cache expiration time (5 minutes)
-  const CACHE_EXPIRATION = 5 * 60 * 1000
+  // Cache expiration time (30 minutes - increased to reduce API calls)
+  const CACHE_EXPIRATION = 30 * 60 * 1000
   const cacheTimestamp = useRef<number | null>(null)
   const cachedRestaurants = useRef<Restaurant[]>([])
+  
+  // Queue state for API requests to prevent multiple calls
+  const isRequestPendingRef = useRef<boolean>(false)
+  const pendingRequestParamsRef = useRef<{ page: number, refresh: boolean } | null>(null)
 
   // Get random placeholder image for restaurants without images
   const getRandomPlaceholderImage = useCallback(() => {
