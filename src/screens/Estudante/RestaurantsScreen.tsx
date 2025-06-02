@@ -665,7 +665,7 @@ function RestaurantsScreen() {
     if (paginationBroken && restaurants.length > 0) {
       return (
         <View style={[styles.paginationBrokenContainer, { borderTopColor: colors.border }]}>
-          <Ionicons name="warning-outline" size={20} color={colors.amber[500]} style={{ marginRight: 8 }} />
+          <Ionicons name="warning-outline" size={20} color={colors.gold[500]} style={{ marginRight: 8 }} />
           <Text style={[styles.paginationBrokenText, { color: colors.text }]}>
             Unable to load more restaurants due to server error.
           </Text>
