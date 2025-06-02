@@ -423,12 +423,16 @@ async function verifySession(userId, sessionId) {
   if (!userId || !sessionId) return false;
   
   try {
+    // Ensure sessionId is converted to the correct type (INTEGER for database)
+    const parsedSessionId = typeof sessionId === 'string' ? parseInt(sessionId, 10) : sessionId;
+    const parsedUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    
     // Check with timeout for cloud databases
     const session = await Promise.race([
       Session.findOne({
         where: {
-          sessionId,
-          userId,
+          sessionId: parsedSessionId,
+          userId: parsedUserId,
           isActive: true,
           // Only consider sessions that haven't expired
           expiresAt: {
@@ -462,7 +466,7 @@ async function verifySession(userId, sessionId) {
     // Update last activity time in the background (don't await)
     Session.update(
       { lastActivity: new Date() },
-      { where: { sessionId } }
+      { where: { sessionId: parsedSessionId } }
     ).catch(error => {
       logger.warn('Failed to update session last activity', {
         error: error.message,
