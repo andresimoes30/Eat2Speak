@@ -394,7 +394,11 @@ function RestaurantsScreen() {
           setRetryAfter(0)
         }
 
-        // Process response data
+        // Process response data - add null check to prevent TS error
+        if (!response) {
+          throw new Error("Failed to get response from API");
+        }
+        
         const { restaurants: fetchedRestaurants, pagination } = response.data.data
 
         // Enhance restaurant data with additional UI fields
