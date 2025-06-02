@@ -20,43 +20,42 @@ export default function RestauranteHelpSupportScreen() {
   const [supportMessage, setSupportMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Estado para preguntas frecuentes
-  // TODO: Move FAQ content to translations system to support multiple languages
+  // Estado para preguntas frecuentes - usando el sistema de traducciones
   const [faqs, setFaqs] = useState<FAQItem[]>([
     {
       id: 1,
-      question: "¿Cómo puedo recibir más estudiantes en mi restaurante?",
-      answer: "Para atraer más estudiantes, completa tu perfil con fotos atractivas, una descripción detallada de tu restaurante y el tipo de cocina que ofreces. Mantén actualizado tu horario de disponibilidad y ofrece un ambiente acogedor para las conversaciones. Los restaurantes con buenas calificaciones aparecen más arriba en los resultados de búsqueda.",
+      question: t("restaurant.faq.moreStudents.question"),
+      answer: t("restaurant.faq.moreStudents.answer"),
       expanded: false
     },
     {
       id: 2,
-      question: "¿Cómo funcionan las comisiones?",
-      answer: "Por cada reserva completada a través de la aplicación, se aplica una comisión del 15% sobre el precio del menú o consumición. Esta comisión se descuenta automáticamente del pago que recibes. Puedes ver un desglose detallado de tus ingresos y comisiones en la sección 'Finanzas' de tu perfil.",
+      question: t("restaurant.faq.commissions.question"),
+      answer: t("restaurant.faq.commissions.answer"),
       expanded: false
     },
     {
       id: 3,
-      question: "¿Qué ocurre si un estudiante no se presenta?",
-      answer: "Si un estudiante no se presenta a una reserva confirmada, debes marcarla como 'No asistió' en la aplicación dentro de las 24 horas. Recibirás una compensación parcial por la reserva. Si esto ocurre frecuentemente con el mismo estudiante, puedes reportarlo a nuestro equipo de soporte.",
+      question: t("restaurant.faq.noShow.question"),
+      answer: t("restaurant.faq.noShow.answer"),
       expanded: false
     },
     {
       id: 4,
-      question: "¿Puedo rechazar una reserva?",
-      answer: "Sí, puedes rechazar reservas, pero te recomendamos hacerlo con anticipación para mantener una buena calificación. Rechazar reservas frecuentemente puede afectar la visibilidad de tu restaurante en la plataforma. Procura mantener tu calendario de disponibilidad actualizado para evitar solicitudes en momentos inconvenientes.",
+      question: t("restaurant.faq.rejectBooking.question"),
+      answer: t("restaurant.faq.rejectBooking.answer"),
       expanded: false
     },
     {
       id: 5,
-      question: "¿Cómo actualizo el menú y los precios?",
-      answer: "Puedes actualizar tu menú y precios en la sección 'Menú' de tu perfil. Te recomendamos mantener esta información actualizada y añadir fotos de los platos para hacerlos más atractivos. Los cambios se reflejarán inmediatamente en tu perfil público.",
+      question: t("restaurant.faq.updateMenu.question"),
+      answer: t("restaurant.faq.updateMenu.answer"),
       expanded: false
     },
     {
       id: 6,
-      question: "¿Cómo gestiono las mesas disponibles?",
-      answer: "En la sección 'Disponibilidad' puedes gestionar el número de mesas disponibles para estudiantes, así como los horarios en que tu restaurante está abierto para reservas a través de la aplicación. Puedes ajustar esta configuración según tus necesidades y la ocupación de tu local.",
+      question: t("restaurant.faq.manageTables.question"),
+      answer: t("restaurant.faq.manageTables.answer"),
       expanded: false
     },
   ]);
