@@ -2200,6 +2200,22 @@ export const translations: TranslationsType = {
     "interest.dance": "Dança",
     "interest.nature": "Natureza",
     
+    // Support related translations
+    "support.helpAndSupport": "Ajuda e Suporte",
+    "support.searchHelp": "Pesquisar ajuda",
+    "support.quickContact": "Contato Rápido",
+    "support.supportEmail": "Email de suporte",
+    "support.phone": "Telefone",
+    "support.whatsapp": "WhatsApp",
+    "support.liveChat": "Chat ao vivo",
+    "support.helpCenter": "Central de Ajuda",
+    "support.visitHelpWebsite": "Visitar site de ajuda",
+    "support.frequentlyAskedQuestions": "Perguntas Frequentes",
+    "support.sendSupportMessage": "Enviar mensagem de suporte",
+    "support.detailedMessageInstructions": "Forneça detalhes sobre seu problema para que possamos ajudá-lo melhor",
+    "support.describeYourProblem": "Descreva seu problema",
+    "support.sendMessage": "Enviar mensagem",
+    
     // Session translations
     "session.menuLabel": "Menu:",
     "session.serviceLabel": "Serviço:",
