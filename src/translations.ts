@@ -3934,19 +3934,6 @@ export const translations: TranslationsType = {
     "terms.cancellation": "Politica di cancellazione",
     "terms.cancellationText": "Puoi cancellare il tuo account in qualsiasi momento. Le prenotazioni possono essere annullate senza costi fino a 24 ore prima della sessione programmata. Per maggiori dettagli, consulta la nostra politica di cancellazione completa.",
     "terms.contact": "Contatto legale",
-    "terms.contactText": "Per qualsiasi domanda legale relativa a questi termini e condizioni, contatta il nostro dipartimento legale all'indirizzo:",
-    
-    // Restaurant availability
-    "restaurant.notAvailable": "Non disponibile",
-    "restaurant.enable": "Abilita",
-    "common.reset": "Reimposta",
-    "restaurant.saveAvailability": "Salva disponibilità",
-    "restaurant.availability": "Disponibilità",
-    "restaurant.calendar": "Calendario",
-    "restaurant.list": "Lista",
-    "restaurant.instructions": "Istruzioni",
-    "restaurant.tapDayInstruction": "Tocca un giorno per visualizzare/modificare gli orari",
-    "restaurant.longPressInstruction": "Premi a lungo per abilitare/disabilitare un giorno",
-    "restaurant.timeSlotIndicatorInstruction": "I giorni con orari definiti sono contrassegnati con un punto"
+    "terms.contactText": "Per qualsiasi domanda legale relativa a questi termini e condizioni, contatta il nostro dipartimento legale all'indirizzo:"
   }
 };
