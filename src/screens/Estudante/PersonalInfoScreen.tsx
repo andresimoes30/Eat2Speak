@@ -1007,56 +1007,7 @@ export default function PersonalInfoScreen() {
           )}
         </Card>
 
-        <Card style={styles.infoCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.interests")}</Text>
-
-          <View style={styles.interestsContainer}>
-            {editedUser.interests.length > 0 ? (
-              editedUser.interests.map((interest, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.interestTag,
-                    {
-                      backgroundColor: colors.blue[50],
-                      borderColor: colors.blue[200],
-                    },
-                  ]}
-                >
-                  <Text style={[styles.interestText, { color: colors.blue[700] }]}>{interest}</Text>
-                  {isEditing && (
-                    <TouchableOpacity 
-                      style={styles.removeInterestButton}
-                      onPress={() => handleRemoveInterest(index)}
-                    >
-                      <Ionicons name="close" size={16} color={colors.blue[700]} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))
-            ) : (
-              <Text style={{ color: colors.text + "80", fontStyle: "italic", marginBottom: 12 }}>
-                {t("personalInfo.noInterestsAdded")}
-              </Text>
-            )}
-
-            {isEditing && (
-              <TouchableOpacity
-                style={[
-                  styles.addInterestButton,
-                  {
-                    borderColor: colors.primary,
-                    borderStyle: "dashed",
-                  },
-                ]}
-                onPress={() => setShowAddInterestModal(true)}
-              >
-                <Ionicons name="add" size={16} color={colors.primary} />
-                <Text style={[styles.addInterestText, { color: colors.primary }]}>{t("personalInfo.add")}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </Card>
+        {/* Interests section removed as requested */}
 
         <Card style={styles.infoCard}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.biography")}</Text>
