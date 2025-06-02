@@ -293,7 +293,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
   const navigation = useNavigation<NavigationProp>()
   const { colors } = useTheme()
   const { t } = useLanguage()
-  const { user } = useAuth() as { user: User }
+  const { user } = useAuth()
   const scrollViewRef = useRef<ScrollView>(null)
   const params = route.params || {}
 
