@@ -619,7 +619,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     }
     
     // Check if user is logged in
-    if (!user || !user.userId) {
+    if (!user?.userId) {
       setError('Debe iniciar sesión para realizar una reserva.');
       return;
     }
@@ -639,7 +639,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       
       // Create session data
       const sessionData: Omit<Session, 'sessionId' | 'status'> = {
-        learnerUserId: user.userId,
+        learnerUserId: user?.userId as string,
         nativeUserId: profesorSeleccionado.id,
         restaurantId: restauranteSeleccionado.id,
         menuId: menuSeleccionado?.id,
