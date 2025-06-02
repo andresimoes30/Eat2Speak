@@ -483,8 +483,6 @@ export default function PersonalInfoScreen() {
         address: editedUser.address,
         gender: editedUser.gender,
         nationality: editedUser.nationality,
-        occupation: editedUser.occupation,
-        company: editedUser.company,
         bio: editedUser.bio
       };
       
