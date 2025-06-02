@@ -3576,6 +3576,9 @@ export const translations: TranslationsType = {
     "common.save": "Salva",
     "common.edit": "Modifica",
     "common.delete": "Elimina",
+    "restaurant.editDish": "Modifica piatto",
+    "restaurant.confirmDeletion": "Conferma eliminazione",
+    "restaurant.confirmDeleteDishMessage": "Sei sicuro di voler eliminare questo piatto?",
     
     // Session
     "session.newSession": "Nuova Sessione",
