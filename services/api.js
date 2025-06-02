@@ -319,6 +319,35 @@ export const setAuthToken = (token) => {
   }
 };
 
+// Logout function to properly invalidate session on the server
+export const logout = async () => {
+  try {
+    // Make a POST request to the logout endpoint
+    const response = await api.post('/api/auth/logout');
+    
+    // Log successful logout for debugging
+    console.log('Logout successful');
+    
+    // Clear the auth token
+    setAuthToken(null);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Logout error:', error);
+    
+    // Add detailed request information to help diagnose the issue
+    if (error.config) {
+      console.error('Logout request details:', {
+        url: `${error.config.baseURL || ''}${error.config.url || ''}`,
+        method: error.config.method,
+        headers: error.config.headers
+      });
+    }
+    
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
 // Login function with correct URL path
 export const login = async (email, password) => {
   try {
