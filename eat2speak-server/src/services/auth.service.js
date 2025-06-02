@@ -396,9 +396,10 @@ async function logoutUser(userId, sessionId, ipAddress = 'unknown') {
       ipAddress: clientIp
     });
     
-    // Return success anyway to avoid locking users in sessions
-    // Better to report success and have user try again than be stuck
-    return true;
+    // Instead of always returning success, return false to indicate there was an error
+    // This ensures the controller can provide appropriate feedback
+    logger.warn('Returning failure status for logout due to error');
+    return false;
   }
 }
 
