@@ -171,6 +171,8 @@ function RestaurantsScreen() {
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [totalRestaurants, setTotalRestaurants] = useState(0)
+  // Flag to detect server pagination issues
+  const [paginationBroken, setPaginationBroken] = useState(false)
 
   // Filtering state
   const [filters, setFilters] = useState<FilterOptions>({
