@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Restaurant.associate = (models) => {
-    Restaurant.belongsTo(models.Users, {
+    Restaurant.belongsTo(models.User, {
       foreignKey: 'ownerUserId',
       as: 'owner'
     });
