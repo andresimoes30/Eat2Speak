@@ -649,16 +649,43 @@ function RestaurantsScreen() {
       ))
   }, [colors.border, colors.card])
 
-  // Footer component for FlatList (loading indicator for infinite scroll)
+  // Footer component for FlatList (loading indicator for infinite scroll or pagination error)
   const renderFooter = useCallback(() => {
-    if (!loadingMore) return null
-    return (
-      <View style={styles.loadingMore}>
-        <ActivityIndicator size="small" color={colors.blue[600]} />
-        <Text style={[styles.loadingMoreText, { color: colors.text }]}>{getTranslation("restaurants.loadingMore")}</Text>
-      </View>
-    )
-  }, [loadingMore, colors.blue, colors.text, t])
+    // Show loading indicator when loading more
+    if (loadingMore) {
+      return (
+        <View style={styles.loadingMore}>
+          <ActivityIndicator size="small" color={colors.blue[600]} />
+          <Text style={[styles.loadingMoreText, { color: colors.text }]}>{getTranslation("restaurants.loadingMore")}</Text>
+        </View>
+      )
+    }
+    
+    // Show pagination broken message when we've detected server issues
+    if (paginationBroken && restaurants.length > 0) {
+      return (
+        <View style={[styles.paginationBrokenContainer, { borderTopColor: colors.border }]}>
+          <Ionicons name="warning-outline" size={20} color={colors.amber[500]} style={{ marginRight: 8 }} />
+          <Text style={[styles.paginationBrokenText, { color: colors.text }]}>
+            Unable to load more restaurants due to server error.
+          </Text>
+        </View>
+      )
+    }
+    
+    // Show end of list message when there are no more results
+    if (!hasMore && restaurants.length > 0) {
+      return (
+        <View style={[styles.endOfListContainer, { borderTopColor: colors.border }]}>
+          <Text style={[styles.endOfListText, { color: colors.text + "80" }]}>
+            {t("restaurants.endOfList") || "End of results"}
+          </Text>
+        </View>
+      )
+    }
+    
+    return null
+  }, [loadingMore, paginationBroken, hasMore, restaurants.length, colors, t, getTranslation])
 
   // Empty state component when no restaurants are found
   const renderEmptyState = useCallback(() => {
