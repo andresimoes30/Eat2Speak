@@ -17,7 +17,10 @@ import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useAuth } from "../../contexts/AuthContext"
-import { useLanguage, Language as LanguageType } from "../../contexts/LanguageContext"
+import { useLanguage } from "../../contexts/LanguageContext"
+
+// Define type for language codes
+type LanguageType = "es" | "en" | "pt" | "fr" | "de" | "it";
 
 // Language options with names and flags (matching student implementation)
 const languageOptions = [
@@ -54,7 +57,7 @@ export default function RestauranteSettingsScreen() {
   const navigation = useNavigation()
   // Get theme context values including toggleTheme function
   const { colors, theme, toggleTheme } = useTheme()
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { t, language, setLanguage } = useLanguage()
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   
