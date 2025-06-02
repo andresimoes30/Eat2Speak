@@ -976,35 +976,7 @@ export default function PersonalInfoScreen() {
           </View>
         </Card>
 
-        <Card style={styles.infoCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.profession")}</Text>
-
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("personalInfo.occupation")}</Text>
-            {isEditing ? (
-              <TextInput
-                style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
-                value={editedUser.occupation}
-                onChangeText={(text) => setEditedUser({ ...editedUser, occupation: text })}
-              />
-            ) : (
-              <Text style={[styles.infoValue, { color: colors.text }]}>{userData.occupation}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("personalInfo.company")}</Text>
-            {isEditing ? (
-              <TextInput
-                style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
-                value={editedUser.company}
-                onChangeText={(text) => setEditedUser({ ...editedUser, company: text })}
-              />
-            ) : (
-              <Text style={[styles.infoValue, { color: colors.text }]}>{userData.company}</Text>
-            )}
-          </View>
-        </Card>
+        {/* Profession section removed as requested */}
 
         <Card style={styles.infoCard}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("personalInfo.languages")}</Text>
