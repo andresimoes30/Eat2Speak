@@ -457,26 +457,10 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
   const [professors, setProfessors] = useState<ProfessorUI[]>([])
   const [loadingProfessors, setLoadingProfessors] = useState(false)
   
-  // Función para seleccionar restaurante
-  const seleccionarRestaurante = (restaurante: RestaurantUI) => {
-    setRestauranteSeleccionado(restaurante)
-    setIdiomaSeleccionado(null) // Resetear idioma al cambiar de restaurante
-    setProfesorSeleccionado(null) // Resetear profesor al cambiar de restaurante
-    
-    // Load menus for this restaurant
-    loadMenusForRestaurant(restaurante.id);
-    
-    // Skip to step 2 (language selection) since we don't need session type selection
-    setCargando(true)
-    setTimeout(() => {
-      setCargando(false)
-      setPaso(2)
-      // Scroll to top when changing steps
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: 0, animated: true })
-      }
-    }, 500)
-  }
+  // Selection states
+  const [paso, setPaso] = useState(params.restaurantId ? 2 : 1) // Start at step 2 if restaurant provided
+  const [restauranteSeleccionado, setRestauranteSeleccionado] = useState<RestaurantUI | null>(null)
+  const [sessionType] = useState<SessionType>(SessionType.OneOnOne) // Always one-on-one sessions
   const [idiomaSeleccionado, setIdiomaSeleccionado] = useState<string | null>(null)
   const [menuSeleccionado, setMenuSeleccionado] = useState<MenuUI | null>(null)
   const [profesorSeleccionado, setProfesorSeleccionado] = useState<ProfessorUI | null>(null)
@@ -701,13 +685,16 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     // Load menus for this restaurant
     loadMenusForRestaurant(restaurante.id);
     
-    avanzarPaso();
-  }
-
-  // Function to select session type
-  const seleccionarSessionType = (type: SessionType) => {
-    setSessionType(type);
-    avanzarPaso();
+    // Skip to step 2 (language selection) since we only have one-on-one sessions
+    setCargando(true)
+    setTimeout(() => {
+      setCargando(false)
+      setPaso(2)
+      // Scroll to top when changing steps
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: true })
+      }
+    }, 500)
   }
 
   // Función para seleccionar idioma
@@ -764,40 +751,38 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
           newErrors.restaurant = 'Debe seleccionar un restaurante';
         }
         break;
-      case 2: // Session type selection
-        if (!sessionType) {
-          newErrors.sessionType = 'Debe seleccionar un tipo de sesión';
-        }
-        break;
-      case 3: // Language selection
+      case 2: // Language selection
         if (!idiomaSeleccionado) {
           newErrors.language = 'Debe seleccionar un idioma';
         }
         break;
-      case 4: // Professor selection
+      case 3: // Professor selection
         if (!profesorSeleccionado) {
           newErrors.professor = 'Debe seleccionar un profesor';
         }
         break;
-      case 5: // Menu selection
+      case 4: // Menu selection
         if (!menuSeleccionado) {
           newErrors.menu = 'Debe seleccionar un menú';
         }
         break;
-      case 6: // Date selection
+      case 5: // Date selection
         if (!fechaSeleccionada) {
           newErrors.date = 'Debe seleccionar una fecha';
         }
         break;
-      case 7: // Time selection
+      case 6: // Time selection
         if (!horaSeleccionada) {
           newErrors.time = 'Debe seleccionar una hora';
         }
         break;
-      case 8: // Duration selection
+      case 7: // Duration selection
         if (!duracionSeleccionada) {
           newErrors.duration = 'Debe seleccionar una duración';
         }
+        break;
+      case 8: // Confirmation
+        // No validation needed for confirmation step
         break;
     }
     
@@ -1054,7 +1039,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
 
         <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
-          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeSessionType")}</Text>
+          <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeRestaurant")}</Text>
         </TouchableOpacity>
       </>
     )
@@ -1699,7 +1684,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
                 styles.progressStep,
                 {
                   backgroundColor: step <= paso ? colors.primary : colors.border,
-                  width: `${100 / 9 - 1}%`,
+                  width: `${100 / 8 - 1}%`,
                 },
               ]}
             />
