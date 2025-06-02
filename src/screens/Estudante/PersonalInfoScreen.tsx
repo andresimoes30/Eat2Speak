@@ -482,8 +482,7 @@ export default function PersonalInfoScreen() {
         phoneNumber: `${editedUser.countryCode} ${editedUser.phone}`,
         address: editedUser.address,
         gender: editedUser.gender,
-        nationality: editedUser.nationality,
-        bio: editedUser.bio
+        nationality: editedUser.nationality
       };
       
       // Only include languages if they exist
