@@ -271,7 +271,6 @@ function RestaurantsScreen() {
 
   // Debounce delay for filter changes (milliseconds)
   const FILTER_DEBOUNCE_DELAY = 800
-  const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   // Function to fetch restaurants from the API with request queue
   const fetchRestaurants = useCallback(
