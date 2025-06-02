@@ -457,10 +457,26 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
   const [professors, setProfessors] = useState<ProfessorUI[]>([])
   const [loadingProfessors, setLoadingProfessors] = useState(false)
   
-  // Selection states
-  const [paso, setPaso] = useState(params.restaurantId ? 2 : 1) // Start at step 2 if restaurant provided
-  const [restauranteSeleccionado, setRestauranteSeleccionado] = useState<RestaurantUI | null>(null)
-  const [sessionType, setSessionType] = useState<SessionType>(SessionType.OneOnOne)
+  // Función para seleccionar restaurante
+  const seleccionarRestaurante = (restaurante: RestaurantUI) => {
+    setRestauranteSeleccionado(restaurante)
+    setIdiomaSeleccionado(null) // Resetear idioma al cambiar de restaurante
+    setProfesorSeleccionado(null) // Resetear profesor al cambiar de restaurante
+    
+    // Load menus for this restaurant
+    loadMenusForRestaurant(restaurante.id);
+    
+    // Skip to step 2 (language selection) since we don't need session type selection
+    setCargando(true)
+    setTimeout(() => {
+      setCargando(false)
+      setPaso(2)
+      // Scroll to top when changing steps
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: true })
+      }
+    }, 500)
+  }
   const [idiomaSeleccionado, setIdiomaSeleccionado] = useState<string | null>(null)
   const [menuSeleccionado, setMenuSeleccionado] = useState<MenuUI | null>(null)
   const [profesorSeleccionado, setProfesorSeleccionado] = useState<ProfessorUI | null>(null)
@@ -968,101 +984,10 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     )
   }
 
-  // Render session type selection
-  const renderizarSeleccionSessionType = () => {
-    return (
-      <>
-        <Text style={[styles.stepTitle, { color: colors.text }]}>{t("session.selectSessionType")}</Text>
-        <Text style={[styles.stepDescription, { color: colors.text + "80" }]}>
-          {t("session.selectSessionTypeDesc").replace("{restaurant}", restauranteSeleccionado?.nombre || "")}
-        </Text>
-
-        <View style={styles.selectedInfo}>
-          <Image source={{ uri: restauranteSeleccionado?.imagen }} style={styles.selectedImage} />
-          <View style={styles.selectedDetails}>
-            <Text style={[styles.selectedTitle, { color: colors.text }]}>{restauranteSeleccionado?.nombre}</Text>
-            <Text style={[styles.selectedSubtitle, { color: colors.text + "80" }]}>
-              {restauranteSeleccionado?.tipo} • {restauranteSeleccionado?.direccion}
-            </Text>
-          </View>
-        </View>
-
-        {/* Session types */}
-        <View style={styles.sessionTypes}>
-          <TouchableOpacity
-            style={[
-              styles.sessionTypeCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: sessionType === SessionType.OneOnOne ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={() => seleccionarSessionType(SessionType.OneOnOne)}
-          >
-            <Ionicons 
-              name="person" 
-              size={40} 
-              color={sessionType === SessionType.OneOnOne ? colors.primary : colors.text} 
-              style={styles.sessionTypeIcon}
-            />
-            <Text style={[styles.sessionTypeName, { color: colors.text }]}>One-on-One</Text>
-            <Text style={[styles.sessionTypeDesc, { color: colors.text + "80" }]}>
-              Sesión personalizada con un profesor nativo, enfocada en tus necesidades específicas.
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.sessionTypeCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: sessionType === SessionType.Group ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={() => seleccionarSessionType(SessionType.Group)}
-          >
-            <Ionicons 
-              name="people" 
-              size={40} 
-              color={sessionType === SessionType.Group ? colors.primary : colors.text} 
-              style={styles.sessionTypeIcon}
-            />
-            <Text style={[styles.sessionTypeName, { color: colors.text }]}>Grupo</Text>
-            <Text style={[styles.sessionTypeDesc, { color: colors.text + "80" }]}>
-              Sesión en grupo pequeño (2-4 personas), ideal para practicar en un ambiente social.
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.sessionTypeCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: sessionType === SessionType.Conversation ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={() => seleccionarSessionType(SessionType.Conversation)}
-          >
-            <Ionicons 
-              name="chatbubbles" 
-              size={40} 
-              color={sessionType === SessionType.Conversation ? colors.primary : colors.text} 
-              style={styles.sessionTypeIcon}
-            />
-            <Text style={[styles.sessionTypeName, { color: colors.text }]}>Conversación</Text>
-            <Text style={[styles.sessionTypeDesc, { color: colors.text + "80" }]}>
-              Práctica de conversación casual enfocada en fluidez y expresión natural.
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={retrocederPaso}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
           <Text style={[styles.backButtonText, { color: colors.text }]}>{t("session.changeRestaurant")}</Text>
         </TouchableOpacity>
-      </>
-    );
-  };
 
   // Render language selection
   const renderizarSeleccionIdioma = () => {
@@ -1623,20 +1548,18 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       case 1:
         return renderizarSeleccionRestaurante()
       case 2:
-        return renderizarSeleccionSessionType()
-      case 3:
         return renderizarSeleccionIdioma()
-      case 4:
+      case 3:
         return renderizarSeleccionProfesor()
-      case 5:
+      case 4:
         return renderizarSeleccionMenu()
-      case 6:
+      case 5:
         return renderizarSeleccionFecha()
-      case 7:
+      case 6:
         return renderizarSeleccionHora()
-      case 8:
+      case 7:
         return renderizarSeleccionDuracion()
-      case 9:
+      case 8:
         return renderizarConfirmacion()
       default:
         return null
@@ -1769,7 +1692,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       <ErrorBoundary>
         {/* Progress Bar */}
         <View style={styles.progressBar}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
             <View
               key={step}
               style={[
