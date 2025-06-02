@@ -762,14 +762,7 @@ export default function PersonalInfoScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.photoContainer}>
-        <View style={styles.profileImageContainer}>
-          <Image source={{ uri: userData.profileImage }} style={styles.profileImage} />
-          <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: "white" }]}>
-            <Ionicons name="camera" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Profile photo section removed as requested */}
       
       <View style={styles.content}>
 
