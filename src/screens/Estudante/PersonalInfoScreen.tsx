@@ -151,19 +151,19 @@ interface UserData {
   bio: string;
 }
 
-// Default empty user data structure
-const emptyUserData: UserData = {
+// Default empty user data (used while loading)
+const defaultUserData: UserData = {
   id: "",
   firstName: "",
   lastName: "",
   email: "",
   phone: "",
-  countryCode: "+34", // Default
-  profileImage: "https://via.placeholder.com/150", // Default placeholder
+  countryCode: "+34",
+  profileImage: "https://via.placeholder.com/150",
   address: "",
   birthDate: "",
-  gender: "gender.preferNotToSay", // Default
-  nationality: "nationality.spanish", // Default
+  gender: "",
+  nationality: "",
   occupation: "",
   company: "",
   languages: [],
@@ -175,13 +175,13 @@ export default function PersonalInfoScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t, language } = useLanguage();
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [userData, setUserData] = useState<UserData>(emptyUserData);
+  const { user: authUser } = useAuth();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editedUser, setEditedUser] = useState<UserData>(emptyUserData);
+  const [userData, setUserData] = useState<UserData>(defaultUserData);
+  const [editedUser, setEditedUser] = useState<UserData>(defaultUserData);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Modals
   const [showCountryCodeModal, setShowCountryCodeModal] = useState<boolean>(false);
@@ -331,133 +331,133 @@ export default function PersonalInfoScreen() {
 
   // Fetch user data from API
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user) return;
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
       
-      try {
-        setIsLoading(true);
-        setError(null);
+      const response = await api.get('/api/user/me');
+      
+      if (response && response.data) {
+        // Transform API data to match our UserData interface
+        const apiUser = response.data;
+        const transformedUserData: UserData = {
+          id: apiUser.userId?.toString() || authUser?.id || "",
+          firstName: apiUser.firstName || "",
+          lastName: apiUser.lastName || "",
+          email: apiUser.email || "",
+          phone: apiUser.phoneNumber?.replace(/^\+\d+\s*/, '') || "", // Remove country code if present
+          countryCode: getCountryCodeFromPhone(apiUser.phoneNumber) || "+34",
+          profileImage: apiUser.profileImage || "https://via.placeholder.com/150",
+          address: apiUser.address || "",
+          birthDate: apiUser.birthDate || "",
+          gender: apiUser.gender || "",
+          nationality: apiUser.nationality || "",
+          occupation: apiUser.occupation || "",
+          company: apiUser.company || "",
+          languages: apiUser.UserLanguages?.map((lang: any) => ({
+            language: `language.${lang.languageName.toLowerCase()}`,
+            level: mapProficiencyToLevel(lang.proficiencyLevel)
+          })) || [],
+          interests: apiUser.interests?.split(',').map((interest: string) => interest.trim()) || [],
+          bio: apiUser.bio || ""
+        };
         
-        // Get user data from auth/verify endpoint
-        const response = await api.get('/api/auth/verify');
-        
-        // Extract user data from response
-        let apiUserData;
-        if (response.data?.data?.user) {
-          apiUserData = response.data.data.user;
-        } else if (response.data?.user) {
-          apiUserData = response.data.user;
-        } else {
-          apiUserData = response.data?.data || response.data;
-        }
-        
-        console.log('API User Data:', apiUserData);
-        
-        // Map API data to our UserData interface
-        if (apiUserData) {
-          const mappedData: UserData = {
-            id: apiUserData.id || user.id || "",
-            firstName: apiUserData.firstName || user.firstName || "",
-            lastName: apiUserData.lastName || user.lastName || "",
-            email: apiUserData.email || user.email || "",
-            phone: apiUserData.phoneNumber || apiUserData.phone || "",
-            countryCode: apiUserData.countryCode || "+34", // Default if not available
-            profileImage: apiUserData.profileImage || "https://via.placeholder.com/150",
-            address: apiUserData.address || "",
-            birthDate: apiUserData.birthDate || "",
-            gender: apiUserData.gender || "gender.preferNotToSay",
-            nationality: apiUserData.nationality || "nationality.spanish", // Default
-            occupation: apiUserData.occupation || "",
-            company: apiUserData.company || "",
-            languages: apiUserData.languages || [],
-            interests: apiUserData.interests || [],
-            bio: apiUserData.bio || "",
-          };
-          
-          setUserData(mappedData);
-          setEditedUser(mappedData);
-        }
-      } catch (err: any) {
-        console.error('Error fetching user data:', err);
-        
-        // Set a helpful error message
-        setError(err.response?.status 
-          ? `Server error: ${err.response.status}` 
-          : 'Failed to load user data');
-          
-        // If we have user data from AuthContext, use it as fallback
-        if (user) {
-          const fallbackData: UserData = {
-            ...emptyUserData,
-            id: user.id || "",
-            firstName: user.firstName || "",
-            lastName: user.lastName || "",
-            email: user.email || "",
-            // Other fields remain as defaults
-          };
-          
-          setUserData(fallbackData);
-          setEditedUser(fallbackData);
-        }
-      } finally {
-        setIsLoading(false);
+        setUserData(transformedUserData);
+        setEditedUser(transformedUserData);
       }
-    };
+    } catch (err: any) {
+      console.error('Error fetching user profile:', err);
+      setError(err?.message || 'Failed to load user profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper to extract country code from phone number
+  const getCountryCodeFromPhone = (phone: string | undefined): string => {
+    if (!phone) return "+34"; // Default
     
-    fetchUserData();
-  }, [user]);
+    // Try to extract country code like +XX or +XXX
+    const match = phone.match(/^\+(\d{1,3})/);
+    if (match && match[0]) {
+      return match[0];
+    }
+    
+    return "+34"; // Default
+  };
+  
+  // Map server proficiency levels to our level format
+  const mapProficiencyToLevel = (proficiency: string): string => {
+    switch (proficiency) {
+      case 'A1': return 'level.a1';
+      case 'A2': return 'level.a2';
+      case 'B1': return 'level.b1';
+      case 'B2': return 'level.b2';
+      case 'C1': return 'level.c1';
+      case 'C2': return 'level.c2';
+      case 'Nativo': return 'level.native';
+      default: return proficiency;
+    }
+  };
+  
+  // Map our level format to server proficiency
+  const mapLevelToProficiency = (level: string): string => {
+    switch (level) {
+      case 'level.a1': return 'A1';
+      case 'level.a2': return 'A2';
+      case 'level.b1': return 'B1';
+      case 'level.b2': return 'B2';
+      case 'level.c1': return 'C1';
+      case 'level.c2': return 'C2';
+      case 'level.native': return 'Nativo';
+      default: return level;
+    }
+  };
 
   const handleSave = async () => {
     try {
-      setIsSubmitting(true);
+      setIsSaving(true);
       setError(null);
       
       // Prepare data for API
-      const updatedData = {
+      const updateData = {
         firstName: editedUser.firstName,
         lastName: editedUser.lastName,
         email: editedUser.email,
-        phoneNumber: editedUser.phone,
-        countryCode: editedUser.countryCode,
+        phoneNumber: `${editedUser.countryCode} ${editedUser.phone}`,
         address: editedUser.address,
-        birthDate: editedUser.birthDate,
         gender: editedUser.gender,
         nationality: editedUser.nationality,
         occupation: editedUser.occupation,
         company: editedUser.company,
-        languages: editedUser.languages,
-        interests: editedUser.interests,
-        bio: editedUser.bio
+        bio: editedUser.bio,
+        languages: editedUser.languages.map(lang => ({
+          languageName: lang.language.replace('language.', ''),
+          proficiencyLevel: mapLevelToProficiency(lang.level)
+        })),
+        interests: editedUser.interests.join(',')
       };
       
-      // Update user profile via API
-      const response = await api.put('/api/user/me', updatedData);
+      // Make API call to update user profile
+      await api.put('/api/user/me', updateData);
       
-      console.log('Profile update response:', response.data);
-      
-      // Update local state with the changes
+      // Update local state with edited data
       setUserData(editedUser);
       setIsEditing(false);
       
       // Show success message
-      Alert.alert(
-        t("personalInfo.updateSuccess"),
-        t("personalInfo.profileUpdated"),
-        [{ text: "OK" }]
-      );
+      Alert.alert('Success', 'Profile updated successfully');
+      
     } catch (err: any) {
       console.error('Error updating profile:', err);
-      
-      // Show error message
-      Alert.alert(
-        t("personalInfo.updateError"),
-        err.response?.data?.message || t("personalInfo.updateFailed"),
-        [{ text: "OK" }]
-      );
-      
-      // Don't exit edit mode on error so user can try again
+      setError(err?.message || 'Failed to update profile');
+      Alert.alert('Error', 'Failed to update profile. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   }
   
@@ -608,56 +608,68 @@ export default function PersonalInfoScreen() {
     setEditedUser(prev => ({ ...prev, interests: updatedInterests }));
   }
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>{t("loading")}</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Ionicons name="alert-circle-outline" size={50} color={colors.error} />
+        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: colors.primary }]}
+          onPress={fetchUserProfile}
+        >
+          <Text style={{ color: 'white' }}>{t("retry")}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background, paddingTop: 30 }]}>
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>{t("personalInfo.loading") || "Loading..."}</Text>
-        </View>
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
-          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
-          <TouchableOpacity 
-            style={[styles.retryButton, { backgroundColor: colors.primary }]}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.retryButtonText}>{t("personalInfo.goBack") || "Go Back"}</Text>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("personalInfo.title")}</Text>
+        <TouchableOpacity 
+          style={styles.editButton} 
+          onPress={() => {
+            if (isEditing) {
+              handleSave();
+            } else {
+              setIsEditing(true);
+            }
+          }}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={[styles.editButtonText, { color: colors.primary }]}>
+              {isEditing ? t("personalInfo.save") : t("personalInfo.edit")}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.photoContainer}>
+        <View style={styles.profileImageContainer}>
+          <Image source={{ uri: userData.profileImage }} style={styles.profileImage} />
+          <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: "white" }]}>
+            <Ionicons name="camera" size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
-      ) : (
-        <>
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-              <Ionicons name="arrow-back" size={24} color={colors.primary} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>{t("personalInfo.title")}</Text>
-            <TouchableOpacity 
-              style={styles.editButton} 
-              onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text style={[styles.editButtonText, { color: colors.primary }]}>
-                  {isEditing ? t("personalInfo.save") : t("personalInfo.edit")}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.photoContainer}>
-            <View style={styles.profileImageContainer}>
-              <Image source={{ uri: editedUser.profileImage }} style={styles.profileImage} />
-              {isEditing && (
-                <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: "white" }]}>
-                  <Ionicons name="camera" size={20} color={colors.primary} />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
+      </View>
       
       <View style={styles.content}>
 
@@ -1468,39 +1480,6 @@ export default function PersonalInfoScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    minHeight: 300,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    minHeight: 300,
-  },
-  errorText: {
-    marginTop: 10,
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  retryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
   // Added new styles for dropdown menu
   dropdownMenu: {
     position: 'absolute',
@@ -1814,4 +1793,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 16,
   },
-});
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+})
