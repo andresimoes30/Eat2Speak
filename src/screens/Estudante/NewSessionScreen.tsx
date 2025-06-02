@@ -469,11 +469,12 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       loadProfessors();
     }
   }, [idiomaSeleccionado]);
+
+  // Función para avanzar al siguiente paso
+  const avanzarPaso = () => {
     // Clear any previous errors
     setError(null);
     setFormErrors({});
-  // Función para avanzar al siguiente paso
-  const avanzarPaso = () => {
     setCargando(true)
     setTimeout(() => {
       setCargando(false)
@@ -484,11 +485,12 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
       }
     }, 500)
   }
+
+  // Función para retroceder al paso anterior
+  const retrocederPaso = () => {
     // Clear any previous errors
     setError(null);
     setFormErrors({});
-  // Función para retroceder al paso anterior
-  const retrocederPaso = () => {
     setPaso(paso - 1)
     // Scroll to top when changing steps
     if (scrollViewRef.current) {
