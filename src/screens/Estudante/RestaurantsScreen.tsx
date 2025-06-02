@@ -1627,4 +1627,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
+  // Pagination state UI styles
+  paginationBrokenContainer: {
+    padding: 16,
+    borderTopWidth: 1,
+    marginTop: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  paginationBrokenText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  endOfListContainer: {
+    padding: 16,
+    borderTopWidth: 1,
+    marginTop: 8,
+    alignItems: "center",
+  },
+  endOfListText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
 })
