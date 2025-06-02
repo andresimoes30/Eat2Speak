@@ -125,42 +125,18 @@ app.use((req, res, next) => {
 // Import rate limiter for API protection
 const rateLimit = require('express-rate-limit');
 
-// Global API rate limiter - prevents abuse with cloud-friendly configuration
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  // Use a cloud-friendly setting to get the proper client IP
-  // This handles proxy servers and cloud load balancers
-  trustProxy: true,
-  // Skip rate limiting for specific paths
-  skip: (req) => {
-    // Allow health checks and status endpoints without rate limiting
-    return req.path === '/health' || req.path === '/status' || req.path === '/ping';
-  },
-  message: {
-    status: 429,
-    message: 'Too many requests, please try again later.'
-  },
-  // Log rate limit hits
-  handler: (req, res, next, options) => {
-    // Try to get the real client IP from various headers
-    const clientIP = req.headers['x-forwarded-for'] || 
-                     req.headers['x-real-ip'] || 
-                     req.ip || 
-                     req.connection.remoteAddress;
-                     
-    logger.warn(`Rate limit exceeded for IP: ${clientIP}`, { 
-      path: req.path,
-      method: req.method
-    });
-    res.status(options.message.status).json(options.message);
-  }
-});
+// Temporarily modified for testing: Higher rate limits to prevent API spam while allowing testing
+const { apiLimiter } = require('./src/middlewares/rate-limiter.middleware');
 
-// Apply rate limiting to all requests
+// Note: Using the apiLimiter from middleware with higher limits (200 requests/minute)
+// instead of the original global rate limiter (100 requests/15 minutes)
+// This allows more frequent API calls during testing while still preventing extreme abuse
+
+// Apply the testing-friendly rate limiter to all requests
 app.use(apiLimiter);
+
+// Additional endpoints with specific rate limiting needs can be configured
+// in their respective route files
 
 // Set default content type for all responses - helps with CloudLinux NodeJS Selector
 app.use((req, res, next) => {
@@ -320,11 +296,21 @@ try {
   // Import route modules
   const authRoutes = require('./src/routes/auth.routes');
   const userRoutes = require('./src/routes/user.routes');
+  const restaurantRoutes = require('./src/routes/restaurant.routes');
+  const sessionRoutes = require('./src/routes/session.routes');
+  const reviewRoutes = require('./src/routes/review.routes');
+  const paymentRoutes = require('./src/routes/payment.routes');
+  const languageRoutes = require('./src/routes/language.routes');
   const testRoutes = require('./src/routes/test.routes');
   
   // Register API routes
   app.use('/api/auth', authRoutes);
   app.use('/api/user', userRoutes);
+  app.use('/api/restaurants', restaurantRoutes);
+  app.use('/api/sessions', sessionRoutes);
+  app.use('/api/reviews', reviewRoutes);
+  app.use('/api/payments', paymentRoutes);
+  app.use('/api/languages', languageRoutes);
   app.use('/api/test', testRoutes);
   
   logger.info('API routes loaded successfully');

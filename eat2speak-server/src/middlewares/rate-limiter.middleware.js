@@ -1,30 +1,35 @@
 const rateLimit = require('express-rate-limit');
 const logger = require('../utils/logger');
 
-// Disabled rate limiter for testing purposes
-// Just passes through all requests without limiting
-const loginLimiter = (req, res, next) => {
-  next();
-};
-
-/* ORIGINAL RATE LIMITER - COMMENTED OUT FOR TESTING
+// Rate limiter with higher limits for testing purposes
+// This allows more API calls without completely disabling rate limiting
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per window
+  windowMs: 60 * 1000, // 1 minute (shorter window for testing)
+  max: 100, // Allow 100 requests per minute per IP (much higher limit for testing)
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  skipSuccessfulRequests: false, // Count successful requests against the rate limit
+  skipSuccessfulRequests: true, // Don't count successful requests against the limit
   message: {
     status: 429,
-    message: 'Too many login attempts. Please try again after 15 minutes.'
+    message: 'Too many requests. Please try again in 1 minute.'
   },
-  // Store object to track attempts across server restarts (in a production app, use Redis or similar)
-  // This is a simple in-memory store for the example
   handler: (req, res, next, options) => {
     logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
     res.status(options.message.status).json(options.message);
   }
 });
-*/
 
-module.exports = { loginLimiter };
+// General API rate limiter for other endpoints with very high limits
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 200, // 200 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: {
+    status: 429,
+    message: 'Too many API requests. Please try again in 1 minute.'
+  }
+});
+
+module.exports = { loginLimiter, apiLimiter };
