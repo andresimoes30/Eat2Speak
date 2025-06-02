@@ -619,7 +619,7 @@ export default function NewSessionScreen({ route }: { route: { params?: RoutePar
     }
     
     // Check if user is logged in
-    if (!user?.userId) {
+    if (!user || !(user as User).userId) {
       setError('Debe iniciar sesión para realizar una reserva.');
       return;
     }
