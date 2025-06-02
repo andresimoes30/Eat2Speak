@@ -460,6 +460,36 @@ function RestaurantsScreen() {
             setRetryAfter(0)
             fetchRestaurants(pageNum, refresh)
           }, actualRetryDelay)
+        } else if (err.response && err.response.status === 500) {
+          // Handle server-side errors specifically - often happens with pagination
+          console.error("Server error (500) detected when fetching restaurants", err)
+          
+          // Different handling based on if this is page 1 or pagination
+          if (pageNum > 1) {
+            // This is a pagination request that failed with server error
+            console.log("Pagination server error detected - disabling further pagination")
+            setPaginationBroken(true)
+            setHasMore(false) // Stop infinite scroll from triggering more requests
+            
+            // Keep existing data but show error toast
+            setError("Unable to load more restaurants. Server error detected.")
+            
+            // Don't clear the loading state - we're not really trying again
+            setLoadingMore(false)
+          } else {
+            // This is a first page request that failed
+            const errorMessage = "Server error when loading restaurants"
+            console.error(errorMessage)
+            setError(errorMessage)
+            
+            // If we have cached data, use it even though there was an error
+            if (cachedRestaurants.current.length > 0) {
+              console.log("Using cached data due to server error")
+              setRestaurants(cachedRestaurants.current)
+            } else {
+              setRestaurants([])
+            }
+          }
         } else {
           // Handle other errors
           const apiError = err as ApiError
