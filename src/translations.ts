@@ -3796,6 +3796,19 @@ export const translations: TranslationsType = {
     "language.english": "Inglese",
     "language.french": "Francese",
     
+    // Restaurant availability
+    "restaurant.notAvailable": "Non disponibile",
+    "restaurant.enable": "Abilita",
+    "common.reset": "Reimposta",
+    "restaurant.saveAvailability": "Salva disponibilità",
+    "restaurant.availability": "Disponibilità",
+    "restaurant.calendar": "Calendario",
+    "restaurant.list": "Lista",
+    "restaurant.instructions": "Istruzioni",
+    "restaurant.tapDayInstruction": "Tocca un giorno per visualizzare/modificare gli orari",
+    "restaurant.longPressInstruction": "Premi a lungo per abilitare/disabilitare un giorno",
+    "restaurant.timeSlotIndicatorInstruction": "I giorni con orari definiti sono contrassegnati con un punto",
+    
     // Common buttons
     "button.save": "Salva",
     "button.cancel": "Annulla",
