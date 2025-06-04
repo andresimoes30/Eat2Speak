@@ -3784,7 +3784,7 @@ export const translations: TranslationsType = {
     "language.french": "Francese",
     
     // Native specific translations
-    "native.home.greeting": "Ciao, {name}",
+    "native.home.greeting": "Ciao",
     "native.home.subtitle": "Gestisci le tue sessioni di insegnamento e disponibilità",
     "native.availability.status": "Stato di Disponibilità",
     "native.availability.statusDescription": "Imposta il tuo stato di disponibilità attuale",
@@ -3819,11 +3819,13 @@ export const translations: TranslationsType = {
     // Profile related
     "profile.darkMode": "Modalità scura",
     "payments.tabLabel": "Pagamenti",
+    "payments.withdraw": "Preleva",
   
     // Common buttons
     "button.save": "Salva",
     "button.cancel": "Annulla",
     "button.accept": "Accetta",
+    "button.back": "Indietro",
     "common.cancel": "Annulla",
     
     // Notifications
