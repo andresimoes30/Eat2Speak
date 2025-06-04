@@ -1,10 +1,11 @@
-import React, { useState, useContext, useEffect } from "react"
+import React, { useState, useContext } from "react"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, FlatList } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useNavigation } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
 import { AppContext, AppContextType } from "./AppTypes"
+import { translations } from "../../translations"
 
 // Country codes with flags
 const countryCodes = [
@@ -206,6 +207,9 @@ export default function NativePersonalInfoScreen() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedUser, setEditedUser] = useState<UserData>(userData);
   
+  // Get translations based on app language
+  const t = translations[appState.language || "es"];
+  
   // Modals
   const [showCountryCodeModal, setShowCountryCodeModal] = useState<boolean>(false);
   const [showCalendarModal, setShowCalendarModal] = useState<boolean>(false);
@@ -405,10 +409,10 @@ export default function NativePersonalInfoScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Información Personal</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t["personalInfo.title"]}</Text>
           <TouchableOpacity style={styles.editButton} onPress={() => (isEditing ? handleSave() : setIsEditing(true))}>
             <Text style={[styles.editButtonText, { color: colors.primary }]}>
-              {isEditing ? "Guardar" : "Editar"}
+              {isEditing ? t["personalInfo.save"] : t["personalInfo.edit"]}
             </Text>
           </TouchableOpacity>
         </View>
@@ -423,10 +427,10 @@ export default function NativePersonalInfoScreen() {
         </View>
 
         <View style={[styles.infoCard, { marginTop: 0, backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos Básicos</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t["personalInfo.basicData"]}</Text>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Nombre</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.firstName"]}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -439,7 +443,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Apellidos</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.lastName"]}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -452,7 +456,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Email</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.email"]}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -466,7 +470,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Teléfono</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.phone"]}</Text>
             {isEditing ? (
               <View style={styles.phoneInputContainer}>
                 <TouchableOpacity 
@@ -493,7 +497,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Fecha de nacimiento</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.birthDate"]}</Text>
             {isEditing ? (
               <TouchableOpacity
                 style={[styles.dateInput, { borderColor: colors.border }]}
@@ -508,7 +512,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Género</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.gender"]}</Text>
             {isEditing ? (
               <TouchableOpacity
                 style={[styles.selectInput, { borderColor: colors.border }]}
@@ -523,7 +527,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Nacionalidad</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.nationality"]}</Text>
             {isEditing ? (
               <TouchableOpacity
                 style={[styles.selectInput, { borderColor: colors.border }]}
@@ -594,10 +598,10 @@ export default function NativePersonalInfoScreen() {
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Dirección</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t["personalInfo.address"]}</Text>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Dirección Completa</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.fullAddress"]}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -612,10 +616,10 @@ export default function NativePersonalInfoScreen() {
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Profesión</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t["personalInfo.profession"]}</Text>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Ocupación</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.occupation"]}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -628,7 +632,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Empresa / Centro</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["personalInfo.company"]}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -641,7 +645,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Años de experiencia</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["native.profile.experience"]}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -661,10 +665,10 @@ export default function NativePersonalInfoScreen() {
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Tarifas</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t["session.price"]}</Text>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Tarifa estándar (€/hora)</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["session.price"]} ({t["session.hour"]})</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -692,7 +696,7 @@ export default function NativePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Tarifa premium (€/hora)</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t["session.price"]} Premium ({t["session.hour"]})</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -721,7 +725,7 @@ export default function NativePersonalInfoScreen() {
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Certificaciones</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t["native.profile.qualifications"]}</Text>
 
           {editedUser.teaching.certifications.map((cert, index) => (
             <View key={index} style={styles.languageItem}>
@@ -742,13 +746,13 @@ export default function NativePersonalInfoScreen() {
               onPress={() => setShowAddCertificationModal(true)}
             >
               <Ionicons name="add" size={20} color={colors.primary} />
-              <Text style={[styles.addButtonText, { color: colors.primary }]}>Añadir Certificación</Text>
+              <Text style={[styles.addButtonText, { color: colors.primary }]}>{t["personalInfo.add"]} {t["native.profile.qualifications"]}</Text>
             </TouchableOpacity>
           )}
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Idiomas</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t["personalInfo.languages"]}</Text>
 
           {editedUser.languages.map((item, index) => (
             <View key={index} style={styles.languageItem}>
@@ -774,13 +778,13 @@ export default function NativePersonalInfoScreen() {
               onPress={() => setShowAddLanguageModal(true)}
             >
               <Ionicons name="add" size={20} color={colors.primary} />
-              <Text style={[styles.addButtonText, { color: colors.primary }]}>Añadir Idioma</Text>
+              <Text style={[styles.addButtonText, { color: colors.primary }]}>{t["personalInfo.addLanguage"]}</Text>
             </TouchableOpacity>
           )}
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Intereses</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t["personalInfo.interests"]}</Text>
 
           <View style={styles.interestsContainer}>
             {editedUser.interests.map((interest, index) => (
@@ -818,14 +822,14 @@ export default function NativePersonalInfoScreen() {
                 onPress={() => setShowAddInterestModal(true)}
               >
                 <Ionicons name="add" size={16} color={colors.primary} />
-                <Text style={[styles.addInterestText, { color: colors.primary }]}>Añadir</Text>
+                <Text style={[styles.addInterestText, { color: colors.primary }]}>{t["personalInfo.add"]}</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Biografía</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t["personalInfo.biography"]}</Text>
           {isEditing ? (
             <TextInput
               style={[
@@ -856,7 +860,7 @@ export default function NativePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Seleccionar Código de País</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t["Select Country Code"]}</Text>
             <FlatList
               data={countryCodes}
               keyExtractor={(item) => `${item.code}-${item.country}`}
@@ -881,7 +885,7 @@ export default function NativePersonalInfoScreen() {
               style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={() => setShowCountryCodeModal(false)}
             >
-              <Text style={{ color: 'white', fontWeight: '600' }}>Cancelar</Text>
+              <Text style={{ color: 'white', fontWeight: '600' }}>{t["button.cancel"]}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -896,7 +900,7 @@ export default function NativePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Seleccionar Fecha</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t["personalInfo.selectDate"]}</Text>
             
             {/* Simple calendar view - in a real app, you'd use a proper calendar component */}
             <View style={styles.calendarContainer}>
@@ -954,13 +958,13 @@ export default function NativePersonalInfoScreen() {
                 style={[styles.modalButton, { backgroundColor: colors.primary }]}
                 onPress={() => setShowCalendarModal(false)}
               >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Cancelar</Text>
+                <Text style={{ color: 'white', fontWeight: '600' }}>{t["button.cancel"]}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.primary }]}
                 onPress={() => handleSelectDate(currentDate)}
               >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Guardar</Text>
+                <Text style={{ color: 'white', fontWeight: '600' }}>{t["button.save"]}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -976,7 +980,7 @@ export default function NativePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Género</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t["personalInfo.gender"]}</Text>
             {getGenderOptions().map((gender, index) => (
               <TouchableOpacity
                 key={index}
@@ -996,7 +1000,7 @@ export default function NativePersonalInfoScreen() {
               style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={() => setShowGenderModal(false)}
             >
-              <Text style={{ color: 'white', fontWeight: '600' }}>Cancelar</Text>
+              <Text style={{ color: 'white', fontWeight: '600' }}>{t["button.cancel"]}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1011,7 +1015,7 @@ export default function NativePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Nacionalidad</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t["personalInfo.nationality"]}</Text>
             <FlatList
               data={getNationalities().map((nationality) => {
                 // Get appropriate flag based on nationality
@@ -1063,7 +1067,7 @@ export default function NativePersonalInfoScreen() {
               style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={() => setShowNationalityModal(false)}
             >
-              <Text style={{ color: 'white', fontWeight: '600' }}>Cancelar</Text>
+              <Text style={{ color: 'white', fontWeight: '600' }}>{t["button.cancel"]}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1081,11 +1085,11 @@ export default function NativePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Añadir Idioma</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t["personalInfo.addLanguage"]}</Text>
             
             {/* Language Dropdown */}
             <View style={{ marginBottom: 20 }}>
-              <Text style={[styles.modalLabel, { color: colors.text + "80" }]}>Idioma</Text>
+              <Text style={[styles.modalLabel, { color: colors.text + "80" }]}>{t["Language Name"]}</Text>
               
               {/* Language Selection Dropdown */}
               <View style={{ position: 'relative' }}>
@@ -1111,7 +1115,7 @@ export default function NativePersonalInfoScreen() {
                         </Text>
                       </>
                     ) : (
-                      <Text style={{ color: colors.text + '80' }}>Seleccionar Idioma</Text>
+                      <Text style={{ color: colors.text + '80' }}>{t["Select Language"]}</Text>
                     )}
                   </View>
                   <Ionicons 
@@ -1163,7 +1167,7 @@ export default function NativePersonalInfoScreen() {
             
             {/* Level Dropdown */}
             <View style={{ marginBottom: 20 }}>
-              <Text style={[styles.modalLabel, { color: colors.text + "80" }]}>Nivel</Text>
+              <Text style={[styles.modalLabel, { color: colors.text + "80" }]}>{t["Language Level"]}</Text>
               
               {/* Level Selection Dropdown */}
               <View style={{ position: 'relative' }}>
@@ -1179,7 +1183,7 @@ export default function NativePersonalInfoScreen() {
                   onPress={() => setShowLanguageLevelModal(!showLanguageLevelModal)}
                 >
                   <Text style={{ color: newLanguage.level ? colors.text : colors.text + '80' }}>
-                    {newLanguage.level ? newLanguage.level : "Seleccionar Nivel"}
+                    {newLanguage.level ? newLanguage.level : t["Select Level"]}
                   </Text>
                   <Ionicons 
                     name={showLanguageLevelModal ? "chevron-up" : "chevron-down"} 
@@ -1238,7 +1242,7 @@ export default function NativePersonalInfoScreen() {
                   setShowAddLanguageModal(false);
                 }}
               >
-                <Text style={{ color: colors.text, fontWeight: '600' }}>Cancelar</Text>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>{t["button.cancel"]}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -1256,7 +1260,7 @@ export default function NativePersonalInfoScreen() {
                 }}
                 disabled={!newLanguage.language || !newLanguage.level}
               >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Guardar</Text>
+                <Text style={{ color: 'white', fontWeight: '600' }}>{t["button.save"]}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1272,13 +1276,13 @@ export default function NativePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Añadir Certificación</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t["personalInfo.add"]} {t["native.profile.qualifications"]}</Text>
             
             <TextInput
               style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.card }]}
               value={newCertification}
               onChangeText={setNewCertification}
-              placeholder="Nombre de la certificación"
+              placeholder={t["native.profile.qualifications"]}
               placeholderTextColor={colors.text + "60"}
             />
             
@@ -1290,7 +1294,7 @@ export default function NativePersonalInfoScreen() {
                   setShowAddCertificationModal(false);
                 }}
               >
-                <Text style={{ color: colors.text, fontWeight: '600' }}>Cancelar</Text>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>{t["button.cancel"]}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -1304,7 +1308,7 @@ export default function NativePersonalInfoScreen() {
                 onPress={handleAddCertification}
                 disabled={!newCertification}
               >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Guardar</Text>
+                <Text style={{ color: 'white', fontWeight: '600' }}>{t["button.save"]}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1320,7 +1324,7 @@ export default function NativePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Añadir Interés</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t["Add Interest"]}</Text>
             
             <FlatList
               data={availableInterests}
@@ -1347,14 +1351,14 @@ export default function NativePersonalInfoScreen() {
                 style={[styles.modalButton, { backgroundColor: '#E5E5E5' }]}
                 onPress={() => setShowAddInterestModal(false)}
               >
-                <Text style={{ color: colors.text, fontWeight: '600' }}>Cancelar</Text>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>{t["button.cancel"]}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.primary }]}
                 onPress={handleAddInterest}
                 disabled={!newInterest}
               >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Guardar</Text>
+                <Text style={{ color: 'white', fontWeight: '600' }}>{t["button.save"]}</Text>
               </TouchableOpacity>
             </View>
           </View>
