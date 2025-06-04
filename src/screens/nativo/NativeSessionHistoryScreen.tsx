@@ -80,7 +80,7 @@ export default function NativeSessionHistoryScreen() {
   const stats = getSessionStats()
   
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
       {/* Header Section */}
       <View style={styles.welcomeSection}>
