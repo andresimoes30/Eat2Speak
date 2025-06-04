@@ -337,6 +337,16 @@ async function logoutUser(userId, sessionId, ipAddress = 'unknown') {
     
     // If sessionId provided, invalidate specific session
     if (sessionId) {
+      // Ensure sessionId is converted to the correct type (INTEGER for database)
+      const parsedSessionId = typeof sessionId === 'string' ? parseInt(sessionId, 10) : sessionId;
+      
+      // Log conversion for debugging
+      logger.info('Logout attempt', { 
+        originalSessionId: sessionId,
+        parsedSessionId,
+        userId 
+      });
+      
       const result = await Session.update(
         { 
           isActive: false,
@@ -344,7 +354,7 @@ async function logoutUser(userId, sessionId, ipAddress = 'unknown') {
           token: null // Clear token for security
         },
         { 
-          where: { sessionId, userId },
+          where: { sessionId: parsedSessionId, userId },
           returning: true
         }
       );
@@ -396,9 +406,10 @@ async function logoutUser(userId, sessionId, ipAddress = 'unknown') {
       ipAddress: clientIp
     });
     
-    // Return success anyway to avoid locking users in sessions
-    // Better to report success and have user try again than be stuck
-    return true;
+    // Instead of always returning success, return false to indicate there was an error
+    // This ensures the controller can provide appropriate feedback
+    logger.warn('Returning failure status for logout due to error');
+    return false;
   }
 }
 
@@ -412,12 +423,16 @@ async function verifySession(userId, sessionId) {
   if (!userId || !sessionId) return false;
   
   try {
+    // Ensure sessionId is converted to the correct type (INTEGER for database)
+    const parsedSessionId = typeof sessionId === 'string' ? parseInt(sessionId, 10) : sessionId;
+    const parsedUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    
     // Check with timeout for cloud databases
     const session = await Promise.race([
       Session.findOne({
         where: {
-          sessionId,
-          userId,
+          sessionId: parsedSessionId,
+          userId: parsedUserId,
           isActive: true,
           // Only consider sessions that haven't expired
           expiresAt: {
@@ -451,7 +466,7 @@ async function verifySession(userId, sessionId) {
     // Update last activity time in the background (don't await)
     Session.update(
       { lastActivity: new Date() },
-      { where: { sessionId } }
+      { where: { sessionId: parsedSessionId } }
     ).catch(error => {
       logger.warn('Failed to update session last activity', {
         error: error.message,

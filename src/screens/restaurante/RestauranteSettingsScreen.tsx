@@ -141,12 +141,15 @@ export default function RestauranteSettingsScreen() {
             try {
               setIsLoggingOut(true)
               await signOut()
-              // Navigate to login screen after successful logout
-              // Using reset to prevent going back to authenticated screens
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "RestaurantLogin" as never }]
-              })
+              // Navigate to Welcome/Auth screen after successful logout
+              // Using CommonActions instead of reset for better cross-navigator compatibility
+              const { CommonActions } = require('@react-navigation/native');
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: "Welcome" as never }], // Navigate to Welcome screen which should be accessible from any navigator
+                })
+              );
             } catch (error) {
               console.error("Error signing out:", error)
               setIsLoggingOut(false)
