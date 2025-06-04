@@ -1,11 +1,12 @@
 import React, { useState, useContext } from "react"
-import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Modal, TextInput, FlatList } from "react-native"
-import { useNavigation, useRoute } from "@react-navigation/native"
+import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Modal, TextInput, FlatList, Alert, ActivityIndicator } from "react-native"
+import { useNavigation, useRoute, CommonActions } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
 import { AppContext, AppContextType, Notification, Restaurant, mockData } from "./AppTypes"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { useTheme } from "../../contexts/ThemeContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { Language } from "../../translations"
 
 // Define the parameter list for the Native Navigator stack
@@ -18,6 +19,7 @@ type NativeStackParamList = {
   NativeTermsConditions: undefined;
   NativeAvailabilityMain: undefined;
   NativeSelectRestaurants: undefined;
+  Welcome: undefined;
 };
 
 // Define the navigation prop type
@@ -41,10 +43,12 @@ export default function NativeProfileScreen() {
   const navigation = useNavigation<NativeProfileNavigationProp>();
   const { language, setLanguage, t } = useLanguage()
   const { colors, theme, toggleTheme } = useTheme()
+  const { signOut } = useAuth()
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showBugHuntModal, setShowBugHuntModal] = useState(false)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
   const [isAvailable, setIsAvailable] = useState(appState.isAvailable)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   
   // Get restaurant details from their IDs
   const selectedRestaurantsDetails = React.useMemo(() => {
@@ -236,20 +240,44 @@ export default function NativeProfileScreen() {
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => {
-            // Logout functionality
-            // Reset app state and navigate to login screen
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "NativeProfileMain" }],
-            });
-            // Aqui seria chamada a função de logout da API/Auth Context
-          }}>
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={async () => {
+              try {
+                setIsLoggingOut(true);
+                // Call the logout API endpoint through AuthContext
+                await signOut();
+                // Reset app state and navigate to welcome screen
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "Welcome" }],
+                  })
+                );
+              } catch (error) {
+                // Show error message to user
+                setIsLoggingOut(false);
+                Alert.alert(
+                  t("profile.logoutError"),
+                  t("profile.logoutErrorMessage"),
+                  [{ text: t("common.ok") }]
+                );
+                console.error("Logout error:", error);
+              }
+            }}
+            disabled={isLoggingOut}
+          >
             <View style={styles.menuItemLeft}>
               <View style={[styles.menuItemIcon, { backgroundColor: colors.error + "15" }]}>
-                <Ionicons name="log-out-outline" size={20} color={colors.error} />
+                {isLoggingOut ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Ionicons name="log-out-outline" size={20} color={colors.error} />
+                )}
               </View>
-              <Text style={[styles.menuItemText, { color: colors.error }]}>{t("profile.logout")}</Text>
+              <Text style={[styles.menuItemText, { color: colors.error }]}>
+                {isLoggingOut ? t("profile.loggingOut") : t("profile.logout")}
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
