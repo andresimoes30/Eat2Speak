@@ -1,12 +1,12 @@
 "use client"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { Card } from "../../components/Card"
 import { useState, useEffect } from "react"
-
 // Transaction interface
 interface Transaction {
   id: number
@@ -15,7 +15,6 @@ interface Transaction {
   date: string
   status: "paid" | "pending" | "failed"
 }
-
 // Payment method interface
 interface PaymentMethod {
   id: number
@@ -26,7 +25,6 @@ interface PaymentMethod {
   isDefault: boolean
   icon: string
 }
-
 // Mock data for transactions - adapted for native speakers (teachers)
 const mockTransactions: Transaction[] = [
   {
@@ -65,7 +63,6 @@ const mockTransactions: Transaction[] = [
     status: "paid"
   },
 ]
-
 // Mock data for payment methods
 const mockPaymentMethods: PaymentMethod[] = [
   {
@@ -123,10 +120,10 @@ export default function NativePaymentsScreen() {
   }
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+      >
       {/* Balance Card */}
       <Card style={styles.balanceCard}>
         <View style={styles.balanceContainer}>
@@ -313,7 +310,8 @@ export default function NativePaymentsScreen() {
           )}
         </View>
       </Card>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
