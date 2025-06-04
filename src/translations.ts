@@ -3813,42 +3813,6 @@ export const translations: TranslationsType = {
     "language.english": "Inglese",
     "language.french": "Francese",
     
-    // Native specific translations
-    "native.home.greeting": "Ciao",
-    "native.home.subtitle": "Gestisci le tue sessioni di insegnamento e disponibilità",
-    "native.availability.status": "Stato di Disponibilità",
-    "native.availability.statusDescription": "Imposta il tuo stato di disponibilità attuale",
-    "native.availability.unavailable": "Non disponibile",
-    "native.restaurants.selectionDescription": "Seleziona i ristoranti dove vorresti insegnare",
-    "native.statistics.title": "Le Tue Statistiche",
-    "native.statistics.subtitle": "Panoramica della tua attività di insegnamento",
-    "native.statistics.students": "Studenti",
-    "native.statistics.hours": "Ore",
-    "native.statistics.rating": "Valutazione",
-    "native.upcomingSessions.title": "Sessioni Imminenti",
-    "native.upcomingSessions.subtitle": "Le tue sessioni di insegnamento programmate",
-    "native.session.details": "Visualizza Dettagli",
-    "native.recentHistory.title": "Sessioni Recenti",
-    "native.recentHistory.viewAll": "Visualizza Tutte",
-    "native.recentHistory.subtitle": "Le tue sessioni completate recentemente",
-    "native.session.noFeedback": "Nessun feedback fornito",
-    "native.availability.modalTitle": "Impostazioni di Disponibilità",
-    "native.availability.modalDescription": "Aggiorna il tuo stato di disponibilità per le sessioni",
-    "native.availability.noRestaurantsSelected": "Nessun ristorante selezionato",
-    "native.availability.confirm": "Conferma",
-    "native.profile.days": "giorni",
-    "native.availability.title.modal": "Disponibilità per le Sessioni",
-    "native.availability.description": "Sei disponibile per tenere sessioni nei seguenti ristoranti:",
-    "native.availability.noRestaurants": "Non hai ristoranti selezionati. Visita la sezione Disponibilità per aggiungere ristoranti.",
-    "native.availability.cancelButton": "Annulla",
-    "native.availability.confirmButton": "Conferma Disponibilità",
-    
-    // Session related
-    "session.at": "alle",
-    
-    // Profile related
-    "profile.darkMode": "Modalità scura",
-    "payments.tabLabel": "Pagamenti",
     "payments.withdraw": "Preleva",
   
     // Common buttons
