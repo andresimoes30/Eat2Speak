@@ -245,24 +245,34 @@ export default function NativeProfileScreen() {
             onPress={async () => {
               try {
                 setIsLoggingOut(true);
-                // Call the logout API endpoint through AuthContext
-                await signOut();
-                // Reset app state and navigate to welcome screen
+                
+                try {
+                  // Try to call the logout API endpoint through AuthContext
+                  await signOut();
+                } catch (error) {
+                  // If we get an error from the API (likely expired token), 
+                  // log it but continue with local logout
+                  console.log("Error during logout API call:", error);
+                  // No need to rethrow - we'll continue with navigation
+                }
+
+                // Reset app state and navigate to the Auth screen
+                // This is handled by RootNavigator to show the login flow
                 navigation.dispatch(
                   CommonActions.reset({
                     index: 0,
-                    routes: [{ name: "Welcome" }],
+                    routes: [{ name: "Auth" }],
                   })
                 );
-              } catch (error) {
-                // Show error message to user
+              } catch (navigationError) {
+                // Only show error message if navigation fails (unlikely)
                 setIsLoggingOut(false);
                 Alert.alert(
                   t("profile.logoutError"),
                   t("profile.logoutErrorMessage"),
                   [{ text: t("common.ok") }]
                 );
-                console.error("Logout error:", error);
+                console.error("Logout navigation error:", navigationError);
               }
             }}
             disabled={isLoggingOut}
