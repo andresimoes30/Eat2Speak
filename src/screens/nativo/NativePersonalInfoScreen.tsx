@@ -398,7 +398,8 @@ export default function NativePersonalInfoScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background, paddingTop: 30 }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScrollView style={{ flex: 1 }}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
@@ -410,7 +411,8 @@ export default function NativePersonalInfoScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-
+      </ScrollView>
+    </SafeAreaView>
       <View style={styles.photoContainer}>
         <View style={styles.profileImageContainer}>
           <Image source={{ uri: userData.profileImage }} style={styles.profileImage} />
