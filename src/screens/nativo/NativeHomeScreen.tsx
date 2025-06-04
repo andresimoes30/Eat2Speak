@@ -283,7 +283,7 @@ export default function NativeHomeScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
       {/* Welcome Section */}
       <View style={styles.welcomeSection}>
