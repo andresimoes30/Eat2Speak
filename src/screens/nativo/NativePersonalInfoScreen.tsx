@@ -421,10 +421,6 @@ export default function NativePersonalInfoScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
-        <View style={styles.content}>
-        </View>
-      </ScrollView>
         <View style={[styles.infoCard, { marginTop: 0, backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos Básicos</Text>
 
@@ -849,9 +845,9 @@ export default function NativePersonalInfoScreen() {
             <Text style={[styles.bioText, { color: colors.text }]}>{userData.bio}</Text>
           )}
         </View>
-      </View>
+        </View>
 
-      {/* Country Code Modal */}
+        {/* Country Code Modal */}
       <Modal
         visible={showCountryCodeModal}
         transparent={true}
@@ -1364,7 +1360,8 @@ export default function NativePersonalInfoScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
