@@ -421,6 +421,7 @@ export default function NativePersonalInfoScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
         <View style={[styles.infoCard, { marginTop: 0, backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos Básicos</Text>
 
@@ -844,7 +845,6 @@ export default function NativePersonalInfoScreen() {
           ) : (
             <Text style={[styles.bioText, { color: colors.text }]}>{userData.bio}</Text>
           )}
-        </View>
         </View>
 
         {/* Country Code Modal */}
