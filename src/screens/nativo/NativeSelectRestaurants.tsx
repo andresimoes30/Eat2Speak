@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from "react"
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { AppContext, AppContextType, Restaurant, mockData } from "./AppTypes"
 import { useLanguage } from "../../contexts/LanguageContext"
@@ -76,7 +77,7 @@ export default function NativeSelectRestaurants() {
   const languages = [...new Set(mockData.restaurants.flatMap((r: Restaurant) => r.languages))]
   
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -320,7 +321,7 @@ export default function NativeSelectRestaurants() {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 
