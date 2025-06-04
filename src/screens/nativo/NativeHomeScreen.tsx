@@ -1,5 +1,6 @@
 import { useContext, useState, useMemo } from "react"
 import { View, Text, Image, ScrollView, Switch, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { useNavigation } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
@@ -282,10 +283,8 @@ export default function NativeHomeScreen() {
   }
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content}>
       {/* Welcome Section */}
       <View style={styles.welcomeSection}>
         <Text style={[styles.welcomeText, { color: colors.text }]}>
@@ -501,78 +500,79 @@ export default function NativeHomeScreen() {
         </View>
       </Card>
       
-      {/* Session Details Modal */}
-      {renderSessionDetailsModal()}
-      
-      {/* Availability Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={showAvailabilityModal}
-        onRequestClose={() => setShowAvailabilityModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {t("native.availability.modalTitle")}
-              </Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowAvailabilityModal(false)}
-              >
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={[styles.modalDescription, { color: colors.text }]}>
-              {t("native.availability.modalDescription")}
-            </Text>
-            
-            <View style={styles.restaurantList}>
-              {selectedRestaurantsDetails.length > 0 ? (
-                selectedRestaurantsDetails.map((restaurant) => (
-                  <View key={restaurant.id} style={[styles.restaurantItem, { borderColor: colors.border }]}>
-                    <View style={[styles.restaurantIconContainer, { backgroundColor: colors.blue[50] }]}>
-                      <Ionicons name="location" size={20} color={colors.blue[600]} />
-                    </View>
-                    <View style={styles.restaurantInfo}>
-                      <Text style={[styles.restaurantName, { color: colors.text }]}>
-                        {restaurant.name}
-                      </Text>
-                      <Text style={[styles.restaurantAddress, { color: colors.text + "80" }]}>
-                        {restaurant.address || restaurant.location}
-                      </Text>
-                    </View>
-                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                  </View>
-                ))
-              ) : (
-                <Text style={[styles.noRestaurantsText, { color: colors.text + "80" }]}>
-                  {t("native.availability.noRestaurantsSelected")}
+        {/* Session Details Modal */}
+        {renderSessionDetailsModal()}
+        
+        {/* Availability Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showAvailabilityModal}
+          onRequestClose={() => setShowAvailabilityModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  {t("native.availability.modalTitle")}
                 </Text>
-              )}
-            </View>
-            
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalCancelButton, { borderColor: colors.border }]}
-                onPress={() => setShowAvailabilityModal(false)}
-              >
-                <Text style={{ color: colors.text }}>{t("common.cancel")}</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowAvailabilityModal(false)}
+                >
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
               
-              <TouchableOpacity
-                style={[styles.modalCloseButton, { backgroundColor: colors.primary }]}
-                onPress={confirmAvailability}
-              >
-                <Text style={{ color: "white" }}>{t("native.availability.confirm")}</Text>
-              </TouchableOpacity>
+              <Text style={[styles.modalDescription, { color: colors.text }]}>
+                {t("native.availability.modalDescription")}
+              </Text>
+              
+              <View style={styles.restaurantList}>
+                {selectedRestaurantsDetails.length > 0 ? (
+                  selectedRestaurantsDetails.map((restaurant) => (
+                    <View key={restaurant.id} style={[styles.restaurantItem, { borderColor: colors.border }]}>
+                      <View style={[styles.restaurantIconContainer, { backgroundColor: colors.blue[50] }]}>
+                        <Ionicons name="location" size={20} color={colors.blue[600]} />
+                      </View>
+                      <View style={styles.restaurantInfo}>
+                        <Text style={[styles.restaurantName, { color: colors.text }]}>
+                          {restaurant.name}
+                        </Text>
+                        <Text style={[styles.restaurantAddress, { color: colors.text + "80" }]}>
+                          {restaurant.address || restaurant.location}
+                        </Text>
+                      </View>
+                      <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                    </View>
+                  ))
+                ) : (
+                  <Text style={[styles.noRestaurantsText, { color: colors.text + "80" }]}>
+                    {t("native.availability.noRestaurantsSelected")}
+                  </Text>
+                )}
+              </View>
+              
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalCancelButton, { borderColor: colors.border }]}
+                  onPress={() => setShowAvailabilityModal(false)}
+                >
+                  <Text style={{ color: colors.text }}>{t("common.cancel")}</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.modalCloseButton, { backgroundColor: colors.primary }]}
+                  onPress={confirmAvailability}
+                >
+                  <Text style={{ color: "white" }}>{t("native.availability.confirm")}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
