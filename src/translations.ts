@@ -80,7 +80,7 @@ export const translations: TranslationsType = {
     "native.availability.title": "Configura tu disponibilidad",
     "native.availability.subtitle": "Selecciona los días y horas en los que puedes dar clases",
     "native.notifications.sessionRequest": "Nueva solicitud de sesión",
-    "native.notifications.paymentReceived": "Pago recebido",
+    "native.notifications.paymentReceived": "Pago recibido",
     "native.availability.confirmSettings": "Confirmar configuración",
     "native.payments.sessionWith": "Sesión con {name}",
     "native.payments.withdrawal": "Retiro de fondos",
@@ -121,7 +121,7 @@ export const translations: TranslationsType = {
     "native.recentHistory.viewAll": "Ver Todas",
     "native.recentHistory.subtitle": "Tus sesiones completadas recientemente",
     "native.session.noFeedback": "Sin comentarios proporcionados",
-    "payments.tabLabel": "Pagamentos",
+    "payments.tabLabel": "Pagos",
     "payments.withdraw": "Retirar",
     
     // Common UI elements
