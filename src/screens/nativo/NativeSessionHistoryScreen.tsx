@@ -1,5 +1,6 @@
 import { useState, useContext } from "react"
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { AppContext, AppContextType, Session, mockData } from "./AppTypes"
 import { useLanguage } from "../../contexts/LanguageContext"
@@ -301,7 +302,8 @@ export default function NativeSessionHistoryScreen() {
           </Card>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
