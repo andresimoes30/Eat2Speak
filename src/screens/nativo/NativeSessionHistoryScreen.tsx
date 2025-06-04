@@ -80,10 +80,8 @@ export default function NativeSessionHistoryScreen() {
   const stats = getSessionStats()
   
   return (
-    <ScrollView 
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content}>
       {/* Header Section */}
       <View style={styles.welcomeSection}>
         <Text style={[styles.welcomeText, { color: colors.text }]}>{t("native.sessionHistory")}</Text>
