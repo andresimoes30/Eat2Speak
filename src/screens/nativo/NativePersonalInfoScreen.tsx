@@ -401,30 +401,30 @@ export default function NativePersonalInfoScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView style={{ flex: 1 }}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Información Personal</Text>
-        <TouchableOpacity style={styles.editButton} onPress={() => (isEditing ? handleSave() : setIsEditing(true))}>
-          <Text style={[styles.editButtonText, { color: colors.primary }]}>
-            {isEditing ? "Guardar" : "Editar"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      </ScrollView>
-    </SafeAreaView>
-      <View style={styles.photoContainer}>
-        <View style={styles.profileImageContainer}>
-          <Image source={{ uri: userData.profileImage }} style={styles.profileImage} />
-          <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: "white" }]}>
-            <Ionicons name="camera" size={20} color={colors.primary} />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Información Personal</Text>
+          <TouchableOpacity style={styles.editButton} onPress={() => (isEditing ? handleSave() : setIsEditing(true))}>
+            <Text style={[styles.editButtonText, { color: colors.primary }]}>
+              {isEditing ? "Guardar" : "Editar"}
+            </Text>
           </TouchableOpacity>
         </View>
-      </View>
-      
-      <View style={styles.content}>
 
+        <View style={styles.photoContainer}>
+          <View style={styles.profileImageContainer}>
+            <Image source={{ uri: userData.profileImage }} style={styles.profileImage} />
+            <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: "white" }]}>
+              <Ionicons name="camera" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        <View style={styles.content}>
+        </View>
+      </ScrollView>
         <View style={[styles.infoCard, { marginTop: 0, backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos Básicos</Text>
 
