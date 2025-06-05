@@ -291,9 +291,74 @@ export default function RestaurantDetailScreen() {
     fetchRestaurantDetails(restaurantId, true);
   }, [restaurantId, fetchRestaurantDetails]);
 
+  // If we're in the loading state, show a loading indicator
+  if (loading && !refreshing) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.blue[600]} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>
+          {t("restaurant.loading") || "Carregando informações do restaurante..."}
+        </Text>
+      </View>
+    );
+  }
+
+  // If there's an error and no data, show an error state
+  if (error && !restaurant) {
+    return (
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <Ionicons name="alert-circle-outline" size={60} color={colors.error} />
+        <Text style={[styles.errorTitle, { color: colors.error }]}>
+          {t("restaurant.errorTitle") || "Erro ao carregar"}
+        </Text>
+        <Text style={[styles.errorMessage, { color: colors.text }]}>
+          {error}
+        </Text>
+        <TouchableOpacity
+          style={[styles.retryButton, { backgroundColor: colors.blue[600] }]}
+          onPress={() => fetchRestaurantDetails(restaurantId)}
+        >
+          <Text style={styles.retryButtonText}>
+            {t("restaurant.retry") || "Tentar novamente"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Image source={{ uri: restaurant.image }} style={styles.coverImage} />
+    <ScrollView 
+      style={[styles.container, { backgroundColor: colors.background }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={[colors.blue[600]]}
+          tintColor={colors.blue[600]}
+        />
+      }
+    >
+      {/* Banner to show errors if we have data but there was an error refreshing */}
+      {error && (
+        <View style={[styles.errorBanner, { backgroundColor: colors.error + "15" }]}>
+          <Ionicons name="alert-circle-outline" size={20} color={colors.error} />
+          <Text style={[styles.errorBannerText, { color: colors.error }]}>
+            {error}
+          </Text>
+          <TouchableOpacity 
+            onPress={() => fetchRestaurantDetails(restaurantId, true)}
+            style={styles.errorBannerButton}
+          >
+            <Ionicons name="refresh-outline" size={20} color={colors.error} />
+          </TouchableOpacity>
+        </View>
+      )}
+      
+      <Image 
+        source={{ uri: restaurant.image }} 
+        style={styles.coverImage}
+        defaultSource={{ uri: "https://via.placeholder.com/600x400" }}
+      />
 
       <View style={styles.content}>
         <View style={styles.header}>
