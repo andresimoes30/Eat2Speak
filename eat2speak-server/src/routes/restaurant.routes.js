@@ -9,6 +9,7 @@
  * - Delete restaurant
  * - Menu management endpoints
  * - Restaurant availability management
+ * - Favorite restaurants management
  * 
  * @module routes/restaurant.routes
  */
@@ -20,7 +21,13 @@ const router = express.Router();
 const { verifyAuthToken } = require('../middlewares/auth.middleware');
 const { apiLimiter } = require('../middlewares/rate-limiter.middleware');
 const restaurantController = require('../controllers/restaurant.controller');
-
+const favoritesController = require('../controllers/favorites.controller');
+/**
+ * @route GET /api/restaurants/favorites
+ * @description Get user's favorite restaurants
+ * @access Private
+ */
+router.get('/favorites', verifyAuthToken, favoritesController.getFavoriteRestaurants);
 /**
  * @route GET /api/restaurants
  * @description Get list of restaurants with pagination, filtering and sorting
@@ -28,7 +35,26 @@ const restaurantController = require('../controllers/restaurant.controller');
  * @middleware High-limit rate limiter (200 requests/minute) to prevent API spam while allowing testing
  */
 router.get('/', apiLimiter, restaurantController.getRestaurants);
+/**
+ * @route GET /api/restaurants/:id/favorite
+ * @description Check if a restaurant is in user's favorites
+ * @access Private
+ */
+router.get('/:id/favorite', verifyAuthToken, favoritesController.checkFavoriteStatus);
 
+/**
+ * @route POST /api/restaurants/:id/favorite
+ * @description Add a restaurant to user's favorites
+ * @access Private
+ */
+router.post('/:id/favorite', verifyAuthToken, favoritesController.addFavoriteRestaurant);
+
+/**
+ * @route DELETE /api/restaurants/:id/favorite
+ * @description Remove a restaurant from user's favorites
+ * @access Private
+ */
+router.delete('/:id/favorite', verifyAuthToken, favoritesController.removeFavoriteRestaurant);
 /**
  * @route GET /api/restaurants/:id
  * @description Get restaurant details by ID
