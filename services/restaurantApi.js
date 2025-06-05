@@ -7,19 +7,32 @@ import api from './api';
  */
 export const getRestaurants = async (filters = {}) => {
   try {
-    // Build query parameters
-    const queryParams = new URLSearchParams();
-    if (filters.search) queryParams.append('search', filters.search);
-    if (filters.cuisine) queryParams.append('cuisine', filters.cuisine);
-    if (filters.city) queryParams.append('city', filters.city);
-    if (filters.language) queryParams.append('language', filters.language);
+    // Use the real API endpoint
+    const response = await fetch('https://eat2speak.com/api/restaurants');
+    const data = await response.json();
     
-    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    const response = await api.get(`/api/restaurants${queryString}`);
-    return response.data.data.restaurants;
+    if (data.status !== 'success' || !data.data.restaurants) {
+      throw new Error('Failed to fetch restaurants data');
+    }
+    
+    // Transform the API response to match our expected format
+    const restaurants = data.data.restaurants.map(restaurant => ({
+      id: restaurant.restaurantId,
+      name: restaurant.name,
+      cuisine: restaurant.cuisineType,
+      location: restaurant.address,
+      rating: (Math.random() * 2 + 3).toFixed(1), // Random rating between 3 and 5
+      languages: getRandomLanguages(), // We'll generate these since API doesn't provide them
+      available: true, // Assume all restaurants are available
+      description: `Authentic ${restaurant.cuisineType} cuisine in ${restaurant.address.split(',')[0]}`,
+      imageUrl: getRestaurantImage(restaurant.restaurantId)
+    }));
+    
+    // Apply filters if provided
+    return filterRestaurants(restaurants, filters);
   } catch (error) {
     console.error('Error fetching restaurants:', error);
-    throw error.response?.data || { message: 'Error fetching restaurants' };
+    throw error;
   }
 };
 
@@ -30,37 +43,94 @@ export const getRestaurants = async (filters = {}) => {
  */
 export const getRestaurantDetails = async (restaurantId) => {
   try {
-    const response = await api.get(`/api/restaurants/${restaurantId}`);
-    return response.data.data.restaurant;
+    // In a real app, we would have a specific endpoint for restaurant details
+    // For now, we'll fetch all restaurants and find the one we want
+    const restaurants = await getRestaurants();
+    const restaurant = restaurants.find(r => r.id === restaurantId);
+    
+    if (!restaurant) {
+      throw new Error(`Restaurant with ID ${restaurantId} not found`);
+    }
+    
+    return restaurant;
   } catch (error) {
     console.error(`Error fetching restaurant details for ID ${restaurantId}:`, error);
-    throw error.response?.data || { message: 'Error fetching restaurant details' };
+    throw error;
   }
 };
 
-// For development/testing, you can use these real restaurant images
-export const getRestaurantImage = (restaurantId, useRealImages = true) => {
-  if (!useRealImages) {
-    return 'https://via.placeholder.com/300x200';
-  }
-  
+/**
+ * Provides images for restaurants
+ * @param {number} restaurantId - ID of the restaurant
+ * @returns {string} - URL to restaurant image
+ */
+export const getRestaurantImage = (restaurantId) => {
   // Real restaurant images from Unsplash
   const restaurantImages = {
-    1: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80',
-    2: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=80',
-    3: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=500&q=80',
-    4: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=500&q=80',
-    5: 'https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?w=500&q=80',
-    6: 'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=500&q=80',
-    7: 'https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?w=500&q=80',
-    8: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&q=80',
-    9: 'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=500&q=80',
-    10: 'https://images.unsplash.com/photo-1555992336-03a23c7b20ee?w=500&q=80',
+    1: 'https://images.unsplash.com/photo-1555992336-03a23c7b20ee?w=500&q=80', // Francesinha Braga
+    2: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500&q=80', // Fogo em Brasa
+    3: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80', // Mac Daniels
+    4: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&q=80', // Hell's Kitchen
+    5: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80', // Sei lá mano
   };
   
-  // Return image for specific restaurant ID or a random one if not found
-  return restaurantImages[restaurantId] || 
-    restaurantImages[Math.floor(Math.random() * Object.keys(restaurantImages).length) + 1];
+  // Return image for specific restaurant ID or a default one if not found
+  return restaurantImages[restaurantId] || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80';
+};
+
+/**
+ * Filter restaurants based on search criteria
+ * @param {Array} restaurants - List of restaurants to filter
+ * @param {Object} filters - Filter criteria
+ * @returns {Array} - Filtered restaurants
+ */
+const filterRestaurants = (restaurants, filters) => {
+  return restaurants.filter(restaurant => {
+    // Apply search filter
+    if (filters.search && !restaurant.name.toLowerCase().includes(filters.search.toLowerCase())) {
+      return false;
+    }
+    
+    // Apply cuisine filter
+    if (filters.cuisine && filters.cuisine !== 'all' && restaurant.cuisine !== filters.cuisine) {
+      return false;
+    }
+    
+    // Apply city filter
+    if (filters.city && filters.city !== 'all') {
+      const cityMatch = restaurant.location.toLowerCase().includes(filters.city.toLowerCase());
+      if (!cityMatch) return false;
+    }
+    
+    // Apply language filter
+    if (filters.language && filters.language !== 'all') {
+      const languageMatch = restaurant.languages.includes(filters.language);
+      if (!languageMatch) return false;
+    }
+    
+    return true;
+  });
+};
+
+/**
+ * Helper function to generate random languages for restaurants
+ * @returns {Array} - Array of languages
+ */
+const getRandomLanguages = () => {
+  const allLanguages = ['Português', 'Inglês', 'Espanhol', 'Francês', 'Italiano', 'Alemão'];
+  const numLanguages = Math.floor(Math.random() * 3) + 1; // 1 to 3 languages
+  
+  const languages = [];
+  for (let i = 0; i < numLanguages; i++) {
+    const randomIndex = Math.floor(Math.random() * allLanguages.length);
+    const language = allLanguages[randomIndex];
+    
+    if (!languages.includes(language)) {
+      languages.push(language);
+    }
+  }
+  
+  return languages;
 };
 
 export default {
