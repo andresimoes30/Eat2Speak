@@ -14,7 +14,7 @@ import {
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
-import { AppContext, AppContextType, Restaurant, mockData } from "./AppTypes"
+import { AppContext, AppContextType, Restaurant } from "./AppTypes"
 import { useLanguage } from "../../contexts/LanguageContext"
 import * as restaurantApi from "../../../services/restaurantApi"
 import * as favoriteApi from "../../../services/favoriteApi"
@@ -76,20 +76,7 @@ export default function NativeSelectRestaurants() {
     setError(null);
     
     try {
-      // In a production app, we would use the real API
-      // For now, simulate API call with mock data but add real images
-      setTimeout(() => {
-        const restaurantsWithImages = mockData.restaurants.map(restaurant => ({
-          ...restaurant,
-          imageUrl: restaurantApi.getRestaurantImage(restaurant.id)
-        }));
-        
-        setRestaurants(restaurantsWithImages);
-        setLoadingRestaurants(false);
-      }, 1000);
-      
-      // Real API call would be like this:
-      /*
+      // Fetch real restaurants from the API
       const filters = {};
       if (searchTerm) filters.search = searchTerm;
       if (filterCity !== 'all') filters.city = filterCity;
@@ -97,12 +84,7 @@ export default function NativeSelectRestaurants() {
       if (filterLanguage !== 'all') filters.language = filterLanguage;
       
       const data = await restaurantApi.getRestaurants(filters);
-      const restaurantsWithImages = data.map(restaurant => ({
-        ...restaurant,
-        imageUrl: restaurantApi.getRestaurantImage(restaurant.id)
-      }));
-      setRestaurants(restaurantsWithImages);
-      */
+      setRestaurants(data);
     } catch (error) {
       console.error("Error fetching restaurants:", error);
       setError("Failed to load restaurants. Please try again.");
@@ -119,7 +101,8 @@ export default function NativeSelectRestaurants() {
       // In a production app, we would use the real API
       // For now, simulate API call with mock data
       setTimeout(() => {
-        const favorites = mockData.favoriteRestaurants.map(restaurant => restaurant.id);
+        // For demonstration, set a couple of restaurants as favorites
+        const favorites = [1, 3]; // Francesinha Braga and Mac Daniels
         setFavoriteRestaurants(favorites);
         setLoadingFavorites(false);
       }, 800);
