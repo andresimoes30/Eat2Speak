@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { AppContext, AppContextType, Notification, Session, Restaurant, mockData } from "./AppTypes"
 import * as favoriteApi from "../../../services/favoriteApi"
 import * as restaurantApi from "../../../services/restaurantApi"
+import * as userApi from "../../../services/userApi"
 import { useLanguage } from "../../contexts/LanguageContext"
 
 // Define the parameter list for the HomeStack navigator
