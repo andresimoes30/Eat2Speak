@@ -86,26 +86,25 @@ export default function NativeHomeScreen() {
     setFavoritesError(null)
     
     try {
-      // In a production app, this would use the real API
-      // For now, we'll use the mock data but simulate an API call
-      setTimeout(() => {
-        // Simulate API call with mock data
-        const favorites = mockData.favoriteRestaurants.map(restaurant => ({
-          ...restaurant,
-          isFavorite: true
-        }))
-        setFavoriteRestaurants(favorites)
-        setLoadingFavorites(false)
-      }, 1000)
+      // Fetch favorites from the real API
+      const favorites = await favoriteApi.getFavoriteRestaurants();
       
-      // Commented out real API call for future implementation
-      /*
-      const favorites = await favoriteApi.getFavoriteRestaurants()
-      setFavoriteRestaurants(favorites.map(restaurant => ({
+      // Process the returned favorites and add image URLs
+      const favoritesWithImages = favorites.map(restaurant => ({
         ...restaurant,
-        isFavorite: true
-      })))
-      */
+        id: restaurant.restaurantid || restaurant.id,
+        cuisine: restaurant.cuisineType || restaurant.cuisine,
+        location: restaurant.address || restaurant.location,
+        // Generate additional properties if they don't exist in the API response
+        rating: restaurant.rating || (Math.random() * 2 + 3).toFixed(1),
+        languages: restaurant.languages || getRandomLanguages(),
+        available: true,
+        isFavorite: true,
+        imageUrl: restaurantApi.getRestaurantImage(restaurant.restaurantid || restaurant.id)
+      }));
+      
+      setFavoriteRestaurants(favoritesWithImages);
+      setLoadingFavorites(false);
     } catch (error) {
       console.error("Error fetching favorite restaurants:", error)
       setFavoritesError("Failed to load favorite restaurants")
@@ -123,9 +122,8 @@ export default function NativeHomeScreen() {
       const isCurrentlyFavorite = favoriteRestaurants.some(r => r.id === restaurantId && r.isFavorite)
       
       if (isCurrentlyFavorite) {
-        // Remove from favorites
-        // In production, this would call the real API
-        // await favoriteApi.removeFromFavorites(restaurantId)
+        // Remove from favorites - make real API call
+        await favoriteApi.removeFromFavorites(restaurantId)
         
         // Update local state
         setFavoriteRestaurants(prev => 
@@ -138,24 +136,32 @@ export default function NativeHomeScreen() {
           t("native.favorites.removedMessage") || "Restaurant removed from your favorites"
         )
       } else {
-        // Find restaurant in all restaurants
-        const restaurantToAdd = mockData.restaurants.find(r => r.id === restaurantId)
-        
-        if (restaurantToAdd) {
-          // Add to favorites
-          // In production, this would call the real API
-          // await favoriteApi.addToFavorites(restaurantId)
+        try {
+          // Add to favorites - make real API call
+          await favoriteApi.addToFavorites(restaurantId)
           
-          // Update local state
+          // Fetch the restaurant details
+          const restaurant = await restaurantApi.getRestaurantDetails(restaurantId)
+          
+          // Update local state with the fetched restaurant
           setFavoriteRestaurants(prev => [
-            ...prev, 
-            { ...restaurantToAdd, isFavorite: true }
+            ...prev,
+            { 
+              ...restaurant,
+              isFavorite: true
+            }
           ])
           
           // Show success message
           Alert.alert(
             t("native.favorites.addedTitle") || "Added to Favorites",
             t("native.favorites.addedMessage") || "Restaurant added to your favorites"
+          )
+        } catch (error) {
+          console.error("Error adding restaurant to favorites:", error)
+          Alert.alert(
+            t("native.favorites.errorTitle") || "Error",
+            t("native.favorites.errorAddingMessage") || "Failed to add restaurant to favorites"
           )
         }
       }
@@ -212,6 +218,23 @@ export default function NativeHomeScreen() {
     setShowAvailabilityModal(false);
   }
 
+  // Helper function to generate random languages - only used if API doesn't provide them
+  const getRandomLanguages = (): string[] => {
+    const allLanguages = ['Português', 'Inglês', 'Espanhol', 'Francês', 'Italiano', 'Alemão'];
+    const numLanguages = Math.floor(Math.random() * 2) + 1; // 1 to 2 languages
+    
+    const languages: string[] = [];
+    for (let i = 0; i < numLanguages; i++) {
+      const randomIndex = Math.floor(Math.random() * allLanguages.length);
+      const language = allLanguages[randomIndex];
+      
+      if (!languages.includes(language)) {
+        languages.push(language);
+      }
+    }
+    
+    return languages;
+  };
   const unreadNotifications = appState.notifications.filter((n: Notification) => !n.read).length
   
   // Theme colors (simplified version since we don't have ThemeContext)
