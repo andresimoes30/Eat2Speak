@@ -47,12 +47,27 @@ declare module '@react-native-community/netinfo' {
     reachabilityShouldRun?: () => boolean;
   }
 
-  export default {
-    fetch: () => Promise<NetInfoState>,
-    addEventListener: (
-      listener: (state: NetInfoState) => void
-    ) => NetInfoSubscription,
-    useNetInfo: () => NetInfoState,
-    configure: (configuration: NetInfoConfiguration) => void
+  // Correctly type the fetch method
+  export function fetch(): Promise<NetInfoState>;
+  
+  // Correctly type the addEventListener method
+  export function addEventListener(
+    listener: (state: NetInfoState) => void
+  ): NetInfoSubscription;
+  
+  // Add useNetInfo hook
+  export function useNetInfo(): NetInfoState;
+  
+  // Add configure method
+  export function configure(configuration: NetInfoConfiguration): void;
+
+  // Default export
+  const NetInfo: {
+    fetch: typeof fetch;
+    addEventListener: typeof addEventListener;
+    useNetInfo: typeof useNetInfo;
+    configure: typeof configure;
   };
+
+  export default NetInfo;
 }
