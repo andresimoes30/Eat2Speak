@@ -95,6 +95,7 @@ const getProfile = async (req, res) => {
       include: [
         {
           model: Role,
+          as: 'Roles', // Explicitly use Roles alias as defined in association
           through: { attributes: [] } // remove info da tabela intermediária
         },
         {
