@@ -547,18 +547,27 @@ export default function RestaurantDetailScreen() {
                   <View style={[styles.smallPin, { top: '75%', left: '75%', backgroundColor: colors.blue[300] }]} />
                   <View style={[styles.smallPin, { top: '20%', left: '65%', backgroundColor: colors.blue[300] }]} />
                   
-                  {/* Address info - positioned in bottom right for better visibility */}
+                  {/* Address info - more prominent real address display */}
                   <View style={[styles.mapAddressContainer, { 
                     position: 'absolute',
                     bottom: 30,
-                    right: 12,
-                    width: '60%',
-                    backgroundColor: 'rgba(255,255,255,0.9)'
+                    right: 0,
+                    left: 0,
+                    marginHorizontal: 20,
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    borderWidth: 1,
+                    borderColor: colors.blue[300]
                   }]}>
-                    <Text style={[styles.mapAddressTitle, { color: colors.text, fontSize: 14 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                      <Ionicons name="navigate" size={18} color={colors.blue[600]} />
+                      <Text style={{ fontSize: 12, color: colors.blue[600], fontWeight: '600', marginLeft: 4 }}>
+                        ENDEREÇO REAL
+                      </Text>
+                    </View>
+                    <Text style={[styles.mapAddressTitle, { color: colors.text, fontSize: 16, fontWeight: 'bold' }]}>
                       {restaurant.name}
                     </Text>
-                    <Text style={[styles.mapAddressText, { color: colors.text + "90", fontSize: 12 }]}>
+                    <Text style={[styles.mapAddressText, { color: colors.text, fontSize: 14, fontWeight: '500' }]}>
                       {restaurant.location}
                     </Text>
                   </View>
