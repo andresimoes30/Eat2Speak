@@ -453,7 +453,7 @@ export default function NativeHomeScreen() {
           </View>
         </Card>
 
-        {/* Favorite Restaurants Section */}
+        {/* Unified Favorites and Restaurant Selection Section */}
         <Card style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
@@ -487,14 +487,8 @@ export default function NativeHomeScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-          ) : favoriteRestaurants.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="heart-outline" size={24} color={colors.textSecondary} />
-              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                {t("native.favorites.empty") || "You haven't added any favorite restaurants yet"}
-              </Text>
-            </View>
-          ) : (
+          ) : favoriteRestaurants.length > 0 ? (
+            // User has favorite restaurants - show them
             <View style={styles.favoritesContainer}>
               {favoriteRestaurants.map((restaurant) => (
                 <View key={restaurant.id} style={[styles.favoriteItem, { borderColor: colors.border }]}>
@@ -541,55 +535,60 @@ export default function NativeHomeScreen() {
                   </TouchableOpacity>
                 </View>
               ))}
+              
+              {/* Add button to select more restaurants */}
+              <TouchableOpacity 
+                style={[styles.addMoreButton, { borderColor: colors.primary }]}
+                onPress={() => navigation.navigate('NativeSelectRestaurants')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+                <Text style={[styles.addMoreButtonText, { color: colors.primary }]}>
+                  {t("native.restaurants.addMore") || "Add more restaurants"}
+                </Text>
+              </TouchableOpacity>
             </View>
+          ) : (
+            // User has no favorites - show restaurant selection prompt
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('NativeSelectRestaurants')}
+              activeOpacity={0.7}
+              style={styles.restaurantSelectionPrompt}
+            >
+              <View style={styles.emptyFavoritesState}>
+                <Ionicons name="heart-outline" size={32} color={colors.textSecondary} />
+                <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                  {t("native.favorites.empty") || "You haven't added any favorite restaurants yet"}
+                </Text>
+                
+                <View style={[styles.selectRestaurantsButton, { backgroundColor: colors.primary + "15" }]}>
+                  <Ionicons name="restaurant-outline" size={20} color={colors.primary} />
+                  <Text style={[styles.selectRestaurantsText, { color: colors.primary }]}>
+                    {t("native.selectRestaurants") || "Select your favorite restaurants"}
+                  </Text>
+                </View>
+                
+                <View style={styles.restaurantPreview}>
+                  {selectedRestaurantsDetails.length > 0 && (
+                    <View style={styles.selectedRestaurantsSummary}>
+                      <View style={styles.restaurantCountBadge}>
+                        <Text style={styles.restaurantCountText}>
+                          {selectedRestaurantsDetails.length} {t(selectedRestaurantsDetails.length === 1 
+                            ? "native.restaurants.singleCount" 
+                            : "native.restaurants.multipleCount")}
+                        </Text>
+                      </View>
+                      <Text style={[styles.restaurantInfoText, { color: colors.textSecondary }]}>
+                        {selectedRestaurantsDetails.map(r => r.name).slice(0, 2).join(', ') + 
+                          (selectedRestaurantsDetails.length > 2 ? ` ${t("native.restaurants.andMore", { count: selectedRestaurantsDetails.length - 2 })}` : '')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </TouchableOpacity>
           )}
         </Card>
-
-        {/* Restaurant Selection Card */}
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('NativeSelectRestaurants')}
-          activeOpacity={0.7}
-        >
-          <Card style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>
-                {t("native.selectRestaurants")}
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-            </View>
-            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-              {t("native.restaurants.selectionDescription")}
-            </Text>
-            
-            <View style={styles.restaurantPreview}>
-              {selectedRestaurantsDetails.length > 0 ? (
-                <View style={styles.selectedRestaurantsSummary}>
-                  <View style={styles.restaurantCountBadge}>
-                    <Text style={styles.restaurantCountText}>
-                      {selectedRestaurantsDetails.length} {t(selectedRestaurantsDetails.length === 1 
-                        ? "native.restaurants.singleCount" 
-                        : "native.restaurants.multipleCount")}
-                    </Text>
-                  </View>
-                  <Text style={[styles.restaurantInfoText, { color: colors.textSecondary }]}>
-                    {selectedRestaurantsDetails.length > 0 
-                      ? selectedRestaurantsDetails.map(r => r.name).slice(0, 2).join(', ') + 
-                        (selectedRestaurantsDetails.length > 2 ? ` ${t("native.restaurants.andMore", { count: selectedRestaurantsDetails.length - 2 })}` : '')
-                      : t("native.restaurants.noSelection")
-                    }
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.noRestaurantsSelected}>
-                  <Ionicons name="restaurant-outline" size={20} color={colors.textSecondary} />
-                  <Text style={[styles.noRestaurantsText, { color: colors.textSecondary }]}>
-                    {t("native.selectRestaurants")}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </Card>
-        </TouchableOpacity>
 
         {/* Statistics Card */}
         <Card style={styles.card}>
@@ -1040,6 +1039,47 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: '100%',
     borderRadius: 4,
+  },
+  
+  // Unified section styles
+  restaurantSelectionPrompt: {
+    marginTop: 8,
+  },
+  emptyFavoritesState: {
+    alignItems: "center",
+    padding: 20,
+  },
+  selectRestaurantsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    width: '100%',
+  },
+  selectRestaurantsText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  addMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  addMoreButtonText: {
+    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '500',
   },
 
   // Stats styles
