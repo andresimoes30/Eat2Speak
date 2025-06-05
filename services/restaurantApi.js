@@ -7,24 +7,23 @@ import api from './api';
  */
 export const getRestaurants = async (filters = {}) => {
   try {
-    // Use the real API endpoint provided by the user
-    const response = await fetch('https://eat2speak.com/api/restaurants');
-    const data = await response.json();
+    // Use the configured API client
+    const response = await api.get('/api/restaurants');
     
-    if (data.status !== 'success' || !data.data.restaurants) {
+    if (!response.data || response.data.status !== 'success' || !response.data.data.restaurants) {
       throw new Error('Failed to fetch restaurants data');
     }
     
     // Transform the API response to match our expected format
-    const restaurants = data.data.restaurants.map(restaurant => ({
+    const restaurants = response.data.data.restaurants.map(restaurant => ({
       id: restaurant.restaurantId,
       name: restaurant.name,
       cuisine: restaurant.cuisineType,
       location: restaurant.address,
-      rating: (Math.random() * 2 + 3).toFixed(1), // Random rating between 3 and 5
-      languages: getRandomLanguages(), // We'll generate these since API doesn't provide them
+      rating: restaurant.rating || (Math.random() * 2 + 3).toFixed(1), // Use rating if available or generate random
+      languages: restaurant.languages || getRandomLanguages(), // Use existing or generate
       available: true, // Assume all restaurants are available
-      description: `Authentic ${restaurant.cuisineType} cuisine in ${restaurant.address.split(',')[0]}`,
+      description: restaurant.description || `Authentic ${restaurant.cuisineType} cuisine in ${restaurant.address.split(',')[0]}`,
       imageUrl: getRestaurantImage(restaurant.restaurantId)
     }));
     
@@ -32,7 +31,7 @@ export const getRestaurants = async (filters = {}) => {
     return filterRestaurants(restaurants, filters);
   } catch (error) {
     console.error('Error fetching restaurants:', error);
-    throw error;
+    throw error.response?.data || { message: 'Error fetching restaurants' };
   }
 };
 
@@ -43,19 +42,30 @@ export const getRestaurants = async (filters = {}) => {
  */
 export const getRestaurantDetails = async (restaurantId) => {
   try {
-    // In a real app, we would have a specific endpoint for restaurant details
-    // For now, we'll fetch all restaurants and find the one we want
-    const restaurants = await getRestaurants();
-    const restaurant = restaurants.find(r => r.id === restaurantId);
+    // Use the configured API client with specific endpoint
+    const response = await api.get(`/api/restaurants/${restaurantId}`);
     
-    if (!restaurant) {
+    if (!response.data || response.data.status !== 'success') {
       throw new Error(`Restaurant with ID ${restaurantId} not found`);
     }
     
-    return restaurant;
+    const restaurant = response.data.data.restaurant;
+    
+    // Transform the response to match our expected format
+    return {
+      id: restaurant.restaurantId,
+      name: restaurant.name,
+      cuisine: restaurant.cuisineType,
+      location: restaurant.address,
+      rating: restaurant.rating || (Math.random() * 2 + 3).toFixed(1),
+      languages: restaurant.languages || getRandomLanguages(),
+      available: true,
+      description: restaurant.description || `Authentic ${restaurant.cuisineType} cuisine in ${restaurant.address.split(',')[0]}`,
+      imageUrl: getRestaurantImage(restaurant.restaurantId)
+    };
   } catch (error) {
     console.error(`Error fetching restaurant details for ID ${restaurantId}:`, error);
-    throw error;
+    throw error.response?.data || { message: `Error fetching restaurant details for ID ${restaurantId}` };
   }
 };
 
