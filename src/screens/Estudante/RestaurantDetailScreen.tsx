@@ -17,7 +17,8 @@ import {
 import { LinearGradient } from "expo-linear-gradient"
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
 import * as Location from "expo-location"
-// Removed NetInfo import that was causing bundling errors
+// Import centralized connectivity utility
+import { checkNetworkConnectivity } from "../../utils/connectivity"
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
@@ -31,25 +32,7 @@ import Geocoder from "react-native-geocoding"
 Geocoder.init("YOUR_GOOGLE_MAPS_API_KEY")
 
 // Simple network connectivity helper (fallback for NetInfo)
-const checkNetworkConnectivity = async (): Promise<boolean> => {
-  try {
-    // A simple fetch request to check connectivity
-    // We use a timeout to avoid hanging if network is very slow
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
-    const response = await fetch('https://www.google.com', { 
-      method: 'HEAD',
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    return response.ok;
-  } catch (error) {
-    console.log('Network connectivity check failed:', error);
-    return false;
-  }
-};
+// Removed local implementation as we now import from centralized utility
 
 // Definindo interfaces para tipagem
 interface MenuItem {
