@@ -104,20 +104,11 @@ export default function NativeSelectRestaurants() {
     setLoadingFavorites(true);
     
     try {
-      // In a production app, we would use the real API
-      // For now, simulate API call with mock data
-      setTimeout(() => {
-        // For demonstration, set a couple of restaurants as favorites
-        const favorites = [1, 3]; // Francesinha Braga and Mac Daniels
-        setFavoriteRestaurants(favorites);
-        setLoadingFavorites(false);
-      }, 800);
-      
-      // Real API call would be like this:
-      /*
+      // Use the real API to fetch favorites
       const favorites = await favoriteApi.getFavoriteRestaurants();
-      setFavoriteRestaurants(favorites.map(restaurant => restaurant.id));
-      */
+      setFavoriteRestaurants(favorites.map(restaurant => 
+        restaurant.restaurantId || restaurant.id
+      ));
     } catch (error) {
       console.error("Error fetching favorites:", error);
       // We don't set an error message here to not block the main functionality
@@ -135,12 +126,12 @@ export default function NativeSelectRestaurants() {
       const isCurrentlyFavorite = favoriteRestaurants.includes(restaurantId);
       
       if (isCurrentlyFavorite) {
-        // Remove from favorites
-        // await favoriteApi.removeFromFavorites(restaurantId);
+        // Remove from favorites - make real API call
+        await favoriteApi.removeFromFavorites(restaurantId);
         setFavoriteRestaurants(prev => prev.filter(id => id !== restaurantId));
       } else {
-        // Add to favorites
-        // await favoriteApi.addToFavorites(restaurantId);
+        // Add to favorites - make real API call
+        await favoriteApi.addToFavorites(restaurantId);
         setFavoriteRestaurants(prev => [...prev, restaurantId]);
       }
       
@@ -178,14 +169,35 @@ export default function NativeSelectRestaurants() {
   }
 
   // Save selection and return to home screen
-  const saveSelection = () => {
+  const saveSelection = async () => {
+    // First update local app state
     updateAppState({ selectedRestaurants });
-    // Show a brief success message
-    Alert.alert(
-      t("native.restaurants.saveSuccess"),
-      t("native.restaurants.selectionConfirmation", { count: selectedRestaurants.length }),
-      [{ text: t("common.ok"), onPress: () => navigation.goBack() }]
-    );
+    
+    try {
+      // Save each selected restaurant to favorites if not already a favorite
+      for (const restaurantId of selectedRestaurants) {
+        if (!favoriteRestaurants.includes(restaurantId)) {
+          await favoriteApi.addToFavorites(restaurantId);
+        }
+      }
+      
+      // Refresh favorites list
+      await fetchFavorites();
+      
+      // Show a brief success message
+      Alert.alert(
+        t("native.restaurants.saveSuccess"),
+        t("native.restaurants.selectionConfirmation", { count: selectedRestaurants.length }),
+        [{ text: t("common.ok"), onPress: () => navigation.goBack() }]
+      );
+    } catch (error) {
+      console.error("Error saving favorites:", error);
+      Alert.alert(
+        t("native.favorites.errorTitle") || "Error",
+        t("native.favorites.errorSavingMessage") || "Failed to save favorite restaurants",
+        [{ text: t("common.ok"), onPress: () => navigation.goBack() }]
+      );
+    }
   }
   
   // Filter restaurants based on search and filters
