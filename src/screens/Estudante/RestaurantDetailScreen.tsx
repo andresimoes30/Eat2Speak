@@ -909,6 +909,26 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     zIndex: 2,
   },
+  // Satellite view specific styles
+  satelliteTexture: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  satelliteBlock: {
+    position: "absolute",
+    borderRadius: 2,
+    opacity: 0.7,
+  },
+  satelliteRoad: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 2,
+  },
   mapLabel: {
     position: "absolute",
     right: 10,
