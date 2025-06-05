@@ -1,11 +1,23 @@
 import { useState, useContext, useEffect } from "react"
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native"
+import { useNavigation } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from "react-native"
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  TextInput, 
+  Alert,
+  Image,
+  ActivityIndicator
+} from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { AppContext, AppContextType, Restaurant, mockData } from "./AppTypes"
 import { useLanguage } from "../../contexts/LanguageContext"
+import * as restaurantApi from "../../../services/restaurantApi"
+import * as favoriteApi from "../../../services/favoriteApi"
 
 // Define the parameter list for navigation
 type NativeStackParamList = {
@@ -20,10 +32,24 @@ type NativeSelectRestaurantsNavigationProp = NativeStackNavigationProp<
   'NativeSelectRestaurants'
 >;
 
+// Extended restaurant type with favorite status
+interface RestaurantWithFavorite extends Restaurant {
+  isFavorite?: boolean;
+  imageUrl?: string;
+}
+
 export default function NativeSelectRestaurants() {
   const { appState, updateAppState } = useContext(AppContext) as AppContextType
   const navigation = useNavigation<NativeSelectRestaurantsNavigationProp>();
   const { t } = useLanguage();
+  
+  // State for restaurants and favorites
+  const [restaurants, setRestaurants] = useState<RestaurantWithFavorite[]>([]);
+  const [favoriteRestaurants, setFavoriteRestaurants] = useState<number[]>([]);
+  const [loadingRestaurants, setLoadingRestaurants] = useState(true);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updatingFavorites, setUpdatingFavorites] = useState<number[]>([]);
   
   // Initialize with context
   const [selectedRestaurants, setSelectedRestaurants] = useState<number[]>(
@@ -38,12 +64,120 @@ export default function NativeSelectRestaurants() {
   const [showLanguageOptions, setShowLanguageOptions] = useState(false)
   const [selectionChanged, setSelectionChanged] = useState(false)
 
-  // Log when the screen renders
+  // Fetch restaurants and favorites on mount
   useEffect(() => {
-    console.log("NativeSelectRestaurants rendered");
+    fetchRestaurants();
+    fetchFavorites();
   }, []);
 
-  // Toggle restaurant selection with visual feedback
+  // Fetch restaurants from API
+  const fetchRestaurants = async () => {
+    setLoadingRestaurants(true);
+    setError(null);
+    
+    try {
+      // In a production app, we would use the real API
+      // For now, simulate API call with mock data but add real images
+      setTimeout(() => {
+        const restaurantsWithImages = mockData.restaurants.map(restaurant => ({
+          ...restaurant,
+          imageUrl: restaurantApi.getRestaurantImage(restaurant.id)
+        }));
+        
+        setRestaurants(restaurantsWithImages);
+        setLoadingRestaurants(false);
+      }, 1000);
+      
+      // Real API call would be like this:
+      /*
+      const filters = {};
+      if (searchTerm) filters.search = searchTerm;
+      if (filterCity !== 'all') filters.city = filterCity;
+      if (filterCuisine !== 'all') filters.cuisine = filterCuisine;
+      if (filterLanguage !== 'all') filters.language = filterLanguage;
+      
+      const data = await restaurantApi.getRestaurants(filters);
+      const restaurantsWithImages = data.map(restaurant => ({
+        ...restaurant,
+        imageUrl: restaurantApi.getRestaurantImage(restaurant.id)
+      }));
+      setRestaurants(restaurantsWithImages);
+      */
+    } catch (error) {
+      console.error("Error fetching restaurants:", error);
+      setError("Failed to load restaurants. Please try again.");
+    } finally {
+      setLoadingRestaurants(false);
+    }
+  };
+  
+  // Fetch user's favorite restaurants
+  const fetchFavorites = async () => {
+    setLoadingFavorites(true);
+    
+    try {
+      // In a production app, we would use the real API
+      // For now, simulate API call with mock data
+      setTimeout(() => {
+        const favorites = mockData.favoriteRestaurants.map(restaurant => restaurant.id);
+        setFavoriteRestaurants(favorites);
+        setLoadingFavorites(false);
+      }, 800);
+      
+      // Real API call would be like this:
+      /*
+      const favorites = await favoriteApi.getFavoriteRestaurants();
+      setFavoriteRestaurants(favorites.map(restaurant => restaurant.id));
+      */
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+      // We don't set an error message here to not block the main functionality
+    } finally {
+      setLoadingFavorites(false);
+    }
+  };
+
+  // Toggle favorite status of a restaurant
+  const toggleFavorite = async (restaurantId: number) => {
+    // Add restaurant ID to updating list to show loading indicator
+    setUpdatingFavorites(prev => [...prev, restaurantId]);
+    
+    try {
+      const isCurrentlyFavorite = favoriteRestaurants.includes(restaurantId);
+      
+      if (isCurrentlyFavorite) {
+        // Remove from favorites
+        // await favoriteApi.removeFromFavorites(restaurantId);
+        setFavoriteRestaurants(prev => prev.filter(id => id !== restaurantId));
+      } else {
+        // Add to favorites
+        // await favoriteApi.addToFavorites(restaurantId);
+        setFavoriteRestaurants(prev => [...prev, restaurantId]);
+      }
+      
+      // Show a brief success message
+      Alert.alert(
+        isCurrentlyFavorite 
+          ? (t("native.favorites.removedTitle") || "Removed from Favorites")
+          : (t("native.favorites.addedTitle") || "Added to Favorites"),
+        isCurrentlyFavorite
+          ? (t("native.favorites.removedMessage") || "Restaurant removed from your favorites")
+          : (t("native.favorites.addedMessage") || "Restaurant added to your favorites"),
+        [{ text: t("common.ok") }]
+      );
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      Alert.alert(
+        t("native.favorites.errorTitle") || "Error",
+        t("native.favorites.errorMessage") || "Failed to update favorites"
+      );
+    } finally {
+      // Remove from updating list
+      setUpdatingFavorites(prev => prev.filter(id => id !== restaurantId));
+    }
+  };
+
+  // Toggle restaurant selection for teaching
   const toggleRestaurant = (restaurantId: number) => {
     setSelectedRestaurants((prev) => {
       const newSelection = prev.includes(restaurantId) 
@@ -64,17 +198,71 @@ export default function NativeSelectRestaurants() {
       [{ text: t("common.ok"), onPress: () => navigation.goBack() }]
     );
   }
-  const filteredRestaurants = mockData.restaurants.filter((restaurant: Restaurant) => {
+  
+  // Filter restaurants based on search and filters
+  const filteredRestaurants = restaurants.filter((restaurant) => {
     const matchesSearch = restaurant.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCity = filterCity === "all" || restaurant.location.includes(filterCity)
     const matchesCuisine = filterCuisine === "all" || restaurant.cuisine === filterCuisine
     const matchesLanguage = filterLanguage === "all" || restaurant.languages.includes(filterLanguage)
     return matchesSearch && matchesCity && matchesCuisine && matchesLanguage
-  })
+  });
 
-  const cities = [...new Set(mockData.restaurants.map((r: Restaurant) => r.location.split(" ")[0]))]
-  const cuisines = [...new Set(mockData.restaurants.map((r: Restaurant) => r.cuisine))]
-  const languages = [...new Set(mockData.restaurants.flatMap((r: Restaurant) => r.languages))]
+  // Get unique options for filters
+  const cities = [...new Set(restaurants.map((r) => r.location.split(" ")[0]))]
+  const cuisines = [...new Set(restaurants.map((r) => r.cuisine))]
+  const languages = [...new Set(restaurants.flatMap((r) => r.languages))]
+  
+  // Loading and error states
+  if (loadingRestaurants) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#000" />
+            <Text style={styles.backButtonText}>{t("button.back")}</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t("native.selectRestaurants")}</Text>
+          <View style={styles.placeholder}></View>
+        </View>
+        
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>
+            {t("native.restaurants.loading") || "Loading restaurants..."}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#000" />
+            <Text style={styles.backButtonText}>{t("button.back")}</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t("native.selectRestaurants")}</Text>
+          <View style={styles.placeholder}></View>
+        </View>
+        
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#dc2626" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={fetchRestaurants}
+          >
+            <Text style={styles.retryButtonText}>
+              {t("native.restaurants.retry") || "Retry"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -88,7 +276,7 @@ export default function NativeSelectRestaurants() {
         <View style={styles.placeholder}></View>
       </View>
 
-      {/* Búsqueda */}
+      {/* Search */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
         <TextInput
@@ -99,7 +287,7 @@ export default function NativeSelectRestaurants() {
         />
       </View>
 
-      {/* Filtros */}
+      {/* Filters */}
       <View style={styles.filtersGrid}>
         <View style={styles.filterItem}>
           <TouchableOpacity 
@@ -209,92 +397,123 @@ export default function NativeSelectRestaurants() {
           )}
         </View>
       </View>
-      {/* Contador de resultados */}
+      
+      {/* Results counter */}
       <View style={styles.resultsCounter}>
-        <Text style={styles.counterText}>{t("native.restaurants.found", { count: filteredRestaurants.length })}</Text>
-        <Text style={styles.counterText}>{t("native.restaurants.selectedCount", { count: selectedRestaurants.length })}</Text>
+        <Text style={styles.counterText}>
+          {t("native.restaurants.found", { count: filteredRestaurants.length })}
+        </Text>
+        <Text style={styles.counterText}>
+          {t("native.restaurants.selectedCount", { count: selectedRestaurants.length })}
+        </Text>
       </View>
 
-      {/* Lista de Restaurantes */}
+      {/* Restaurant list */}
       <ScrollView style={styles.restaurantList}>
-        {filteredRestaurants.map((restaurant: Restaurant) => (
-          <TouchableOpacity
-            key={restaurant.id}
-            style={[
-              styles.card, 
-              selectedRestaurants.includes(restaurant.id) && styles.selectedCard,
-              !restaurant.available && styles.unavailableCard
-            ]}
-            onPress={() => restaurant.available && toggleRestaurant(restaurant.id)}
-            activeOpacity={restaurant.available ? 0.7 : 1}
-          >
-            <View style={styles.cardContent}>
-              <View style={styles.restaurantContainer}>
-                <View style={styles.restaurantInfo}>
-                  <View style={styles.restaurantHeader}>
-                    <Text style={[
-                      styles.restaurantName,
-                      selectedRestaurants.includes(restaurant.id) && styles.selectedText,
-                      !restaurant.available && styles.disabledText
+        {filteredRestaurants.map((restaurant) => (
+          <View key={restaurant.id} style={styles.cardWrapper}>
+            {/* Restaurant card */}
+            <TouchableOpacity
+              style={[
+                styles.card, 
+                selectedRestaurants.includes(restaurant.id) && styles.selectedCard,
+                !restaurant.available && styles.unavailableCard
+              ]}
+              onPress={() => restaurant.available && toggleRestaurant(restaurant.id)}
+              activeOpacity={restaurant.available ? 0.7 : 1}
+            >
+              {/* Restaurant image */}
+              <Image 
+                source={{ uri: restaurant.imageUrl }} 
+                style={styles.restaurantImage}
+                resizeMode="cover"
+              />
+              
+              <View style={styles.cardContent}>
+                <View style={styles.restaurantContainer}>
+                  <View style={styles.restaurantInfo}>
+                    <View style={styles.restaurantHeader}>
+                      <Text style={[
+                        styles.restaurantName,
+                        selectedRestaurants.includes(restaurant.id) && styles.selectedText,
+                        !restaurant.available && styles.disabledText
+                      ]}>
+                        {restaurant.name}
+                      </Text>
+                      {selectedRestaurants.includes(restaurant.id) && 
+                        <View style={styles.checkmarkContainer}>
+                          <Ionicons name="checkmark-circle" size={20} color="#2563eb" />
+                        </View>
+                      }
+                    </View>
+
+                    <View style={styles.locationContainer}>
+                      <Ionicons name="location-outline" size={16} color="#4b5563" style={styles.locationIcon} />
+                      <Text style={styles.locationText}>{restaurant.location}</Text>
+                    </View>
+
+                    <Text style={styles.descriptionText}>{restaurant.description}</Text>
+
+                    <View style={styles.ratingContainer}>
+                      <View style={styles.ratingWrapper}>
+                        <Ionicons name="star" size={16} color="#f59e0b" style={styles.starIcon} />
+                        <Text style={styles.ratingText}>{restaurant.rating}</Text>
+                      </View>
+                      <View style={styles.badge}>
+                        <Text style={styles.badgeText}>{restaurant.cuisine}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.languagesContainer}>
+                      {restaurant.languages.map((lang: string) => (
+                        <View key={lang} style={styles.languageBadge}>
+                          <Text style={styles.badgeText}>{lang}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  <View style={styles.statusContainer}>
+                    <View style={[
+                      styles.statusBadge, 
+                      restaurant.available ? styles.availableBadge : styles.unavailableBadge
                     ]}>
-                      {restaurant.name}
-                    </Text>
-                    {selectedRestaurants.includes(restaurant.id) && 
-                      <View style={styles.checkmarkContainer}>
-                        <Ionicons name="checkmark-circle" size={20} color="#2563eb" />
+                      <Text style={styles.statusText}>
+                        {restaurant.available ? t("native.restaurants.available") : t("native.restaurants.unavailable")}
+                      </Text>
+                    </View>
+                    {!restaurant.available && (
+                      <View style={styles.comingSoonContainer}>
+                        <Ionicons name="time-outline" size={16} color="#6b7280" />
+                        <Text style={styles.comingSoonText}>{t("native.restaurants.comingSoon")}</Text>
                       </View>
-                    }
+                    )}
                   </View>
-
-                  <View style={styles.locationContainer}>
-                    <Ionicons name="location-outline" size={16} color="#4b5563" style={styles.locationIcon} />
-                    <Text style={styles.locationText}>{restaurant.location}</Text>
-                  </View>
-
-                  <Text style={styles.descriptionText}>{restaurant.description}</Text>
-
-                  <View style={styles.ratingContainer}>
-                    <View style={styles.ratingWrapper}>
-                      <Ionicons name="star" size={16} color="#f59e0b" style={styles.starIcon} />
-                      <Text style={styles.ratingText}>{restaurant.rating}</Text>
-                    </View>
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{restaurant.cuisine}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.languagesContainer}>
-                    {restaurant.languages.map((lang: string) => (
-                      <View key={lang} style={styles.languageBadge}>
-                        <Text style={styles.badgeText}>{lang}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-
-                <View style={styles.statusContainer}>
-                  <View style={[
-                    styles.statusBadge, 
-                    restaurant.available ? styles.availableBadge : styles.unavailableBadge
-                  ]}>
-                    <Text style={styles.statusText}>
-                      {restaurant.available ? t("native.restaurants.available") : t("native.restaurants.unavailable")}
-                    </Text>
-                  </View>
-                  {!restaurant.available && (
-                    <View style={styles.comingSoonContainer}>
-                      <Ionicons name="time-outline" size={16} color="#6b7280" />
-                      <Text style={styles.comingSoonText}>{t("native.restaurants.comingSoon")}</Text>
-                    </View>
-                  )}
                 </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+            
+            {/* Favorite button overlay */}
+            <TouchableOpacity 
+              style={styles.favoriteButton}
+              onPress={() => toggleFavorite(restaurant.id)}
+              disabled={updatingFavorites.includes(restaurant.id)}
+            >
+              {updatingFavorites.includes(restaurant.id) ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons 
+                  name={favoriteRestaurants.includes(restaurant.id) ? "heart" : "heart-outline"} 
+                  size={22} 
+                  color={favoriteRestaurants.includes(restaurant.id) ? "#dc2626" : "#ffffff"} 
+                />
+              )}
+            </TouchableOpacity>
+          </View>
         ))}
       </ScrollView>
 
-      {/* Botones de acción */}
+      {/* Action buttons */}
       <View style={styles.actionButtons}>
         <TouchableOpacity 
           style={[styles.button, styles.clearButton]} 
@@ -352,6 +571,42 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 50,
   },
+  // Loading and error styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#dc2626',
+    textAlign: 'center',
+    marginVertical: 16,
+  },
+  retryButton: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  // Search styles
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -369,6 +624,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
   },
+  // Filter styles
   filtersGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -406,6 +662,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
+  // Results counter
   resultsCounter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -415,27 +672,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4b5563',
   },
+  // Restaurant list
   restaurantList: {
     marginBottom: 16,
   },
+  cardWrapper: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
+  restaurantImage: {
+    width: '100%',
+    height: 180,
+  },
   selectedCard: {
-    backgroundColor: '#eff6ff',
     borderColor: '#3b82f6',
     borderWidth: 2,
   },
   unavailableCard: {
     opacity: 0.7,
-    backgroundColor: '#f9fafb',
   },
   selectedText: {
     color: '#2563eb',
@@ -557,6 +833,7 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginLeft: 4,
   },
+  // Action buttons
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
