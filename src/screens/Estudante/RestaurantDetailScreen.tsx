@@ -11,7 +11,8 @@ import {
   ActivityIndicator, 
   RefreshControl, 
   Alert,
-  Linking
+  Linking,
+  Platform
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
