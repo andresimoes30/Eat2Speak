@@ -75,8 +75,8 @@ const isPhysicalDevice = () => {
 
 // Helper to determine the appropriate base URL for the current environment
 const getBaseUrl = () => {
-  // Define development mode - set to true for local development
-  const isDevelopment = true;
+  // Define development mode - set to false for production mode
+  const isDevelopment = false;
   
   // If in production mode, use production URL
   if (!isDevelopment) {
