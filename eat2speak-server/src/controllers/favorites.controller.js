@@ -62,7 +62,7 @@ const getFavoriteRestaurants = async (req, res) => {
 const addFavoriteRestaurant = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { restaurantId } = req.params;
+    const restaurantId = req.params.id; // Extract id parameter from route
 
     // Check if restaurant exists
     const restaurant = await Restaurant.findByPk(restaurantId);
@@ -122,7 +122,7 @@ const addFavoriteRestaurant = async (req, res) => {
 const removeFavoriteRestaurant = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { restaurantId } = req.params;
+    const restaurantId = req.params.id; // Extract id parameter from route
 
     // Check if favorited
     const favorite = await FavoriteRestaurant.findOne({
@@ -170,7 +170,7 @@ const removeFavoriteRestaurant = async (req, res) => {
 const checkFavoriteStatus = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { restaurantId } = req.params;
+    const restaurantId = req.params.id; // Extract id parameter from route
 
     // Check if favorited
     const favorite = await FavoriteRestaurant.findOne({
