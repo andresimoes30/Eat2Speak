@@ -20,28 +20,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Card } from '../../components/Card';
 import * as Location from 'expo-location';
-// Remove NetInfo import to resolve bundling error
-
-// Simple network connectivity helper (replacement for NetInfo)
-const checkNetworkConnectivity = async (): Promise<boolean> => {
-  try {
-    // A simple fetch request to check connectivity
-    // We use a timeout to avoid hanging if network is very slow
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
-    const response = await fetch('https://www.google.com', { 
-      method: 'HEAD',
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    return response.ok;
-  } catch (error) {
-    console.log('Network connectivity check failed:', error);
-    return false;
-  }
-};
+// Import centralized connectivity utility
+import { checkNetworkConnectivity } from '../../utils/connectivity';
 
 // Define custom MapEvent interface since it's not exported from react-native-maps
 interface MapEvent {
