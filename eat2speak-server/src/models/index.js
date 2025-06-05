@@ -63,6 +63,7 @@ db.Session.hasMany(db.Review, { foreignKey: 'sessionId' });
 db.Review.belongsTo(db.Session, { foreignKey: 'sessionId' });
 
 // FavoriteRestaurant associations
+// Many-to-many relationships
 db.User.belongsToMany(db.Restaurant, { 
   through: db.FavoriteRestaurant,
   foreignKey: 'UserId',
@@ -72,6 +73,19 @@ db.Restaurant.belongsToMany(db.User, {
   through: db.FavoriteRestaurant,
   foreignKey: 'RestaurantId',
   otherKey: 'UserId'
+});
+
+// Direct associations needed by the controller
+db.FavoriteRestaurant.belongsTo(db.User, {
+  foreignKey: 'UserId',
+  targetKey: 'userId',
+  as: 'user'
+});
+
+db.FavoriteRestaurant.belongsTo(db.Restaurant, {
+  foreignKey: 'RestaurantId',
+  targetKey: 'restaurantid',
+  as: 'restaurant'
 });
 
 // Sync com banco remoto
