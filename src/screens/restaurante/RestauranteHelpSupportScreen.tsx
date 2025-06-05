@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linkin
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
-
+import { useLanguage } from "../../contexts/LanguageContext"
 // Define FAQ item type
 interface FAQItem {
   id: number;
@@ -11,51 +11,51 @@ interface FAQItem {
   answer: string;
   expanded: boolean;
 }
-
 export default function RestauranteHelpSupportScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   
   // Estado para la mensaje de soporte
   const [supportMessage, setSupportMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Estado para preguntas frecuentes
+  // Estado para preguntas frecuentes - usando el sistema de traducciones
   const [faqs, setFaqs] = useState<FAQItem[]>([
     {
       id: 1,
-      question: "¿Cómo puedo recibir más estudiantes en mi restaurante?",
-      answer: "Para atraer más estudiantes, completa tu perfil con fotos atractivas, una descripción detallada de tu restaurante y el tipo de cocina que ofreces. Mantén actualizado tu horario de disponibilidad y ofrece un ambiente acogedor para las conversaciones. Los restaurantes con buenas calificaciones aparecen más arriba en los resultados de búsqueda.",
+      question: t("restaurant.faq.moreStudents.question"),
+      answer: t("restaurant.faq.moreStudents.answer"),
       expanded: false
     },
     {
       id: 2,
-      question: "¿Cómo funcionan las comisiones?",
-      answer: "Por cada reserva completada a través de la aplicación, se aplica una comisión del 15% sobre el precio del menú o consumición. Esta comisión se descuenta automáticamente del pago que recibes. Puedes ver un desglose detallado de tus ingresos y comisiones en la sección 'Finanzas' de tu perfil.",
+      question: t("restaurant.faq.commissions.question"),
+      answer: t("restaurant.faq.commissions.answer"),
       expanded: false
     },
     {
       id: 3,
-      question: "¿Qué ocurre si un estudiante no se presenta?",
-      answer: "Si un estudiante no se presenta a una reserva confirmada, debes marcarla como 'No asistió' en la aplicación dentro de las 24 horas. Recibirás una compensación parcial por la reserva. Si esto ocurre frecuentemente con el mismo estudiante, puedes reportarlo a nuestro equipo de soporte.",
+      question: t("restaurant.faq.noShow.question"),
+      answer: t("restaurant.faq.noShow.answer"),
       expanded: false
     },
     {
       id: 4,
-      question: "¿Puedo rechazar una reserva?",
-      answer: "Sí, puedes rechazar reservas, pero te recomendamos hacerlo con anticipación para mantener una buena calificación. Rechazar reservas frecuentemente puede afectar la visibilidad de tu restaurante en la plataforma. Procura mantener tu calendario de disponibilidad actualizado para evitar solicitudes en momentos inconvenientes.",
+      question: t("restaurant.faq.rejectBooking.question"),
+      answer: t("restaurant.faq.rejectBooking.answer"),
       expanded: false
     },
     {
       id: 5,
-      question: "¿Cómo actualizo el menú y los precios?",
-      answer: "Puedes actualizar tu menú y precios en la sección 'Menú' de tu perfil. Te recomendamos mantener esta información actualizada y añadir fotos de los platos para hacerlos más atractivos. Los cambios se reflejarán inmediatamente en tu perfil público.",
+      question: t("restaurant.faq.updateMenu.question"),
+      answer: t("restaurant.faq.updateMenu.answer"),
       expanded: false
     },
     {
       id: 6,
-      question: "¿Cómo gestiono las mesas disponibles?",
-      answer: "En la sección 'Disponibilidad' puedes gestionar el número de mesas disponibles para estudiantes, así como los horarios en que tu restaurante está abierto para reservas a través de la aplicación. Puedes ajustar esta configuración según tus necesidades y la ocupación de tu local.",
+      question: t("restaurant.faq.manageTables.question"),
+      answer: t("restaurant.faq.manageTables.answer"),
       expanded: false
     },
   ]);
@@ -66,7 +66,6 @@ export default function RestauranteHelpSupportScreen() {
       faq.id === id ? { ...faq, expanded: !faq.expanded } : faq
     ));
   };
-
   // Filtrar FAQs con base en la búsqueda
   const filteredFAQs = faqs.filter(faq => 
     faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,10 +75,10 @@ export default function RestauranteHelpSupportScreen() {
   // Función para enviar mensaje de soporte
   const sendSupportMessage = () => {
     if (supportMessage.trim()) {
-      alert("Tu mensaje ha sido enviado. Te responderemos en breve.");
+      alert(t("support.messageSent"));
       setSupportMessage("");
     } else {
-      alert("Por favor, escribe un mensaje antes de enviar.");
+      alert(t("support.pleaseWriteMessage"));
     }
   };
 
@@ -129,7 +128,7 @@ export default function RestauranteHelpSupportScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Ayuda y Soporte</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("support.helpAndSupport")}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -139,7 +138,7 @@ export default function RestauranteHelpSupportScreen() {
           <Ionicons name="search-outline" size={20} color={colors.text + '80'} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Buscar ayuda..."
+            placeholder={t("support.searchHelp")}
             placeholderTextColor={colors.text + '80'}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -152,7 +151,7 @@ export default function RestauranteHelpSupportScreen() {
         </View>
 
         {/* Contactos rápidos */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Contacto Rápido</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("support.quickContact")}</Text>
         <View style={styles.contactLinksContainer}>
           {contactLinks.map(link => (
             <TouchableOpacity
@@ -164,8 +163,8 @@ export default function RestauranteHelpSupportScreen() {
                 <Ionicons name={link.icon as any} size={24} color={link.color} />
               </View>
               <View style={styles.contactTextContainer}>
-                <Text style={[styles.contactTitle, { color: colors.text }]}>{link.title}</Text>
-                <Text style={[styles.contactDescription, { color: colors.text + '80' }]}>{link.description}</Text>
+                <Text style={[styles.contactTitle, { color: colors.text }]}>{t(`support.${link.id === 1 ? 'supportEmail' : link.id === 2 ? 'phone' : link.id === 3 ? 'whatsapp' : 'helpCenter'}`)}</Text>
+                <Text style={[styles.contactDescription, { color: colors.text + '80' }]}>{link.id === 3 ? t("support.liveChat") : link.id === 4 ? t("support.visitHelpWebsite") : link.description}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.text + '80'} />
             </TouchableOpacity>
@@ -173,7 +172,7 @@ export default function RestauranteHelpSupportScreen() {
         </View>
 
         {/* FAQs */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Preguntas Frecuentes</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("support.frequentlyAskedQuestions")}</Text>
         <View style={styles.faqsContainer}>
           {filteredFAQs.length > 0 ? (
             filteredFAQs.map(faq => (
@@ -199,20 +198,20 @@ export default function RestauranteHelpSupportScreen() {
             <View style={[styles.noResultsContainer, { backgroundColor: colors.card }]}>
               <Ionicons name="search-outline" size={48} color={colors.text + '80'} />
               <Text style={[styles.noResultsText, { color: colors.text }]}>
-                No se encontraron resultados para "{searchQuery}"
+                {t("support.noResultsFound")} "{searchQuery}"
               </Text>
               <Text style={[styles.noResultsSubtext, { color: colors.text + '80' }]}>
-                Intenta con diferentes palabras o revisa nuestra sección de contacto
+                {t("support.tryDifferentWords")}
               </Text>
             </View>
           )}
         </View>
 
         {/* Formulario de soporte */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Enviar Mensaje al Soporte</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("support.sendSupportMessage")}</Text>
         <View style={[styles.supportCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.supportText, { color: colors.text + '80' }]}>
-            Envíanos un mensaje detallado sobre tu consulta o problema y te responderemos en breve.
+            {t("support.detailedMessageInstructions")}
           </Text>
           
           <TextInput
@@ -224,7 +223,7 @@ export default function RestauranteHelpSupportScreen() {
                 color: colors.text
               }
             ]}
-            placeholder="Describe tu problema o pregunta..."
+            placeholder={t("support.describeYourProblem")}
             placeholderTextColor={colors.text + '80'}
             multiline
             numberOfLines={6}
@@ -244,7 +243,7 @@ export default function RestauranteHelpSupportScreen() {
             onPress={sendSupportMessage}
           >
             <Ionicons name="send" size={20} color="white" style={{ marginRight: 8 }} />
-            <Text style={styles.sendButtonText}>Enviar Mensaje</Text>
+            <Text style={styles.sendButtonText}>{t("support.sendMessage")}</Text>
           </TouchableOpacity>
         </View>
       </View>

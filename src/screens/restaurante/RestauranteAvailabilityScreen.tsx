@@ -133,7 +133,7 @@ export default function RestauranteAvailabilityScreen() {
     )
     
     setTimeSlotsModalVisible(false)
-    Alert.alert("Éxito", "Horarios guardados correctamente")
+    Alert.alert(t("common.success"), t("restaurant.timeSlotsSuccessfullySaved"))
   }
   
   // Check if a day has any time slots selected
@@ -166,7 +166,7 @@ export default function RestauranteAvailabilityScreen() {
       t("restaurant.confirmSaveAvailability"),
       [
         {
-          text: "Cancelar",
+          text: t("common.cancel"),
           style: "cancel"
         },
         {
@@ -230,7 +230,7 @@ export default function RestauranteAvailabilityScreen() {
             
             <View style={styles.dayInfoContainer}>
               <Text style={[styles.dayInfoText, { color: colors.text }]}>
-                {selectedDay.dayOfWeek}, {selectedDay.dayNumber} de {selectedDay.month}
+                {selectedDay.dayOfWeek}, {selectedDay.dayNumber} {t("common.of")} {selectedDay.month}
               </Text>
               <View style={styles.availabilityToggleContainer}>
                 <Text style={[styles.availabilityLabel, { color: colors.text }]}>

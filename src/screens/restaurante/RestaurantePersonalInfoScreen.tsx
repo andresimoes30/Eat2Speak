@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useAuth } from "../../contexts/AuthContext"
+import { useLanguage } from "../../contexts/LanguageContext"
 
 // Country codes with flags
 const countryCodes = [
@@ -135,6 +136,7 @@ export default function RestaurantePersonalInfoScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { t } = useLanguage();
   
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedRestaurant, setEditedRestaurant] = useState<RestaurantData>(restaurantData);
@@ -152,7 +154,7 @@ export default function RestaurantePersonalInfoScreen() {
   const handleSave = () => {
     // Aquí iría la lógica para guardar los cambios
     setIsEditing(false);
-    alert("Cambios guardados correctamente");
+    alert(t("common.changesSavedSuccessfully"));
   }
   
   // Select country code
@@ -197,10 +199,10 @@ export default function RestaurantePersonalInfoScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Información Personal</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("profile.personalInfo")}</Text>
         <TouchableOpacity style={styles.editButton} onPress={() => (isEditing ? handleSave() : setIsEditing(true))}>
           <Text style={[styles.editButtonText, { color: colors.primary }]}>
-            {isEditing ? "Guardar" : "Editar"}
+            {isEditing ? t("common.save") : t("common.edit")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -216,10 +218,10 @@ export default function RestaurantePersonalInfoScreen() {
       
       <View style={styles.content}>
         <View style={[styles.infoCard, { marginTop: 0, backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos del Restaurante</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.restaurantData")}</Text>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Nombre del Restaurante</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("restaurant.restaurantName")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -232,7 +234,7 @@ export default function RestaurantePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Tipo de Cocina</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("restaurant.cuisineType")}</Text>
             {isEditing ? (
               <TouchableOpacity
                 style={[styles.selectInput, { borderColor: colors.border }]}
@@ -247,7 +249,7 @@ export default function RestaurantePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Dirección</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("restaurant.address")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -261,7 +263,7 @@ export default function RestaurantePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>CIF/NIF</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("restaurant.taxId")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -275,10 +277,10 @@ export default function RestaurantePersonalInfoScreen() {
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos del Propietario</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.ownerData")}</Text>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Nombre</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("common.firstName")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -291,7 +293,7 @@ export default function RestaurantePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Apellidos</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("common.lastName")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -304,7 +306,7 @@ export default function RestaurantePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Email</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("common.email")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -318,7 +320,7 @@ export default function RestaurantePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Teléfono</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("common.phone")}</Text>
             {isEditing ? (
               <View style={styles.phoneInputContainer}>
                 <TouchableOpacity 
@@ -346,10 +348,10 @@ export default function RestaurantePersonalInfoScreen() {
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos de Operación</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.operationData")}</Text>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Horario de Apertura</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("restaurant.openingHours")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -362,7 +364,7 @@ export default function RestaurantePersonalInfoScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Capacidad por Mesa</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("restaurant.tableCapacity")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -376,12 +378,12 @@ export default function RestaurantePersonalInfoScreen() {
                 keyboardType="numeric"
               />
             ) : (
-              <Text style={[styles.infoValue, { color: colors.text }]}>{restaurantData.tableCapacity} personas</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{restaurantData.tableCapacity} {t("common.people")}</Text>
             )}
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Número de Mesas</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("restaurant.numberOfTables")}</Text>
             {isEditing ? (
               <TextInput
                 style={[styles.infoInput, { color: colors.text, borderColor: colors.border }]}
@@ -395,19 +397,19 @@ export default function RestaurantePersonalInfoScreen() {
                 keyboardType="numeric"
               />
             ) : (
-              <Text style={[styles.infoValue, { color: colors.text }]}>{restaurantData.totalTables} mesas</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{restaurantData.totalTables} {t("common.tables")}</Text>
             )}
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>Comisión de Servicio</Text>
+            <Text style={[styles.infoLabel, { color: colors.text + "80" }]}>{t("restaurant.serviceCommission")}</Text>
             <Text style={[styles.infoValue, { color: colors.text }]}>{restaurantData.commissionRate}%</Text>
-            <Text style={[styles.readOnlyText, { color: colors.text + "60" }]}>(Solo lectura)</Text>
+            <Text style={[styles.readOnlyText, { color: colors.text + "60" }]}>{t("common.readOnly")}</Text>
           </View>
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Idiomas Disponibles</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.availableLanguages")}</Text>
 
           <View style={styles.languagesContainer}>
             {editedRestaurant.languages.map((language, index) => (
@@ -445,14 +447,14 @@ export default function RestaurantePersonalInfoScreen() {
                 onPress={() => setShowAddLanguageModal(true)}
               >
                 <Ionicons name="add" size={16} color={colors.primary} />
-                <Text style={[styles.addLanguageText, { color: colors.primary }]}>Añadir</Text>
+                <Text style={[styles.addLanguageText, { color: colors.primary }]}>{t("common.add")}</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Descripción</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("common.description")}</Text>
           {isEditing ? (
             <TextInput
               style={[
@@ -484,7 +486,7 @@ export default function RestaurantePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Seleccionar Código de País</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t("restaurant.selectCountryCode")}</Text>
             <FlatList
               data={countryCodes}
               keyExtractor={(item) => `${item.code}-${item.country}`}
@@ -509,7 +511,7 @@ export default function RestaurantePersonalInfoScreen() {
               style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={() => setShowCountryCodeModal(false)}
             >
-              <Text style={{ color: 'white', fontWeight: '600' }}>Cancelar</Text>
+              <Text style={{ color: 'white', fontWeight: '600' }}>{t("common.cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -524,7 +526,7 @@ export default function RestaurantePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Seleccionar Tipo de Cocina</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t("restaurant.selectCuisineType")}</Text>
             <FlatList
               data={cuisineTypes}
               keyExtractor={(item) => item}
@@ -548,7 +550,7 @@ export default function RestaurantePersonalInfoScreen() {
               style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={() => setShowCuisineTypeModal(false)}
             >
-              <Text style={{ color: 'white', fontWeight: '600' }}>Cancelar</Text>
+              <Text style={{ color: 'white', fontWeight: '600' }}>{t("common.cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -563,10 +565,10 @@ export default function RestaurantePersonalInfoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Añadir Idioma</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t("restaurant.addLanguage")}</Text>
             
             <View style={{ marginBottom: 20 }}>
-              <Text style={[styles.modalLabel, { color: colors.text + "80" }]}>Selecciona los idiomas que se hablan en tu restaurante</Text>
+              <Text style={[styles.modalLabel, { color: colors.text + "80" }]}>{t("restaurant.selectLanguagesSpoken")}</Text>
               
               <FlatList
                 data={[
@@ -595,7 +597,7 @@ export default function RestaurantePersonalInfoScreen() {
                       <Ionicons name="checkmark" size={20} color={colors.primary} style={{ marginLeft: 'auto' }} />
                     )}
                     {editedRestaurant.languages.includes(item) && (
-                      <Text style={{ color: colors.text + "40", marginLeft: 'auto' }}>Ya añadido</Text>
+                      <Text style={{ color: colors.text + "40", marginLeft: 'auto' }}>{t("common.alreadyAdded")}</Text>
                     )}
                   </TouchableOpacity>
                 )}
@@ -611,7 +613,7 @@ export default function RestaurantePersonalInfoScreen() {
                   setShowAddLanguageModal(false);
                 }}
               >
-                <Text style={{ color: colors.text, fontWeight: '600' }}>Cancelar</Text>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>{t("common.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -627,7 +629,7 @@ export default function RestaurantePersonalInfoScreen() {
                 onPress={handleAddLanguage}
                 disabled={!newLanguage || editedRestaurant.languages.includes(newLanguage)}
               >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Añadir</Text>
+                <Text style={{ color: 'white', fontWeight: '600' }}>{t("common.add")}</Text>
               </TouchableOpacity>
             </View>
           </View>
