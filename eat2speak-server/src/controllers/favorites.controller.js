@@ -5,6 +5,7 @@
  * - Retrieving a user's favorite restaurants
  * - Adding a restaurant to favorites
  * - Removing a restaurant from favorites
+ * - Checking if a restaurant is in a user's favorites
  * 
  * @module controllers/favorites.controller
  */
@@ -32,7 +33,7 @@ const getFavoriteRestaurants = async (req, res) => {
         {
           model: Restaurant,
           as: 'restaurant',
-          attributes: ['restaurantid', 'name', 'cuisineType', 'address']
+          attributes: ['restaurantid', 'name', 'cuisineType', 'address', 'rating', 'description']
         }
       ]
     });
