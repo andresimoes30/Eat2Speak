@@ -1,25 +1,31 @@
-import { useContext, useState, useMemo } from "react"
-import { View, Text, Image, ScrollView, Switch, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native"
+import { useContext, useState, useMemo, useEffect } from "react"
+import { View, Text, Image, ScrollView, Switch, StyleSheet, TouchableOpacity, Modal, Alert, ActivityIndicator } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useNavigation } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
-import { AppContext, AppContextType, Notification, Session, mockData } from "./AppTypes"
+import { AppContext, AppContextType, Notification, Session, Restaurant, mockData } from "./AppTypes"
+import * as favoriteApi from "../../../services/favoriteApi"
 import { useLanguage } from "../../contexts/LanguageContext"
-
+  NativeHomeMain: undefined;
+  NativeSelectRestaurants: undefined;
+  NativeHistoryMain: undefined; // Added for cross-stack navigation
+};
 // Define the parameter list for the HomeStack navigator
 type HomeStackParamList = {
   NativeHomeMain: undefined;
   NativeSelectRestaurants: undefined;
   NativeHistoryMain: undefined; // Added for cross-stack navigation
 };
-
+// Handle both API response and mock data for favorites
+interface RestaurantWithFavorite extends Restaurant {
+  isFavorite: boolean;
+}
 // Define the navigation prop type
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   HomeStackParamList,
   'NativeHomeMain'
 >;
-
 // ProgressBar component for language teaching progress
 const ProgressBar = ({ progress, color }: { progress: number, color: string }) => {
   return (
@@ -33,7 +39,107 @@ const ProgressBar = ({ progress, color }: { progress: number, color: string }) =
     </View>
   )
 }
-
+  // State for favorite restaurants
+  const [favoriteRestaurants, setFavoriteRestaurants] = useState<RestaurantWithFavorite[]>([])
+  const [loadingFavorites, setLoadingFavorites] = useState(true)
+  const [favoritesError, setFavoritesError] = useState<string | null>(null)
+  const [updatingFavorites, setUpdatingFavorites] = useState<number[]>([])
+  
+  // Fetch favorite restaurants on component mount
+  useEffect(() => {
+    fetchFavoriteRestaurants()
+  }, [])
+  
+  // Function to fetch favorite restaurants
+  const fetchFavoriteRestaurants = async () => {
+    setLoadingFavorites(true)
+    setFavoritesError(null)
+    
+    try {
+      // In a production app, this would use the real API
+      // For now, we'll use the mock data but simulate an API call
+      setTimeout(() => {
+        // Simulate API call with mock data
+        const favorites = mockData.favoriteRestaurants.map(restaurant => ({
+          ...restaurant,
+          isFavorite: true
+        }))
+        setFavoriteRestaurants(favorites)
+        setLoadingFavorites(false)
+      }, 1000)
+      
+      // Commented out real API call for future implementation
+      /*
+      const favorites = await favoriteApi.getFavoriteRestaurants()
+      setFavoriteRestaurants(favorites.map(restaurant => ({
+        ...restaurant,
+        isFavorite: true
+      })))
+      */
+    } catch (error) {
+      console.error("Error fetching favorite restaurants:", error)
+      setFavoritesError("Failed to load favorite restaurants")
+      setLoadingFavorites(false)
+    }
+  }
+  
+  // Toggle favorite status of a restaurant
+  const toggleFavorite = async (restaurantId: number) => {
+    // Add restaurant ID to updating list to show loading indicator
+    setUpdatingFavorites(prev => [...prev, restaurantId])
+    
+    try {
+      // Check if restaurant is already a favorite
+      const isCurrentlyFavorite = favoriteRestaurants.some(r => r.id === restaurantId && r.isFavorite)
+      
+      if (isCurrentlyFavorite) {
+        // Remove from favorites
+        // In production, this would call the real API
+        // await favoriteApi.removeFromFavorites(restaurantId)
+        
+        // Update local state
+        setFavoriteRestaurants(prev => 
+          prev.filter(restaurant => restaurant.id !== restaurantId)
+        )
+        
+        // Show success message
+        Alert.alert(
+          t("native.favorites.removedTitle") || "Removed from Favorites",
+          t("native.favorites.removedMessage") || "Restaurant removed from your favorites"
+        )
+      } else {
+        // Find restaurant in all restaurants
+        const restaurantToAdd = mockData.restaurants.find(r => r.id === restaurantId)
+        
+        if (restaurantToAdd) {
+          // Add to favorites
+          // In production, this would call the real API
+          // await favoriteApi.addToFavorites(restaurantId)
+          
+          // Update local state
+          setFavoriteRestaurants(prev => [
+            ...prev, 
+            { ...restaurantToAdd, isFavorite: true }
+          ])
+          
+          // Show success message
+          Alert.alert(
+            t("native.favorites.addedTitle") || "Added to Favorites",
+            t("native.favorites.addedMessage") || "Restaurant added to your favorites"
+          )
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling favorite status:", error)
+      Alert.alert(
+        t("native.favorites.errorTitle") || "Error",
+        t("native.favorites.errorMessage") || "Failed to update favorites"
+      )
+    } finally {
+      // Remove from updating list
+      setUpdatingFavorites(prev => prev.filter(id => id !== restaurantId))
+    }
+  }
 // Card component to maintain consistent styling
 const Card = ({ children, style }: { children: React.ReactNode, style?: any }) => {
   return (
@@ -42,7 +148,97 @@ const Card = ({ children, style }: { children: React.ReactNode, style?: any }) =
     </View>
   )
 }
-
+      {/* Favorite Restaurants Section */}
+      <Card style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>
+            {t("native.favorites.title") || "Favorite Restaurants"}
+          </Text>
+          <TouchableOpacity onPress={fetchFavoriteRestaurants}>
+            <Ionicons name="refresh" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+          {t("native.favorites.subtitle") || "Restaurants you've marked as favorites"}
+        </Text>
+        
+        {loadingFavorites ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              {t("native.favorites.loading") || "Loading favorites..."}
+            </Text>
+          </View>
+        ) : favoritesError ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={24} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{favoritesError}</Text>
+            <TouchableOpacity 
+              style={[styles.retryButton, { borderColor: colors.primary }]}
+              onPress={fetchFavoriteRestaurants}
+            >
+              <Text style={{ color: colors.primary }}>
+                {t("native.favorites.retry") || "Retry"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : favoriteRestaurants.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="heart-outline" size={24} color={colors.textSecondary} />
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+              {t("native.favorites.empty") || "You haven't added any favorite restaurants yet"}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.favoritesContainer}>
+            {favoriteRestaurants.map((restaurant) => (
+              <View key={restaurant.id} style={[styles.favoriteItem, { borderColor: colors.border }]}>
+                <View style={styles.favoriteContent}>
+                  <View style={styles.favoriteHeader}>
+                    <Text style={[styles.favoriteName, { color: colors.text }]}>{restaurant.name}</Text>
+                    <View style={styles.favoriteRating}>
+                      <Ionicons name="star" size={16} color={colors.gold[600]} />
+                      <Text style={styles.favoriteRatingText}>{restaurant.rating}</Text>
+                    </View>
+                  </View>
+                  
+                  <Text style={[styles.favoriteLocation, { color: colors.textSecondary }]}>
+                    {restaurant.location}
+                  </Text>
+                  
+                  <View style={styles.cuisineBadge}>
+                    <Text style={styles.cuisineBadgeText}>{restaurant.cuisine}</Text>
+                  </View>
+                  
+                  <View style={styles.favoriteLanguages}>
+                    {restaurant.languages.map((language, index) => (
+                      <View key={index} style={styles.languageTag}>
+                        <Text style={styles.languageTagText}>{language}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.favoriteAction}
+                  onPress={() => toggleFavorite(restaurant.id)}
+                  disabled={updatingFavorites.includes(restaurant.id)}
+                >
+                  {updatingFavorites.includes(restaurant.id) ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Ionicons 
+                      name="heart" 
+                      size={24} 
+                      color={colors.error}
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
 export default function NativeHomeScreen() {
   const { appState, updateAppState } = useContext(AppContext) as AppContextType
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -99,7 +295,100 @@ export default function NativeHomeScreen() {
     // Close the modal
     setShowAvailabilityModal(false);
   }
-
+  // Favorites styles
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+  },
+  errorContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    marginTop: 10,
+    marginBottom: 16,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  favoritesContainer: {
+    marginTop: 8,
+  },
+  favoriteItem: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 12,
+    padding: 12,
+  },
+  favoriteContent: {
+    flex: 1,
+  },
+  favoriteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  favoriteName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  favoriteRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  favoriteRatingText: {
+    marginLeft: 4,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#b45309',
+  },
+  favoriteLocation: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  cuisineBadge: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  cuisineBadgeText: {
+    fontSize: 12,
+    color: '#4b5563',
+  },
+  favoriteLanguages: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  languageTag: {
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginRight: 4,
+    marginBottom: 4,
+  },
+  languageTagText: {
+    fontSize: 12,
+    color: '#2563eb',
+  },
+  favoriteAction: {
+    justifyContent: 'center',
+    paddingLeft: 12,
+  },
   const unreadNotifications = appState.notifications.filter((n: Notification) => !n.read).length
   
   // Theme colors (simplified version since we don't have ThemeContext)
