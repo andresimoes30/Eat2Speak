@@ -445,20 +445,7 @@ export default function RestaurantDetailScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.sections.about")}</Text>
               <Text style={[styles.description, { color: colors.text + "90" }]}>{restaurant.description}</Text>
 
-              <View style={styles.contactInfo}>
-                <View style={styles.contactItem}>
-                  <Ionicons name="call-outline" size={18} color={colors.primary} style={styles.contactIcon} />
-                  <Text style={[styles.contactText, { color: colors.text }]}>{restaurant.phone}</Text>
-                </View>
-                <View style={styles.contactItem}>
-                  <Ionicons name="globe-outline" size={18} color={colors.primary} style={styles.contactIcon} />
-                  <Text style={[styles.contactText, { color: colors.text }]}>{restaurant.website}</Text>
-                </View>
-                <View style={styles.contactItem}>
-                  <Ionicons name="time-outline" size={18} color={colors.primary} style={styles.contactIcon} />
-                  <Text style={[styles.contactText, { color: colors.text }]}>{restaurant.hours}</Text>
-                </View>
-              </View>
+              {/* Contact information removed as requested */}
             </Card>
 
             <Card style={styles.infoCard}>
