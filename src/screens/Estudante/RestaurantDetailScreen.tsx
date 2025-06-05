@@ -457,38 +457,114 @@ export default function RestaurantDetailScreen() {
                   style={styles.mapBackground}
                 />
                 
-                {/* Location pin and address display */}
-                <View style={styles.mapContent}>
-                  <View style={styles.mapPinContainer}>
-                    <View style={[styles.mapPin, { backgroundColor: colors.blue[600] }]}>
-                      <Ionicons name="location" size={24} color="white" />
+                {/* Map grid lines for visual effect - more lines for zoomed out effect */}
+                <View style={styles.mapGrid}>
+                  {[...Array(10)].map((_, i) => (
+                    <View 
+                      key={`h-${i}`} 
+                      style={[
+                        styles.mapGridLine, 
+                        styles.mapGridHorizontal, 
+                        { 
+                          top: `${10 * i}%`, 
+                          borderColor: colors.blue[200] + (i % 3 === 0 ? '70' : '30')
+                        }
+                      ]} 
+                    />
+                  ))}
+                  {[...Array(10)].map((_, i) => (
+                    <View 
+                      key={`v-${i}`} 
+                      style={[
+                        styles.mapGridLine, 
+                        styles.mapGridVertical, 
+                        { 
+                          left: `${10 * i}%`, 
+                          borderColor: colors.blue[200] + (i % 3 === 0 ? '70' : '30')
+                        }
+                      ]} 
+                    />
+                  ))}
+                </View>
+                
+                {/* Multiple road-like elements for visual effect - more roads for zoomed out effect */}
+                <View style={[styles.mapRoad, { backgroundColor: colors.blue[200] + '80', height: 14 }]} />
+                <View style={[styles.mapRoadSecondary, { backgroundColor: colors.blue[200] + '70', width: 14 }]} />
+                
+                {/* Additional roads to create a grid */}
+                <View style={[styles.mapRoad, { 
+                  backgroundColor: colors.blue[200] + '60', 
+                  height: 10, 
+                  top: '25%',
+                  marginTop: -5
+                }]} />
+                <View style={[styles.mapRoad, { 
+                  backgroundColor: colors.blue[200] + '60', 
+                  height: 10, 
+                  top: '75%',
+                  marginTop: -5
+                }]} />
+                <View style={[styles.mapRoadSecondary, { 
+                  backgroundColor: colors.blue[200] + '60', 
+                  width: 10, 
+                  left: '25%',
+                  marginLeft: -5
+                }]} />
+                <View style={[styles.mapRoadSecondary, { 
+                  backgroundColor: colors.blue[200] + '60', 
+                  width: 10, 
+                  left: '75%',
+                  marginLeft: -5
+                }]} />
+                
+                {/* City blocks for zoomed out effect */}
+                <View style={[styles.cityBlock, { top: '20%', left: '20%', backgroundColor: colors.blue[200] + '20' }]} />
+                <View style={[styles.cityBlock, { top: '20%', left: '60%', backgroundColor: colors.blue[200] + '15' }]} />
+                <View style={[styles.cityBlock, { top: '60%', left: '30%', backgroundColor: colors.blue[200] + '25' }]} />
+                <View style={[styles.cityBlock, { top: '70%', left: '70%', backgroundColor: colors.blue[200] + '15' }]} />
+                
+                {/* Location pin and address display - smaller for zoomed out effect */}
+                <View style={[styles.mapContent, { justifyContent: 'center' }]}>
+                  {/* Center pin - the restaurant location */}
+                  <View style={[styles.mapPinContainer, { position: 'absolute', top: '47%', left: '47%' }]}>
+                    <View style={[styles.mapPin, { 
+                      backgroundColor: colors.blue[600],
+                      width: 32, 
+                      height: 32,
+                      borderRadius: 16,
+                    }]}>
+                      <Ionicons name="location" size={18} color="white" />
                     </View>
-                    <View style={[styles.mapPinShadow, { backgroundColor: colors.blue[600] + '30' }]} />
+                    <View style={[styles.mapPinShadow, { 
+                      backgroundColor: colors.blue[600] + '30',
+                      width: 24,
+                      height: 6,
+                      bottom: -3
+                    }]} />
                   </View>
                   
-                  <View style={styles.mapAddressContainer}>
-                    <Text style={[styles.mapAddressTitle, { color: colors.text }]}>
+                  {/* Small additional points of interest for context */}
+                  <View style={[styles.smallPin, { top: '30%', left: '25%', backgroundColor: colors.blue[300] }]} />
+                  <View style={[styles.smallPin, { top: '65%', left: '35%', backgroundColor: colors.blue[300] }]} />
+                  <View style={[styles.smallPin, { top: '75%', left: '75%', backgroundColor: colors.blue[300] }]} />
+                  <View style={[styles.smallPin, { top: '20%', left: '65%', backgroundColor: colors.blue[300] }]} />
+                  
+                  {/* Address info - positioned in bottom right for better visibility */}
+                  <View style={[styles.mapAddressContainer, { 
+                    position: 'absolute',
+                    bottom: 30,
+                    right: 12,
+                    width: '60%',
+                    backgroundColor: 'rgba(255,255,255,0.9)'
+                  }]}>
+                    <Text style={[styles.mapAddressTitle, { color: colors.text, fontSize: 14 }]}>
                       {restaurant.name}
                     </Text>
-                    <Text style={[styles.mapAddressText, { color: colors.text + "90" }]}>
+                    <Text style={[styles.mapAddressText, { color: colors.text + "90", fontSize: 12 }]}>
                       {restaurant.location}
                     </Text>
                   </View>
                 </View>
-                
-                {/* Map grid lines for visual effect */}
-                <View style={styles.mapGrid}>
-                  {[...Array(5)].map((_, i) => (
-                    <View key={`h-${i}`} style={[styles.mapGridLine, styles.mapGridHorizontal, { borderColor: colors.blue[200] + '50' }]} />
-                  ))}
-                  {[...Array(5)].map((_, i) => (
-                    <View key={`v-${i}`} style={[styles.mapGridLine, styles.mapGridVertical, { borderColor: colors.blue[200] + '50' }]} />
-                  ))}
-                </View>
-                
-                {/* Road-like elements for visual effect */}
-                <View style={[styles.mapRoad, { backgroundColor: colors.blue[200] + '80' }]} />
-                <View style={[styles.mapRoadSecondary, { backgroundColor: colors.blue[200] + '50' }]} />
                 
                 {/* Map Label */}
                 <View style={[styles.mapLabel, { backgroundColor: colors.card }]}>
