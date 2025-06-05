@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { 
   View, 
   Text, 
@@ -15,14 +15,20 @@ import {
   Platform
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-// Remove MapView import to avoid native module error
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
+import * as Location from "expo-location"
+import NetInfo from "@react-native-community/netinfo"
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { Card } from "../../components/Card"
 import restaurantApi from "../../../services/restaurantApi"
+import Geocoder from "react-native-geocoding"
 
+// Initialize Geocoder with a placeholder API key (should be replaced with your actual key)
+// For production, store this in environment variables or secure configuration
+Geocoder.init("YOUR_GOOGLE_MAPS_API_KEY")
 // Definindo interfaces para tipagem
 interface MenuItem {
   id: number
@@ -30,7 +36,6 @@ interface MenuItem {
   price: string
   description: string
 }
-
 interface Review {
   id: number
   user: string
@@ -38,7 +43,6 @@ interface Review {
   date: string
   comment: string
 }
-
 interface RestaurantDetail {
   id: number
   name: string
@@ -61,17 +65,20 @@ interface RestaurantDetail {
   }
 }
 
+// Interface for map-related errors
+interface MapError {
+  code?: string;
+  message: string;
+}
 // Interface for API error
 interface ApiError {
   message: string
   code?: string
 }
-
 // Definindo tipos para as rotas de navegação
 type RootStackParamList = {
   RestaurantDetail: { id?: number; name?: string }
 }
-
 // Default restaurant data (used while loading or as fallback)
 // Default fallback data for when the API call fails or for initial loading UI
 const fallbackRestaurantDetails: RestaurantDetail = {
@@ -131,11 +138,17 @@ const fallbackRestaurantDetails: RestaurantDetail = {
   ],
 }
 
+// Default region for the map (Lisbon, Portugal)
+const DEFAULT_REGION = {
+  latitude: 38.7223,
+  longitude: -9.1393,
+  latitudeDelta: 0.01,
+  longitudeDelta: 0.01,
+};
 // Definindo tipos para as rotas de navegação
 type NavigationProp = {
   navigate: (screen: string, params: { restaurantId: number; restaurantName: string }) => void
 }
-
 // Helper function to get random menu items
 const getRandomMenuItems = (count: number = 3): MenuItem[] => {
   const menuItems = [
@@ -174,7 +187,6 @@ const getRandomMenuItems = (count: number = 3): MenuItem[] => {
   // Return random items from the menu
   return [...menuItems].sort(() => 0.5 - Math.random()).slice(0, count);
 };
-
 // Helper function to get random reviews
 const getRandomReviews = (count: number = 2): Review[] => {
   const reviews = [
@@ -211,7 +223,6 @@ const getRandomReviews = (count: number = 2): Review[] => {
   // Return random reviews
   return [...reviews].sort(() => 0.5 - Math.random()).slice(0, count);
 };
-
 // Function to transform API data to match our component's data structure
 const transformRestaurantData = (apiData: any): RestaurantDetail => {
   if (!apiData) return fallbackRestaurantDetails;
@@ -250,6 +261,36 @@ const transformRestaurantData = (apiData: any): RestaurantDetail => {
   };
 };
 
+// Function to geocode an address to coordinates
+const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number } | null> => {
+  if (!address || address === "Endereço não disponível") {
+    return null;
+  }
+  
+  try {
+    // Check for network connectivity
+    const netInfoState = await NetInfo.fetch();
+    if (!netInfoState.isConnected) {
+      throw new Error('No network connection');
+    }
+    
+    const response = await Geocoder.from(address);
+    
+    if (!response.results || response.results.length === 0) {
+      return null;
+    }
+    
+    const { lat, lng } = response.results[0].geometry.location;
+    
+    return {
+      latitude: lat,
+      longitude: lng
+    };
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return null;
+  }
+};
 export default function RestaurantDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "RestaurantDetail">>()
   const navigation = useNavigation<NavigationProp>()
@@ -262,7 +303,14 @@ export default function RestaurantDetailScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
+  
+  // Map-specific states
+  const mapRef = useRef<MapView | null>(null)
+  const [mapRegion, setMapRegion] = useState<Region>(DEFAULT_REGION)
+  const [mapReady, setMapReady] = useState(false)
+  const [mapError, setMapError] = useState<string | null>(null)
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false)
+  const [isNetworkConnected, setIsNetworkConnected] = useState<boolean | null>(true)
   // Get the restaurant ID from route params
   const restaurantId = route.params?.id || 1
 
@@ -285,7 +333,25 @@ export default function RestaurantDetailScreen() {
       
       // Update state with fetched data
       setRestaurant(transformedData);
+      
+      // Update map region based on restaurant coordinates
+      if (transformedData.coordinates) {
+        const newRegion = {
+          latitude: transformedData.coordinates.latitude,
+          longitude: transformedData.coordinates.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01
+        };
+        setMapRegion(newRegion);
+        
+        // Animate map to restaurant location if map is ready
+        if (mapRef.current && mapReady) {
+          mapRef.current.animateToRegion(newRegion, 1000);
+        }
+      }
+      
       setError(null);
+      setMapError(null);
     } catch (err) {
       const apiError = err as ApiError;
       const errorMessage = apiError.message || "Failed to load restaurant details";
@@ -310,12 +376,141 @@ export default function RestaurantDetailScreen() {
       setRefreshing(false);
     }
   }, []);
-
+  
+  // Check network connectivity
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsNetworkConnected(state.isConnected);
+      
+      // Update map error based on connectivity
+      if (!state.isConnected) {
+        setMapError(t('map.noNetworkConnection') || 'No network connection. Map functionality may be limited.');
+      } else if (mapError === 'No network connection. Map functionality may be limited.') {
+        setMapError(null);
+      }
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [mapError, t]);
+  
+  // Request location permissions
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      try {
+        if (Platform.OS === 'android') {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          setLocationPermissionGranted(status === 'granted');
+        } else {
+          // iOS
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          setLocationPermissionGranted(status === 'granted');
+        }
+      } catch (err) {
+        console.error('Error requesting location permission:', err);
+        setLocationPermissionGranted(false);
+      }
+    };
+    
+    requestLocationPermission();
+  }, []);
+  
+  // Try to geocode the restaurant address if coordinates are missing
+  useEffect(() => {
+    const tryGeocodeAddress = async () => {
+      // Skip if we already have valid coordinates or no address
+      if (
+        (restaurant.coordinates.latitude !== 0 && restaurant.coordinates.longitude !== 0) ||
+        !restaurant.location ||
+        restaurant.location === "Endereço não disponível"
+      ) {
+        return;
+      }
+      
+      try {
+        const coordinates = await geocodeAddress(restaurant.location);
+        
+        if (coordinates) {
+          // Update restaurant with geocoded coordinates
+          setRestaurant(prev => ({
+            ...prev,
+            coordinates
+          }));
+          
+          // Update map region
+          const newRegion = {
+            ...coordinates,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01
+          };
+          
+          setMapRegion(newRegion);
+          
+          // Animate map to new coordinates if map is ready
+          if (mapRef.current && mapReady) {
+            mapRef.current.animateToRegion(newRegion, 1000);
+          }
+        }
+      } catch (err) {
+        console.error('Error geocoding address:', err);
+        // Don't set error state here as it's not critical, just fall back to default coordinates
+      }
+    };
+    
+    if (isNetworkConnected) {
+      tryGeocodeAddress();
+    }
+  }, [restaurant.location, isNetworkConnected, mapReady]);
   // Fetch restaurant details when component mounts or ID changes
   useEffect(() => {
     fetchRestaurantDetails(restaurantId);
   }, [restaurantId, fetchRestaurantDetails]);
-
+  
+  // Handle map ready event
+  const handleMapReady = useCallback(() => {
+    setMapReady(true);
+    
+    // Animate to restaurant location if we have coordinates
+    if (mapRef.current && restaurant.coordinates) {
+      const region = {
+        latitude: restaurant.coordinates.latitude,
+        longitude: restaurant.coordinates.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01
+      };
+      
+      mapRef.current.animateToRegion(region, 1000);
+    }
+  }, [restaurant.coordinates]);
+  
+  // Open directions in native maps app
+  const openDirections = useCallback(() => {
+    const { latitude, longitude } = restaurant.coordinates;
+    const label = encodeURIComponent(restaurant.name);
+    
+    const scheme = Platform.select({
+      ios: 'maps://0,0?q=',
+      android: 'geo:0,0?q='
+    });
+    
+    const latLng = `${latitude},${longitude}`;
+    const url = Platform.select({
+      ios: `${scheme}${label}@${latLng}`,
+      android: `${scheme}${latLng}(${label})`
+    });
+    
+    if (url) {
+      Linking.openURL(url).catch(err => {
+        console.error('Error opening maps app:', err);
+        Alert.alert(
+          "Error",
+          "Unable to open maps application. Please make sure you have a maps app installed.",
+          [{ text: "OK" }]
+        );
+      });
+    }
+  }, [restaurant.coordinates, restaurant.name]);
   // Handle pull-to-refresh
   const handleRefresh = useCallback(() => {
     fetchRestaurantDetails(restaurantId, true);
@@ -481,62 +676,67 @@ export default function RestaurantDetailScreen() {
             <Card style={styles.infoCard}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.sections.location")}</Text>
               <View style={styles.mapContainer}>
-                {/* Static map visualization to avoid native module errors */}
-                <View style={styles.mapBackground}>
-                  {/* Map grid pattern */}
-                  <View style={styles.mapGrid}>
-                    {[...Array(5)].map((_, i) => (
-                      <View 
-                        key={`h-${i}`} 
-                        style={[
-                          styles.mapGridLine, 
-                          styles.mapGridHorizontal, 
-                          { 
-                            top: `${20 * (i + 1)}%`, 
-                            borderColor: 'rgba(255,255,255,0.2)' 
-                          }
-                        ]} 
-                      />
-                    ))}
-                    {[...Array(5)].map((_, i) => (
-                      <View 
-                        key={`v-${i}`} 
-                        style={[
-                          styles.mapGridLine, 
-                          styles.mapGridVertical, 
-                          { 
-                            left: `${20 * (i + 1)}%`, 
-                            borderColor: 'rgba(255,255,255,0.2)' 
-                          }
-                        ]} 
-                      />
-                    ))}
+                {/* Show map error if there is one */}
+                {mapError && (
+                  <View style={[styles.mapErrorContainer, { backgroundColor: colors.error + '15' }]}>
+                    <Ionicons name="alert-circle-outline" size={24} color={colors.error} />
+                    <Text style={[styles.mapErrorText, { color: colors.error }]}>
+                      {mapError}
+                    </Text>
                   </View>
-
-                  {/* Simulated roads */}
-                  <View style={[styles.mapRoad, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
-                  <View style={[styles.mapRoadSecondary, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
-                  
-                  {/* Location marker */}
-                  <View style={styles.mapMarkerContainer}>
-                    <View style={[styles.mapMarker, { backgroundColor: colors.blue[600] }]}>
-                      <Ionicons name="location" size={20} color="white" />
-                    </View>
-                    <View style={[styles.mapMarkerShadow, { backgroundColor: colors.blue[600] + '50' }]} />
-                  </View>
-                </View>
+                )}
                 
-                {/* Address info container */}
+                {/* Dynamic map view */}
+                <MapView
+                  ref={mapRef}
+                  style={styles.map}
+                  provider={PROVIDER_GOOGLE}
+                  initialRegion={mapRegion}
+                  region={mapRegion}
+                  onMapReady={handleMapReady}
+                  showsUserLocation={locationPermissionGranted}
+                  showsMyLocationButton={false}
+                  showsCompass={true}
+                  showsScale={true}
+                  zoomEnabled={true}
+                  rotateEnabled={true}
+                  scrollEnabled={true}
+                  pitchEnabled={true}
+                >
+                  {/* Restaurant marker */}
+                  <Marker
+                    coordinate={{
+                      latitude: restaurant.coordinates.latitude,
+                      longitude: restaurant.coordinates.longitude
+                    }}
+                    title={restaurant.name}
+                    description={restaurant.location}
+                  >
+                    <View style={styles.customMarkerContainer}>
+                      <View style={[styles.customMarker, { backgroundColor: colors.blue[600] }]}>
+                        <Ionicons name="restaurant" size={16} color="white" />
+                      </View>
+                      <View style={[styles.customMarkerTriangle, { borderBottomColor: colors.blue[600] }]} />
+                    </View>
+                  </Marker>
+                </MapView>
+                
+                {/* Map overlay with restaurant information */}
                 <View style={styles.mapOverlay}>
-                  <View style={[styles.mapAddressContainer, { 
-                    backgroundColor: 'rgba(255,255,255,0.95)',
-                    borderWidth: 1,
-                    borderColor: colors.blue[300]
-                  }]}>
+                  <View 
+                    style={[
+                      styles.mapAddressContainer, 
+                      { 
+                        backgroundColor: 'rgba(255,255,255,0.95)',
+                        borderWidth: 1,
+                        borderColor: colors.blue[300] 
+                      }
+                    ]}
+                  >
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                       <Ionicons name="navigate" size={18} color={colors.blue[600]} />
                       <Text style={{ fontSize: 12, color: colors.blue[600], fontWeight: '600', marginLeft: 4 }}>
-                        ENDEREÇO REAL
+                        ENDEREÇO
                       </Text>
                     </View>
                     <Text style={[styles.mapAddressTitle, { color: colors.text, fontSize: 16, fontWeight: 'bold' }]}>
@@ -549,17 +749,7 @@ export default function RestaurantDetailScreen() {
                     {/* Directions button */}
                     <TouchableOpacity 
                       style={[styles.directionsButton, { backgroundColor: colors.blue[600] }]}
-                      onPress={() => {
-                        const scheme = Platform.select({ ios: 'maps://0,0?q=', android: 'geo:0,0?q=' });
-                        const latLng = `${restaurant.coordinates.latitude},${restaurant.coordinates.longitude}`;
-                        const label = encodeURIComponent(restaurant.name);
-                        const url = Platform.select({
-                          ios: `${scheme}${label}@${latLng}`,
-                          android: `${scheme}${latLng}(${label})`
-                        });
-                        
-                        if (url) Linking.openURL(url);
-                      }}
+                      onPress={openDirections}
                     >
                       <Ionicons name="navigate-circle-outline" size={16} color="white" />
                       <Text style={styles.directionsButtonText}>
@@ -790,56 +980,31 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     marginBottom: 12,
-    backgroundColor: '#37474F', // Map background color
   },
-  mapBackground: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#37474F',
-  },
-  mapGrid: {
+  map: {
     ...StyleSheet.absoluteFillObject,
   },
-  mapGridLine: {
-    position: 'absolute',
-    borderWidth: 1,
-    zIndex: 1,
-  },
-  mapGridHorizontal: {
+  // Map error styles
+  mapErrorContainer: {
+    position: "absolute",
+    top: 0,
     left: 0,
     right: 0,
+    padding: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 10,
   },
-  mapGridVertical: {
-    top: 0,
-    bottom: 0,
+  mapErrorText: {
+    marginLeft: 8,
+    fontSize: 12,
+    flex: 1,
   },
-  mapRoad: {
-    position: 'absolute',
-    height: 16,
-    left: 0,
-    right: 0,
-    top: '50%',
-    marginTop: -8,
-    zIndex: 2,
-  },
-  mapRoadSecondary: {
-    position: 'absolute',
-    width: 16,
-    top: 0,
-    bottom: 0,
-    left: '50%',
-    marginLeft: -8,
-    zIndex: 2,
-  },
-  mapMarkerContainer: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    marginLeft: -16,
-    marginTop: -32,
+  // Custom marker styles
+  customMarkerContainer: {
     alignItems: 'center',
-    zIndex: 3,
   },
-  mapMarker: {
+  customMarker: {
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -851,11 +1016,18 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 5,
   },
-  mapMarkerShadow: {
-    width: 16,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 2,
+  customMarkerTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 8,
+    borderStyle: 'solid',
+    backgroundColor: 'transparent',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    transform: [{ rotate: '180deg' }],
+    marginTop: -2,
   },
   mapOverlay: {
     position: "absolute",
