@@ -895,6 +895,22 @@ const styles = StyleSheet.create({
     marginLeft: -10,
     zIndex: 2,
   },
+  // City blocks for the zoomed out map effect
+  cityBlock: {
+    position: "absolute",
+    width: "15%",
+    height: "15%",
+    borderRadius: 4,
+    zIndex: 1,
+  },
+  // Small pins for additional points of interest
+  smallPin: {
+    position: "absolute",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    zIndex: 2,
+  },
   mapLabel: {
     position: "absolute",
     right: 10,
