@@ -493,12 +493,17 @@ export default function NativeHomeScreen() {
                 {isAvailable ? t("native.availability.available") : t("native.availability.unavailable")}
               </Text>
             </View>
-            <Switch
-              value={isAvailable}
-              onValueChange={toggleAvailability}
-              trackColor={{ false: '#d1d5db', true: colors.primary }}
-              thumbColor="#ffffff"
-            />
+            {updatingAvailability ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={isAvailable}
+                onValueChange={toggleAvailability}
+                trackColor={{ false: '#d1d5db', true: colors.primary }}
+                thumbColor="#ffffff"
+                disabled={updatingAvailability}
+              />
+            )}
           </View>
         </Card>
 
