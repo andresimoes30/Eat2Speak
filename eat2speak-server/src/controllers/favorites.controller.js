@@ -24,24 +24,20 @@ const getFavoriteRestaurants = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Get favorite restaurants for the user
+    // Get favorite restaurants IDs for the user (without trying to join with Restaurant)
     const favorites = await FavoriteRestaurant.findAll({
       where: {
         UserId: userId
       },
-      include: [
-        {
-          model: Restaurant,
-          as: 'restaurant',
-          attributes: ['restaurantid', 'name', 'cuisineType', 'address', 'rating', 'description']
-        }
-      ]
+      attributes: ['RestaurantId']
     });
 
+    // Return just the restaurant IDs - frontend will need to make separate API calls
+    // to fetch complete restaurant details including ratings
     return res.status(200).json({
       status: 'success',
       data: {
-        favorites: favorites.map(fav => fav.restaurant)
+        favoriteRestaurantIds: favorites.map(fav => fav.RestaurantId)
       }
     });
   } catch (error) {
