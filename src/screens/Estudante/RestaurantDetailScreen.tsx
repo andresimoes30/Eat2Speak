@@ -1,12 +1,23 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from "react-native"
+import { useState, useEffect, useCallback } from "react"
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  Image, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  RefreshControl, 
+  Alert 
+} from "react-native"
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { Card } from "../../components/Card"
+import restaurantApi from "../../../services/restaurantApi"
 
 // Definindo interfaces para tipagem
 interface MenuItem {
@@ -41,12 +52,18 @@ interface RestaurantDetail {
   reviews: Review[]
 }
 
+// Interface for API error
+interface ApiError {
+  message: string
+  code?: string
+}
+
 // Definindo tipos para as rotas de navegação
 type RootStackParamList = {
   RestaurantDetail: { id?: number; name?: string }
 }
 
-// Mock data for restaurant details
+// Default restaurant data (used while loading or as fallback)
 const restaurantDetails: RestaurantDetail = {
   id: 1,
   name: "La Pasta Italiana",
