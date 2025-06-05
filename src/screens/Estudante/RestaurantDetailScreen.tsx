@@ -15,7 +15,7 @@ import {
   Platform
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
+// Remove MapView import to avoid native module error
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
@@ -481,30 +481,50 @@ export default function RestaurantDetailScreen() {
             <Card style={styles.infoCard}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.sections.location")}</Text>
               <View style={styles.mapContainer}>
-                {/* Real interactive map using react-native-maps */}
-                <MapView
-                  provider={PROVIDER_GOOGLE}
-                  style={styles.map}
-                  region={{
-                    latitude: restaurant.coordinates.latitude,
-                    longitude: restaurant.coordinates.longitude,
-                    // Smaller delta values for closer zoom
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  pitchEnabled={true}
-                  rotateEnabled={true}
-                  scrollEnabled={true}
-                  zoomEnabled={true}
-                >
-                  {/* Restaurant marker */}
-                  <Marker
-                    coordinate={restaurant.coordinates}
-                    title={restaurant.name}
-                    description={restaurant.location}
-                    pinColor={colors.blue[600]}
-                  />
-                </MapView>
+                {/* Static map visualization to avoid native module errors */}
+                <View style={styles.mapBackground}>
+                  {/* Map grid pattern */}
+                  <View style={styles.mapGrid}>
+                    {[...Array(5)].map((_, i) => (
+                      <View 
+                        key={`h-${i}`} 
+                        style={[
+                          styles.mapGridLine, 
+                          styles.mapGridHorizontal, 
+                          { 
+                            top: `${20 * (i + 1)}%`, 
+                            borderColor: 'rgba(255,255,255,0.2)' 
+                          }
+                        ]} 
+                      />
+                    ))}
+                    {[...Array(5)].map((_, i) => (
+                      <View 
+                        key={`v-${i}`} 
+                        style={[
+                          styles.mapGridLine, 
+                          styles.mapGridVertical, 
+                          { 
+                            left: `${20 * (i + 1)}%`, 
+                            borderColor: 'rgba(255,255,255,0.2)' 
+                          }
+                        ]} 
+                      />
+                    ))}
+                  </View>
+
+                  {/* Simulated roads */}
+                  <View style={[styles.mapRoad, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
+                  <View style={[styles.mapRoadSecondary, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
+                  
+                  {/* Location marker */}
+                  <View style={styles.mapMarkerContainer}>
+                    <View style={[styles.mapMarker, { backgroundColor: colors.blue[600] }]}>
+                      <Ionicons name="location" size={20} color="white" />
+                    </View>
+                    <View style={[styles.mapMarkerShadow, { backgroundColor: colors.blue[600] + '50' }]} />
+                  </View>
+                </View>
                 
                 {/* Address info container */}
                 <View style={styles.mapOverlay}>
@@ -770,10 +790,72 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     marginBottom: 12,
+    backgroundColor: '#37474F', // Map background color
   },
-  map: {
+  mapBackground: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 8,
+    backgroundColor: '#37474F',
+  },
+  mapGrid: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  mapGridLine: {
+    position: 'absolute',
+    borderWidth: 1,
+    zIndex: 1,
+  },
+  mapGridHorizontal: {
+    left: 0,
+    right: 0,
+  },
+  mapGridVertical: {
+    top: 0,
+    bottom: 0,
+  },
+  mapRoad: {
+    position: 'absolute',
+    height: 16,
+    left: 0,
+    right: 0,
+    top: '50%',
+    marginTop: -8,
+    zIndex: 2,
+  },
+  mapRoadSecondary: {
+    position: 'absolute',
+    width: 16,
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    marginLeft: -8,
+    zIndex: 2,
+  },
+  mapMarkerContainer: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    marginLeft: -16,
+    marginTop: -32,
+    alignItems: 'center',
+    zIndex: 3,
+  },
+  mapMarker: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 5,
+  },
+  mapMarkerShadow: {
+    width: 16,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 2,
   },
   mapOverlay: {
     position: "absolute",
