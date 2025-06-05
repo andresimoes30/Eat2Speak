@@ -14,7 +14,6 @@ import {
   Linking,
   Platform
 } from "react-native"
-} from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native"
