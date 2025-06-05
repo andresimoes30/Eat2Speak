@@ -64,7 +64,8 @@ type RootStackParamList = {
 }
 
 // Default restaurant data (used while loading or as fallback)
-const restaurantDetails: RestaurantDetail = {
+// Default fallback data for when the API call fails or for initial loading UI
+const fallbackRestaurantDetails: RestaurantDetail = {
   id: 1,
   name: "La Pasta Italiana",
   image: "https://via.placeholder.com/600x400",
@@ -121,17 +122,174 @@ type NavigationProp = {
   navigate: (screen: string, params: { restaurantId: number; restaurantName: string }) => void
 }
 
+// Helper function to get random menu items
+const getRandomMenuItems = (count: number = 3): MenuItem[] => {
+  const menuItems = [
+    {
+      id: 1,
+      name: "Spaghetti alla Carbonara",
+      price: "45,00 €",
+      description: "Spaghetti com molho de ovos, queijo pecorino, pimenta preta e pancetta.",
+    },
+    {
+      id: 2,
+      name: "Risotto ai Funghi",
+      price: "52,00 €",
+      description: "Risoto cremoso com mix de cogumelos frescos e parmesão.",
+    },
+    {
+      id: 3,
+      name: "Tiramisu",
+      price: "28,00 €",
+      description: "Sobremesa tradicional italiana com café, mascarpone e cacau.",
+    },
+    {
+      id: 4,
+      name: "Pizza Margherita",
+      price: "38,00 €",
+      description: "Pizza tradicional com molho de tomate, mussarela e manjericão fresco.",
+    },
+    {
+      id: 5,
+      name: "Lasagna Bolognese",
+      price: "48,00 €",
+      description: "Camadas de massa fresca, molho bolonhesa, bechamel e queijo parmesão.",
+    }
+  ];
+  
+  // Return random items from the menu
+  return [...menuItems].sort(() => 0.5 - Math.random()).slice(0, count);
+};
+
+// Helper function to get random reviews
+const getRandomReviews = (count: number = 2): Review[] => {
+  const reviews = [
+    {
+      id: 1,
+      user: "João P.",
+      rating: 5,
+      date: "10/04/2025",
+      comment: "Excelente experiência! A comida estava deliciosa e a aula de italiano foi muito produtiva.",
+    },
+    {
+      id: 2,
+      user: "Ana M.",
+      rating: 4,
+      date: "28/03/2025",
+      comment: "Ótimo lugar para aprender italiano enquanto desfruta de uma boa comida. Recomendo!",
+    },
+    {
+      id: 3,
+      user: "Carlos S.",
+      rating: 5,
+      date: "15/05/2025",
+      comment: "Ambiente agradável e ótimo para praticar o idioma. A comida é autêntica e deliciosa.",
+    },
+    {
+      id: 4,
+      user: "Mariana L.",
+      rating: 3,
+      date: "02/03/2025",
+      comment: "Comida boa, mas o serviço poderia ser mais rápido. Boa experiência com o idioma.",
+    }
+  ];
+  
+  // Return random reviews
+  return [...reviews].sort(() => 0.5 - Math.random()).slice(0, count);
+};
+
+// Function to transform API data to match our component's data structure
+const transformRestaurantData = (apiData: any): RestaurantDetail => {
+  if (!apiData) return fallbackRestaurantDetails;
+  
+  return {
+    id: apiData.id || apiData.restaurantId || 1,
+    name: apiData.name || "Restaurante",
+    image: restaurantApi.getRestaurantImage(apiData.restaurantId || 1),
+    cuisine: apiData.cuisine || apiData.cuisineType || "Variada",
+    price: apiData.price || (Math.floor(Math.random() * 3) + 1).toString().split('').map(() => '$').join(''),
+    rating: apiData.rating || (3.5 + Math.random() * 1.5).toFixed(1),
+    location: apiData.location || apiData.address || "Endereço não disponível",
+    phone: apiData.phone || "(00) 0000-0000",
+    website: apiData.website || "www.restaurante.com",
+    hours: apiData.hours || "Segunda a Sábado: 12h às 23h",
+    description: apiData.description || `Restaurante ${apiData.cuisineType || 'tradicional'} com ambiente acolhedor.`,
+    languages: apiData.languages || ["Português", "Inglês"],
+    menu: apiData.menu || getRandomMenuItems(3 + Math.floor(Math.random() * 3)),
+    reviews: apiData.reviews || getRandomReviews(2 + Math.floor(Math.random() * 3))
+  };
+};
+
 export default function RestaurantDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "RestaurantDetail">>()
   const navigation = useNavigation<NavigationProp>()
   const { colors } = useTheme()
   const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState("info")
+  
+  // State for the restaurant data, loading state, and errors
+  const [restaurant, setRestaurant] = useState<RestaurantDetail>(fallbackRestaurantDetails)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // In a real app, you would fetch the restaurant details based on the ID from the route params
+  // Get the restaurant ID from route params
   const restaurantId = route.params?.id || 1
 
-  const restaurant = restaurantDetails // This would be fetched from an API
+  // Function to fetch restaurant details
+  const fetchRestaurantDetails = useCallback(async (id: number, isRefreshing = false) => {
+    if (isRefreshing) {
+      setRefreshing(true);
+    } else if (!refreshing) {
+      setLoading(true);
+    }
+    
+    setError(null);
+    
+    try {
+      // Fetch restaurant details from API
+      const response = await restaurantApi.getRestaurantDetails(id);
+      
+      // Transform API data to match our component's structure
+      const transformedData = transformRestaurantData(response);
+      
+      // Update state with fetched data
+      setRestaurant(transformedData);
+      setError(null);
+    } catch (err) {
+      const apiError = err as ApiError;
+      const errorMessage = apiError.message || "Failed to load restaurant details";
+      setError(errorMessage);
+      
+      // Show error alert
+      Alert.alert(
+        "Error",
+        `Failed to load restaurant details: ${errorMessage}`,
+        [
+          { text: "OK" },
+          { 
+            text: "Retry", 
+            onPress: () => fetchRestaurantDetails(id, isRefreshing)
+          }
+        ]
+      );
+      
+      console.error("Error fetching restaurant details:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Fetch restaurant details when component mounts or ID changes
+  useEffect(() => {
+    fetchRestaurantDetails(restaurantId);
+  }, [restaurantId, fetchRestaurantDetails]);
+
+  // Handle pull-to-refresh
+  const handleRefresh = useCallback(() => {
+    fetchRestaurantDetails(restaurantId, true);
+  }, [restaurantId, fetchRestaurantDetails]);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
