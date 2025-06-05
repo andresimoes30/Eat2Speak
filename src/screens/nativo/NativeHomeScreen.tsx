@@ -7,25 +7,25 @@ import { Ionicons } from "@expo/vector-icons"
 import { AppContext, AppContextType, Notification, Session, Restaurant, mockData } from "./AppTypes"
 import * as favoriteApi from "../../../services/favoriteApi"
 import { useLanguage } from "../../contexts/LanguageContext"
-  NativeHomeMain: undefined;
-  NativeSelectRestaurants: undefined;
-  NativeHistoryMain: undefined; // Added for cross-stack navigation
-};
+
 // Define the parameter list for the HomeStack navigator
 type HomeStackParamList = {
   NativeHomeMain: undefined;
   NativeSelectRestaurants: undefined;
   NativeHistoryMain: undefined; // Added for cross-stack navigation
 };
-// Handle both API response and mock data for favorites
-interface RestaurantWithFavorite extends Restaurant {
-  isFavorite: boolean;
-}
+
 // Define the navigation prop type
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   HomeStackParamList,
   'NativeHomeMain'
 >;
+
+// Handle both API response and mock data for favorites
+interface RestaurantWithFavorite extends Restaurant {
+  isFavorite: boolean;
+}
+
 // ProgressBar component for language teaching progress
 const ProgressBar = ({ progress, color }: { progress: number, color: string }) => {
   return (
@@ -39,11 +39,41 @@ const ProgressBar = ({ progress, color }: { progress: number, color: string }) =
     </View>
   )
 }
+
+// Card component to maintain consistent styling
+const Card = ({ children, style }: { children: React.ReactNode, style?: any }) => {
+  return (
+    <View style={[styles.card, style]}>
+      {children}
+    </View>
+  )
+}
+
+export default function NativeHomeScreen() {
+  const { appState, updateAppState } = useContext(AppContext) as AppContextType
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const { t } = useLanguage();
+  
+  // Use local state to track availability to ensure UI updates immediately
+  const [isAvailable, setIsAvailable] = useState(appState.isAvailable)
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
+  
   // State for favorite restaurants
   const [favoriteRestaurants, setFavoriteRestaurants] = useState<RestaurantWithFavorite[]>([])
   const [loadingFavorites, setLoadingFavorites] = useState(true)
   const [favoritesError, setFavoritesError] = useState<string | null>(null)
   const [updatingFavorites, setUpdatingFavorites] = useState<number[]>([])
+  
+  // State for session details modal
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false)
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
+  
+  // Get restaurant details from their IDs
+  const selectedRestaurantsDetails = useMemo(() => {
+    return mockData.restaurants.filter(restaurant => 
+      appState.selectedRestaurants.includes(restaurant.id)
+    );
+  }, [appState.selectedRestaurants]);
   
   // Fetch favorite restaurants on component mount
   useEffect(() => {
@@ -140,120 +170,6 @@ const ProgressBar = ({ progress, color }: { progress: number, color: string }) =
       setUpdatingFavorites(prev => prev.filter(id => id !== restaurantId))
     }
   }
-// Card component to maintain consistent styling
-const Card = ({ children, style }: { children: React.ReactNode, style?: any }) => {
-  return (
-    <View style={[styles.card, style]}>
-      {children}
-    </View>
-  )
-}
-      {/* Favorite Restaurants Section */}
-      <Card style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>
-            {t("native.favorites.title") || "Favorite Restaurants"}
-          </Text>
-          <TouchableOpacity onPress={fetchFavoriteRestaurants}>
-            <Ionicons name="refresh" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-          {t("native.favorites.subtitle") || "Restaurants you've marked as favorites"}
-        </Text>
-        
-        {loadingFavorites ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-              {t("native.favorites.loading") || "Loading favorites..."}
-            </Text>
-          </View>
-        ) : favoritesError ? (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={24} color={colors.error} />
-            <Text style={[styles.errorText, { color: colors.error }]}>{favoritesError}</Text>
-            <TouchableOpacity 
-              style={[styles.retryButton, { borderColor: colors.primary }]}
-              onPress={fetchFavoriteRestaurants}
-            >
-              <Text style={{ color: colors.primary }}>
-                {t("native.favorites.retry") || "Retry"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : favoriteRestaurants.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="heart-outline" size={24} color={colors.textSecondary} />
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-              {t("native.favorites.empty") || "You haven't added any favorite restaurants yet"}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.favoritesContainer}>
-            {favoriteRestaurants.map((restaurant) => (
-              <View key={restaurant.id} style={[styles.favoriteItem, { borderColor: colors.border }]}>
-                <View style={styles.favoriteContent}>
-                  <View style={styles.favoriteHeader}>
-                    <Text style={[styles.favoriteName, { color: colors.text }]}>{restaurant.name}</Text>
-                    <View style={styles.favoriteRating}>
-                      <Ionicons name="star" size={16} color={colors.gold[600]} />
-                      <Text style={styles.favoriteRatingText}>{restaurant.rating}</Text>
-                    </View>
-                  </View>
-                  
-                  <Text style={[styles.favoriteLocation, { color: colors.textSecondary }]}>
-                    {restaurant.location}
-                  </Text>
-                  
-                  <View style={styles.cuisineBadge}>
-                    <Text style={styles.cuisineBadgeText}>{restaurant.cuisine}</Text>
-                  </View>
-                  
-                  <View style={styles.favoriteLanguages}>
-                    {restaurant.languages.map((language, index) => (
-                      <View key={index} style={styles.languageTag}>
-                        <Text style={styles.languageTagText}>{language}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-                
-                <TouchableOpacity 
-                  style={styles.favoriteAction}
-                  onPress={() => toggleFavorite(restaurant.id)}
-                  disabled={updatingFavorites.includes(restaurant.id)}
-                >
-                  {updatingFavorites.includes(restaurant.id) ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <Ionicons 
-                      name="heart" 
-                      size={24} 
-                      color={colors.error}
-                    />
-                  )}
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-      </Card>
-export default function NativeHomeScreen() {
-  const { appState, updateAppState } = useContext(AppContext) as AppContextType
-  const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { t } = useLanguage();
-  
-  // Use local state to track availability to ensure UI updates immediately
-  const [isAvailable, setIsAvailable] = useState(appState.isAvailable)
-  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
-  
-  // Get restaurant details from their IDs
-  const selectedRestaurantsDetails = useMemo(() => {
-    return mockData.restaurants.filter(restaurant => 
-      appState.selectedRestaurants.includes(restaurant.id)
-    );
-  }, [appState.selectedRestaurants]);
   
   const toggleAvailability = () => {
     if (!isAvailable) {
@@ -295,100 +211,7 @@ export default function NativeHomeScreen() {
     // Close the modal
     setShowAvailabilityModal(false);
   }
-  // Favorites styles
-  loadingContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 14,
-  },
-  errorContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  errorText: {
-    marginTop: 10,
-    marginBottom: 16,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  retryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  favoritesContainer: {
-    marginTop: 8,
-  },
-  favoriteItem: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderRadius: 12,
-    marginBottom: 12,
-    padding: 12,
-  },
-  favoriteContent: {
-    flex: 1,
-  },
-  favoriteHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  favoriteName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  favoriteRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  favoriteRatingText: {
-    marginLeft: 4,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#b45309',
-  },
-  favoriteLocation: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  cuisineBadge: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  cuisineBadgeText: {
-    fontSize: 12,
-    color: '#4b5563',
-  },
-  favoriteLanguages: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  languageTag: {
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginRight: 4,
-    marginBottom: 4,
-  },
-  languageTagText: {
-    fontSize: 12,
-    color: '#2563eb',
-  },
-  favoriteAction: {
-    justifyContent: 'center',
-    paddingLeft: 12,
-  },
+
   const unreadNotifications = appState.notifications.filter((n: Notification) => !n.read).length
   
   // Theme colors (simplified version since we don't have ThemeContext)
@@ -425,10 +248,6 @@ export default function NativeHomeScreen() {
       900: '#78350f'
     }
   }
-  
-  // State for session details modal
-  const [detailsModalVisible, setDetailsModalVisible] = useState(false)
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
   
   // Handle showing session details
   const handleShowDetails = (session: Session) => {
@@ -574,133 +393,283 @@ export default function NativeHomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
-      {/* Welcome Section */}
-      <View style={styles.welcomeSection}>
-        <Text style={[styles.welcomeText, { color: colors.text }]}>
-          {t("native.home.greeting")}, {appState.user.name.split(' ')[0]}
-        </Text>
-        <Text style={[styles.welcomeSubtext, { color: colors.textSecondary }]}>
-          {t("native.home.subtitle")}
-        </Text>
-      </View>
-
-
-      {/* Availability Status */}
-      <Card style={styles.availabilityCard}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{t("native.availability.status")}</Text>
-        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-          {t("native.availability.statusDescription")}
-        </Text>
-        
-        <View style={styles.availabilityContainer}>
-          <View style={styles.availabilityStatusContainer}>
-            <View style={[
-              styles.availabilityStatusIndicator, 
-              { backgroundColor: isAvailable ? colors.success : colors.error + "50" }
-            ]} />
-            <Text style={[styles.availabilityStatusText, { color: isAvailable ? colors.success : colors.text }]}>
-              {isAvailable ? t("native.availability.available") : t("native.availability.unavailable")}
-            </Text>
-          </View>
-          <Switch
-            value={isAvailable}
-            onValueChange={toggleAvailability}
-            trackColor={{ false: '#d1d5db', true: colors.primary }}
-            thumbColor="#ffffff"
-          />
+        {/* Welcome Section */}
+        <View style={styles.welcomeSection}>
+          <Text style={[styles.welcomeText, { color: colors.text }]}>
+            {t("native.home.greeting")}, {appState.user.name.split(' ')[0]}
+          </Text>
+          <Text style={[styles.welcomeSubtext, { color: colors.textSecondary }]}>
+            {t("native.home.subtitle")}
+          </Text>
         </View>
-      </Card>
 
-      {/* Restaurant Selection Card */}
-      <TouchableOpacity 
-        onPress={() => navigation.navigate('NativeSelectRestaurants')}
-        activeOpacity={0.7}
-      >
+        {/* Availability Status */}
+        <Card style={styles.availabilityCard}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{t("native.availability.status")}</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+            {t("native.availability.statusDescription")}
+          </Text>
+          
+          <View style={styles.availabilityContainer}>
+            <View style={styles.availabilityStatusContainer}>
+              <View style={[
+                styles.availabilityStatusIndicator, 
+                { backgroundColor: isAvailable ? colors.success : colors.error + "50" }
+              ]} />
+              <Text style={[styles.availabilityStatusText, { color: isAvailable ? colors.success : colors.text }]}>
+                {isAvailable ? t("native.availability.available") : t("native.availability.unavailable")}
+              </Text>
+            </View>
+            <Switch
+              value={isAvailable}
+              onValueChange={toggleAvailability}
+              trackColor={{ false: '#d1d5db', true: colors.primary }}
+              thumbColor="#ffffff"
+            />
+          </View>
+        </Card>
+
+        {/* Favorite Restaurants Section */}
         <Card style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
-              {t("native.selectRestaurants")}
+              {t("native.favorites.title") || "Favorite Restaurants"}
             </Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+            <TouchableOpacity onPress={fetchFavoriteRestaurants}>
+              <Ionicons name="refresh" size={20} color={colors.primary} />
+            </TouchableOpacity>
           </View>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-            {t("native.restaurants.selectionDescription")}
+            {t("native.favorites.subtitle") || "Restaurants you've marked as favorites"}
           </Text>
           
-          <View style={styles.restaurantPreview}>
-            {selectedRestaurantsDetails.length > 0 ? (
-              <View style={styles.selectedRestaurantsSummary}>
-                <View style={styles.restaurantCountBadge}>
-                  <Text style={styles.restaurantCountText}>
-                    {selectedRestaurantsDetails.length} {t(selectedRestaurantsDetails.length === 1 
-                      ? "native.restaurants.singleCount" 
-                      : "native.restaurants.multipleCount")}
+          {loadingFavorites ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                {t("native.favorites.loading") || "Loading favorites..."}
+              </Text>
+            </View>
+          ) : favoritesError ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle-outline" size={24} color={colors.error} />
+              <Text style={[styles.errorText, { color: colors.error }]}>{favoritesError}</Text>
+              <TouchableOpacity 
+                style={[styles.retryButton, { borderColor: colors.primary }]}
+                onPress={fetchFavoriteRestaurants}
+              >
+                <Text style={{ color: colors.primary }}>
+                  {t("native.favorites.retry") || "Retry"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : favoriteRestaurants.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="heart-outline" size={24} color={colors.textSecondary} />
+              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                {t("native.favorites.empty") || "You haven't added any favorite restaurants yet"}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.favoritesContainer}>
+              {favoriteRestaurants.map((restaurant) => (
+                <View key={restaurant.id} style={[styles.favoriteItem, { borderColor: colors.border }]}>
+                  <View style={styles.favoriteContent}>
+                    <View style={styles.favoriteHeader}>
+                      <Text style={[styles.favoriteName, { color: colors.text }]}>{restaurant.name}</Text>
+                      <View style={styles.favoriteRating}>
+                        <Ionicons name="star" size={16} color={colors.gold[600]} />
+                        <Text style={styles.favoriteRatingText}>{restaurant.rating}</Text>
+                      </View>
+                    </View>
+                    
+                    <Text style={[styles.favoriteLocation, { color: colors.textSecondary }]}>
+                      {restaurant.location}
+                    </Text>
+                    
+                    <View style={styles.cuisineBadge}>
+                      <Text style={styles.cuisineBadgeText}>{restaurant.cuisine}</Text>
+                    </View>
+                    
+                    <View style={styles.favoriteLanguages}>
+                      {restaurant.languages.map((language, index) => (
+                        <View key={index} style={styles.languageTag}>
+                          <Text style={styles.languageTagText}>{language}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                  
+                  <TouchableOpacity 
+                    style={styles.favoriteAction}
+                    onPress={() => toggleFavorite(restaurant.id)}
+                    disabled={updatingFavorites.includes(restaurant.id)}
+                  >
+                    {updatingFavorites.includes(restaurant.id) ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Ionicons 
+                        name="heart" 
+                        size={24} 
+                        color={colors.error}
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </Card>
+
+        {/* Restaurant Selection Card */}
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('NativeSelectRestaurants')}
+          activeOpacity={0.7}
+        >
+          <Card style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>
+                {t("native.selectRestaurants")}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+            </View>
+            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+              {t("native.restaurants.selectionDescription")}
+            </Text>
+            
+            <View style={styles.restaurantPreview}>
+              {selectedRestaurantsDetails.length > 0 ? (
+                <View style={styles.selectedRestaurantsSummary}>
+                  <View style={styles.restaurantCountBadge}>
+                    <Text style={styles.restaurantCountText}>
+                      {selectedRestaurantsDetails.length} {t(selectedRestaurantsDetails.length === 1 
+                        ? "native.restaurants.singleCount" 
+                        : "native.restaurants.multipleCount")}
+                    </Text>
+                  </View>
+                  <Text style={[styles.restaurantInfoText, { color: colors.textSecondary }]}>
+                    {selectedRestaurantsDetails.length > 0 
+                      ? selectedRestaurantsDetails.map(r => r.name).slice(0, 2).join(', ') + 
+                        (selectedRestaurantsDetails.length > 2 ? ` ${t("native.restaurants.andMore", { count: selectedRestaurantsDetails.length - 2 })}` : '')
+                      : t("native.restaurants.noSelection")
+                    }
                   </Text>
                 </View>
-                <Text style={[styles.restaurantInfoText, { color: colors.textSecondary }]}>
-                  {selectedRestaurantsDetails.length > 0 
-                    ? selectedRestaurantsDetails.map(r => r.name).slice(0, 2).join(', ') + 
-                      (selectedRestaurantsDetails.length > 2 ? ` ${t("native.restaurants.andMore", { count: selectedRestaurantsDetails.length - 2 })}` : '')
-                    : t("native.restaurants.noSelection")
-                  }
-                </Text>
+              ) : (
+                <View style={styles.noRestaurantsSelected}>
+                  <Ionicons name="restaurant-outline" size={20} color={colors.textSecondary} />
+                  <Text style={[styles.noRestaurantsText, { color: colors.textSecondary }]}>
+                    {t("native.selectRestaurants")}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Card>
+        </TouchableOpacity>
+
+        {/* Statistics Card */}
+        <Card style={styles.card}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{t("native.statistics.title")}</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+            {t("native.statistics.subtitle")}
+          </Text>
+          
+          <View style={styles.statsGrid}>
+            <View style={styles.statItem}>
+              <View style={[styles.statIconContainer, { backgroundColor: colors.blue[50] }]}>
+                <Ionicons name="people-outline" size={24} color={colors.blue[600]} />
               </View>
-            ) : (
-              <View style={styles.noRestaurantsSelected}>
-                <Ionicons name="restaurant-outline" size={20} color={colors.textSecondary} />
-                <Text style={[styles.noRestaurantsText, { color: colors.textSecondary }]}>
-                  {t("native.selectRestaurants")}
-                </Text>
+              <Text style={[styles.statValue, { color: colors.blue[600] }]}>{mockData.stats.students}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("native.statistics.students")}</Text>
+            </View>
+            
+            <View style={styles.statItem}>
+              <View style={[styles.statIconContainer, { backgroundColor: colors.purple[50] }]}>
+                <Ionicons name="time-outline" size={24} color={(colors.purple as any)[600]} />
               </View>
-            )}
+              <Text style={[styles.statValue, { color: (colors.purple as any)[600] }]}>{mockData.stats.hoursTeached}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("native.statistics.hours")}</Text>
+            </View>
+            
+            <View style={styles.statItem}>
+              <View style={[styles.statIconContainer, { backgroundColor: colors.gold[50] }]}>
+                <Ionicons name="star-outline" size={24} color={(colors.gold as any)[600]} />
+              </View>
+              <Text style={[styles.statValue, { color: (colors.gold as any)[600] }]}>{mockData.stats.averageRating}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("native.statistics.rating")}</Text>
+            </View>
           </View>
         </Card>
-      </TouchableOpacity>
 
-      {/* Statistics Card */}
-      <Card style={styles.card}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{t("native.statistics.title")}</Text>
-        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-          {t("native.statistics.subtitle")}
-        </Text>
-        
-        <View style={styles.statsGrid}>
-          <View style={styles.statItem}>
-            <View style={[styles.statIconContainer, { backgroundColor: colors.blue[50] }]}>
-              <Ionicons name="people-outline" size={24} color={colors.blue[600]} />
-            </View>
-            <Text style={[styles.statValue, { color: colors.blue[600] }]}>{mockData.stats.students}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("native.statistics.students")}</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <View style={[styles.statIconContainer, { backgroundColor: colors.purple[50] }]}>
-              <Ionicons name="time-outline" size={24} color={(colors.purple as any)[600]} />
-            </View>
-            <Text style={[styles.statValue, { color: (colors.purple as any)[600] }]}>{mockData.stats.hoursTeached}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("native.statistics.hours")}</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <View style={[styles.statIconContainer, { backgroundColor: colors.gold[50] }]}>
-              <Ionicons name="star-outline" size={24} color={(colors.gold as any)[600]} />
-            </View>
-            <Text style={[styles.statValue, { color: (colors.gold as any)[600] }]}>{mockData.stats.averageRating}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("native.statistics.rating")}</Text>
-          </View>
-        </View>
-      </Card>
+        {/* Upcoming Sessions */}
+        <Card style={styles.card}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{t("native.upcomingSessions.title")}</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+            {t("native.upcomingSessions.subtitle")}
+          </Text>
 
-      {/* Upcoming Sessions */}
-      <Card style={styles.card}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{t("native.upcomingSessions.title")}</Text>
-        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-          {t("native.upcomingSessions.subtitle")}
-        </Text>
+          {mockData.upcomingSessions.length > 0 ? (
+            <View style={styles.sessionsContainer}>
+              {mockData.upcomingSessions.map((session) => (
+                <View key={session.id} style={[styles.sessionItem, { borderColor: colors.border }]}>
+                  <View style={styles.sessionInfo}>
+                    <Text style={[styles.sessionTitle, { color: colors.text }]}>
+                      {t("native.session.with", { language: session.language, student: session.student })}
+                    </Text>
+                    <View style={styles.sessionMeta}>
+                      <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} style={styles.sessionIcon} />
+                      <Text style={[styles.sessionMetaText, { color: colors.textSecondary }]}>
+                        {session.date} {t("session.at")} {session.time}
+                      </Text>
+                    </View>
+                    <Text style={[styles.sessionLocation, { color: colors.textSecondary }]}>{session.restaurant}</Text>
+                  </View>
+                  <View style={styles.sessionActions}>
+                    <TouchableOpacity 
+                      style={[styles.sessionButton, { borderColor: colors.border }]}
+                      onPress={() => handleShowDetails(session)}
+                    >
+                      <Text style={[styles.sessionButtonText, { color: colors.text }]}>{t("native.session.details")}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.sessionButton,
+                        {
+                          borderColor: colors.error + "30",
+                          marginTop: 8,
+                        },
+                      ]}
+                      onPress={() => handleCancelSession(session.id)}
+                    >
+                      <Text style={{ color: colors.error }}>{t("common.cancel")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                {t("native.upcomingSessions.empty")}
+              </Text>
+            </View>
+          )}
+        </Card>
 
-        {mockData.upcomingSessions.length > 0 ? (
+        {/* Recent Sessions History */}
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{t("native.recentHistory.title")}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('NativeHistoryMain')}>
+              <Text style={[styles.linkText, { color: colors.primary }]}>{t("native.recentHistory.viewAll")} →</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+            {t("native.recentHistory.subtitle")}
+          </Text>
+
           <View style={styles.sessionsContainer}>
-            {mockData.upcomingSessions.map((session) => (
+            {mockData.recentSessions.slice(0, 2).map((session) => (
               <View key={session.id} style={[styles.sessionItem, { borderColor: colors.border }]}>
                 <View style={styles.sessionInfo}>
                   <Text style={[styles.sessionTitle, { color: colors.text }]}>
@@ -709,85 +678,26 @@ export default function NativeHomeScreen() {
                   <View style={styles.sessionMeta}>
                     <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} style={styles.sessionIcon} />
                     <Text style={[styles.sessionMetaText, { color: colors.textSecondary }]}>
-                      {session.date} {t("session.at")} {session.time}
+                      {session.date}
                     </Text>
                   </View>
                   <Text style={[styles.sessionLocation, { color: colors.textSecondary }]}>{session.restaurant}</Text>
                 </View>
-                <View style={styles.sessionActions}>
-                  <TouchableOpacity 
-                    style={[styles.sessionButton, { borderColor: colors.border }]}
-                    onPress={() => handleShowDetails(session)}
-                  >
-                    <Text style={[styles.sessionButtonText, { color: colors.text }]}>{t("native.session.details")}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.sessionButton,
-                      {
-                        borderColor: colors.error + "30",
-                        marginTop: 8,
-                      },
-                    ]}
-                    onPress={() => handleCancelSession(session.id)}
-                  >
-                    <Text style={{ color: colors.error }}>{t("common.cancel")}</Text>
-                  </TouchableOpacity>
+                <View style={styles.ratingContainer}>
+                  <View style={[styles.ratingBadge, { backgroundColor: colors.gold[50] }]}>
+                    <Ionicons name="star" size={14} color={(colors.gold as any)[600]} />
+                    <Text style={[styles.ratingText, { color: colors.gold[700] }]}>{session.rating}</Text>
+                  </View>
+                  {!session.hasFeedback && (
+                    <View style={[styles.outlineBadge, { borderColor: colors.border }]}>
+                      <Text style={[styles.outlineBadgeText, { color: colors.textSecondary }]}>{t("native.session.noFeedback")}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
             ))}
           </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-              {t("native.upcomingSessions.empty")}
-            </Text>
-          </View>
-        )}
-      </Card>
-
-      {/* Recent Sessions History */}
-      <Card style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>{t("native.recentHistory.title")}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('NativeHistoryMain')}>
-            <Text style={[styles.linkText, { color: colors.primary }]}>{t("native.recentHistory.viewAll")} →</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-          {t("native.recentHistory.subtitle")}
-        </Text>
-
-        <View style={styles.sessionsContainer}>
-          {mockData.recentSessions.slice(0, 2).map((session) => (
-            <View key={session.id} style={[styles.sessionItem, { borderColor: colors.border }]}>
-              <View style={styles.sessionInfo}>
-                <Text style={[styles.sessionTitle, { color: colors.text }]}>
-                  {t("native.session.with", { language: session.language, student: session.student })}
-                </Text>
-                <View style={styles.sessionMeta}>
-                  <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} style={styles.sessionIcon} />
-                  <Text style={[styles.sessionMetaText, { color: colors.textSecondary }]}>
-                    {session.date}
-                  </Text>
-                </View>
-                <Text style={[styles.sessionLocation, { color: colors.textSecondary }]}>{session.restaurant}</Text>
-              </View>
-              <View style={styles.ratingContainer}>
-                <View style={[styles.ratingBadge, { backgroundColor: colors.gold[50] }]}>
-                  <Ionicons name="star" size={14} color={(colors.gold as any)[600]} />
-                  <Text style={[styles.ratingText, { color: colors.gold[700] }]}>{session.rating}</Text>
-                </View>
-                {!session.hasFeedback && (
-                  <View style={[styles.outlineBadge, { borderColor: colors.border }]}>
-                    <Text style={[styles.outlineBadgeText, { color: colors.textSecondary }]}>{t("native.session.noFeedback")}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          ))}
-        </View>
-      </Card>
+        </Card>
       
         {/* Session Details Modal */}
         {renderSessionDetailsModal()}
@@ -866,85 +776,7 @@ export default function NativeHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Restaurant preview styles
-  restaurantPreview: {
-    marginTop: 8,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#f9fafb',
-  },
-  selectedRestaurantsSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  restaurantCountBadge: {
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  restaurantCountText: {
-    fontSize: 14,
-    color: '#2563eb',
-    fontWeight: '500',
-  },
-  restaurantInfoText: {
-    flex: 1,
-    fontSize: 14,
-    flexWrap: 'wrap',
-  },
-  noRestaurantsSelected: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  
-  // Restaurant modal styles
-  modalDescription: {
-    fontSize: 16,
-    marginBottom: 16,
-    lineHeight: 22,
-  },
-  restaurantList: {
-    marginBottom: 20,
-    maxHeight: 300,
-  },
-  restaurantItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  restaurantIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  restaurantInfo: {
-    flex: 1,
-  },
-  restaurantName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  restaurantAddress: {
-    fontSize: 14,
-  },
-  noRestaurantsText: {
-    textAlign: 'center',
-    fontSize: 14,
-    padding: 16,
-  },
+  // Container and general styles
   container: {
     flex: 1,
   },
@@ -962,35 +794,8 @@ const styles = StyleSheet.create({
   welcomeSubtext: {
     fontSize: 16,
   },
-  quickAccessSection: {
-    marginBottom: 24,
-  },
-  quickAccessCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  quickAccessIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  quickAccessContent: {
-    flex: 1,
-  },
-  quickAccessTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  quickAccessSubtitle: {
-    fontSize: 14,
-  },
+  
+  // Card styles
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -1028,6 +833,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 16,
   },
+
+  // Availability styles
   availabilityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1048,6 +855,140 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  
+  // Restaurant preview styles
+  restaurantPreview: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+  },
+  selectedRestaurantsSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  restaurantCountBadge: {
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  restaurantCountText: {
+    fontSize: 14,
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  restaurantInfoText: {
+    flex: 1,
+    fontSize: 14,
+    flexWrap: 'wrap',
+  },
+  noRestaurantsSelected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  
+  // Favorites styles
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+  },
+  errorContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    marginTop: 10,
+    marginBottom: 16,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  favoritesContainer: {
+    marginTop: 8,
+  },
+  favoriteItem: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 12,
+    padding: 12,
+  },
+  favoriteContent: {
+    flex: 1,
+  },
+  favoriteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  favoriteName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  favoriteRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  favoriteRatingText: {
+    marginLeft: 4,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#b45309',
+  },
+  favoriteLocation: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  cuisineBadge: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  cuisineBadgeText: {
+    fontSize: 12,
+    color: '#4b5563',
+  },
+  favoriteLanguages: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  languageTag: {
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginRight: 4,
+    marginBottom: 4,
+  },
+  languageTagText: {
+    fontSize: 12,
+    color: '#2563eb',
+  },
+  favoriteAction: {
+    justifyContent: 'center',
+    paddingLeft: 12,
+  },
+
+  // ProgressBar styles
   progressContainer: {
     marginTop: 12,
   },
@@ -1076,6 +1017,8 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
   },
+
+  // Stats styles
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1101,6 +1044,8 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 14,
   },
+
+  // Sessions styles
   sessionsContainer: {
     marginTop: 8,
   },
@@ -1182,6 +1127,50 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
   },
+
+  // Restaurant modal styles
+  modalDescription: {
+    fontSize: 16,
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  restaurantList: {
+    marginBottom: 20,
+    maxHeight: 300,
+  },
+  restaurantItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  restaurantIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  restaurantInfo: {
+    flex: 1,
+  },
+  restaurantName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  restaurantAddress: {
+    fontSize: 14,
+  },
+  noRestaurantsText: {
+    textAlign: 'center',
+    fontSize: 14,
+    padding: 16,
+  },
+
   // Modal styles
   modalOverlay: {
     flex: 1,
