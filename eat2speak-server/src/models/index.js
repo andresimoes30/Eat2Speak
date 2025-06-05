@@ -84,7 +84,7 @@ db.FavoriteRestaurant.belongsTo(db.User, {
 
 db.FavoriteRestaurant.belongsTo(db.Restaurant, {
   foreignKey: 'RestaurantId',
-  targetKey: 'restaurantid',
+  targetKey: 'restaurantId',
   as: 'restaurant'
 });
 
