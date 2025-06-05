@@ -1,13 +1,35 @@
 import api from './api';
+import * as restaurantApi from './restaurantApi';
 
 /**
  * Fetches all favorite restaurants for the authenticated user
- * @returns {Promise<Array>} - Array of favorite restaurant objects
+ * Implements a two-step process:
+ * 1. Fetch favorite restaurant IDs from the favorites endpoint
+ * 2. For each ID, fetch complete restaurant details from the restaurant API
+ * @returns {Promise<Array>} - Array of favorite restaurant objects with complete details
  */
 export const getFavoriteRestaurants = async () => {
   try {
+    // Step 1: Get favorite restaurant IDs from the favorites endpoint
     const response = await api.get('/api/restaurants/favorites');
-    return response.data.data.favorites;
+    const favoriteIds = response.data.data.favoriteRestaurantIds;
+    
+    // Step 2: Fetch complete details for each restaurant ID
+    const favoriteRestaurants = await Promise.all(
+      favoriteIds.map(async (id) => {
+        try {
+          // Get complete restaurant details including rating
+          const restaurantDetails = await restaurantApi.getRestaurantDetails(id);
+          return restaurantDetails;
+        } catch (error) {
+          console.error(`Error fetching details for restaurant ID ${id}:`, error);
+          // Return a minimal object if we can't get details, to avoid breaking the UI
+          return { id, name: `Restaurant ${id}`, isFavorite: true };
+        }
+      })
+    );
+    
+    return favoriteRestaurants;
   } catch (error) {
     console.error('Error fetching favorite restaurants:', error);
     throw error.response?.data || { message: 'Error fetching favorite restaurants' };
