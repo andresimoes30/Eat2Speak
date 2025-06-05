@@ -10,9 +10,11 @@ import {
   TouchableOpacity, 
   ActivityIndicator, 
   RefreshControl, 
-  Alert 
+  Alert,
+  Linking
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
@@ -51,6 +53,11 @@ interface RestaurantDetail {
   languages: string[]
   menu: MenuItem[]
   reviews: Review[]
+  // Added coordinates for map display
+  coordinates: {
+    latitude: number
+    longitude: number
+  }
 }
 
 // Interface for API error
@@ -73,13 +80,18 @@ const fallbackRestaurantDetails: RestaurantDetail = {
   cuisine: "Italiana",
   price: "$$",
   rating: 4.7,
-  location: "Rua Augusta, 1200",
+  location: "Rua Augusta, 1200, São Paulo",
   phone: "(11) 3456-7890",
   website: "www.lapastaitaliana.com.br",
   hours: "Segunda a Sábado: 12h às 23h, Domingo: 12h às 17h",
   description:
     "Restaurante italiano autêntico com ambiente acolhedor e pratos tradicionais da culinária italiana. Nossos chefs são nativos da Itália e oferecem uma experiência gastronômica única.",
   languages: ["Italiano", "Inglês"],
+  // Default coordinates for São Paulo
+  coordinates: {
+    latitude: -23.5505,
+    longitude: -46.6333
+  },
   menu: [
     {
       id: 1,
@@ -203,6 +215,21 @@ const getRandomReviews = (count: number = 2): Review[] => {
 const transformRestaurantData = (apiData: any): RestaurantDetail => {
   if (!apiData) return fallbackRestaurantDetails;
   
+  // Default coordinates for Lisbon if none provided
+  // These would normally come from the API
+  const defaultCoordinates = {
+    latitude: 38.7223,
+    longitude: -9.1393
+  };
+  
+  // Use API coordinates if available, or generate random coordinates nearby default
+  const coordinates = apiData.coordinates || {
+    // If no coordinates are available, use defaults with slight random variation
+    // to simulate different locations in the city
+    latitude: defaultCoordinates.latitude + (Math.random() - 0.5) * 0.02,
+    longitude: defaultCoordinates.longitude + (Math.random() - 0.5) * 0.02
+  };
+  
   return {
     id: apiData.id || apiData.restaurantId || 1,
     name: apiData.name || "Restaurante",
@@ -216,6 +243,7 @@ const transformRestaurantData = (apiData: any): RestaurantDetail => {
     hours: apiData.hours || "Segunda a Sábado: 12h às 23h",
     description: apiData.description || `Restaurante ${apiData.cuisineType || 'tradicional'} com ambiente acolhedor.`,
     languages: apiData.languages || ["Português", "Inglês"],
+    coordinates: coordinates,
     menu: apiData.menu || getRandomMenuItems(3 + Math.floor(Math.random() * 3)),
     reviews: apiData.reviews || getRandomReviews(2 + Math.floor(Math.random() * 3))
   };
@@ -452,108 +480,34 @@ export default function RestaurantDetailScreen() {
             <Card style={styles.infoCard}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.sections.location")}</Text>
               <View style={styles.mapContainer}>
-                {/* Satellite view background */}
-                <LinearGradient
-                  colors={['#263238', '#37474F', '#455A64']}
-                  style={styles.mapBackground}
-                />
+                {/* Real interactive map using react-native-maps */}
+                <MapView
+                  provider={PROVIDER_GOOGLE}
+                  style={styles.map}
+                  region={{
+                    latitude: restaurant.coordinates.latitude,
+                    longitude: restaurant.coordinates.longitude,
+                    // Smaller delta values for closer zoom
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                  pitchEnabled={true}
+                  rotateEnabled={true}
+                  scrollEnabled={true}
+                  zoomEnabled={true}
+                >
+                  {/* Restaurant marker */}
+                  <Marker
+                    coordinate={restaurant.coordinates}
+                    title={restaurant.name}
+                    description={restaurant.location}
+                    pinColor={colors.blue[600]}
+                  />
+                </MapView>
                 
-                {/* Satellite texture overlay */}
-                <View style={styles.satelliteTexture}>
-                  {/* Random patterns to simulate satellite imagery */}
-                  {[...Array(20)].map((_, i) => (
-                    <View 
-                      key={`block-${i}`} 
-                      style={[
-                        styles.satelliteBlock, 
-                        { 
-                          top: `${Math.random() * 90}%`, 
-                          left: `${Math.random() * 90}%`,
-                          width: 20 + Math.random() * 60,
-                          height: 20 + Math.random() * 60,
-                          backgroundColor: `rgba(${30 + Math.random() * 40}, ${
-                            50 + Math.random() * 40
-                          }, ${60 + Math.random() * 40}, ${0.2 + Math.random() * 0.3})`,
-                          transform: [{ rotate: `${Math.random() * 360}deg` }]
-                        }
-                      ]} 
-                    />
-                  ))}
-                </View>
-                
-                {/* Roads in satellite view */}
-                <View style={[styles.satelliteRoad, { 
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  height: 8,
-                  top: '50%'
-                }]} />
-                <View style={[styles.satelliteRoad, { 
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)', 
-                  width: 8,
-                  height: '100%',
-                  left: '50%',
-                  top: 0
-                }]} />
-                
-                {/* Secondary roads */}
-                <View style={[styles.satelliteRoad, { 
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                  height: 4,
-                  top: '30%'
-                }]} />
-                <View style={[styles.satelliteRoad, { 
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                  height: 4,
-                  top: '70%'
-                }]} />
-                <View style={[styles.satelliteRoad, { 
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                  width: 4,
-                  height: '100%',
-                  left: '30%',
-                  top: 0
-                }]} />
-                <View style={[styles.satelliteRoad, { 
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                  width: 4,
-                  height: '100%',
-                  left: '70%',
-                  top: 0
-                }]} />
-                
-                {/* Location pin and address display - smaller for zoomed out effect */}
-                <View style={[styles.mapContent, { justifyContent: 'center' }]}>
-                  {/* Center pin - the restaurant location */}
-                  <View style={[styles.mapPinContainer, { position: 'absolute', top: '47%', left: '47%' }]}>
-                    <View style={[styles.mapPin, { 
-                      backgroundColor: colors.blue[600],
-                      width: 32, 
-                      height: 32,
-                      borderRadius: 16,
-                    }]}>
-                      <Ionicons name="location" size={18} color="white" />
-                    </View>
-                    <View style={[styles.mapPinShadow, { 
-                      backgroundColor: colors.blue[600] + '30',
-                      width: 24,
-                      height: 6,
-                      bottom: -3
-                    }]} />
-                  </View>
-                  
-                  {/* Small additional points of interest for context */}
-                  <View style={[styles.smallPin, { top: '30%', left: '25%', backgroundColor: colors.blue[300] }]} />
-                  <View style={[styles.smallPin, { top: '65%', left: '35%', backgroundColor: colors.blue[300] }]} />
-                  <View style={[styles.smallPin, { top: '75%', left: '75%', backgroundColor: colors.blue[300] }]} />
-                  <View style={[styles.smallPin, { top: '20%', left: '65%', backgroundColor: colors.blue[300] }]} />
-                  
-                  {/* Address info - more prominent real address display */}
+                {/* Address info container */}
+                <View style={styles.mapOverlay}>
                   <View style={[styles.mapAddressContainer, { 
-                    position: 'absolute',
-                    bottom: 30,
-                    right: 0,
-                    left: 0,
-                    marginHorizontal: 20,
                     backgroundColor: 'rgba(255,255,255,0.95)',
                     borderWidth: 1,
                     borderColor: colors.blue[300]
@@ -570,14 +524,28 @@ export default function RestaurantDetailScreen() {
                     <Text style={[styles.mapAddressText, { color: colors.text, fontSize: 14, fontWeight: '500' }]}>
                       {restaurant.location}
                     </Text>
+                    
+                    {/* Directions button */}
+                    <TouchableOpacity 
+                      style={[styles.directionsButton, { backgroundColor: colors.blue[600] }]}
+                      onPress={() => {
+                        const scheme = Platform.select({ ios: 'maps://0,0?q=', android: 'geo:0,0?q=' });
+                        const latLng = `${restaurant.coordinates.latitude},${restaurant.coordinates.longitude}`;
+                        const label = encodeURIComponent(restaurant.name);
+                        const url = Platform.select({
+                          ios: `${scheme}${label}@${latLng}`,
+                          android: `${scheme}${latLng}(${label})`
+                        });
+                        
+                        if (url) Linking.openURL(url);
+                      }}
+                    >
+                      <Ionicons name="navigate-circle-outline" size={16} color="white" />
+                      <Text style={styles.directionsButtonText}>
+                        {t("restaurant.getDirections") || "Como Chegar"}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                </View>
-                
-                {/* Map Label */}
-                <View style={[styles.mapLabel, { backgroundColor: colors.card }]}>
-                  <Text style={[styles.mapLabelText, { color: colors.text + "80" }]}>
-                    {t("restaurant.location") || "Localização do Restaurante"}
-                  </Text>
                 </View>
               </View>
             </Card>
@@ -802,50 +770,21 @@ const styles = StyleSheet.create({
     position: "relative",
     marginBottom: 12,
   },
-  mapBackground: {
+  map: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
+  },
+  mapOverlay: {
     position: "absolute",
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-  },
-  mapContent: {
     padding: 16,
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     zIndex: 10,
   },
-  mapPinContainer: {
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  mapPin: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    zIndex: 2,
-  },
-  mapPinShadow: {
-    position: "absolute",
-    bottom: -5,
-    width: 40,
-    height: 10,
-    borderRadius: 10,
-    zIndex: 1,
-  },
   mapAddressContainer: {
-    backgroundColor: "white",
     padding: 12,
     borderRadius: 8,
-    width: "80%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -861,95 +800,22 @@ const styles = StyleSheet.create({
   mapAddressText: {
     fontSize: 14,
     textAlign: "center",
+    marginBottom: 8,
   },
-  mapGrid: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
+  directionsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginTop: 4,
   },
-  mapGridLine: {
-    position: "absolute",
-    borderWidth: 0.5,
-  },
-  mapGridHorizontal: {
-    left: 0,
-    right: 0,
-    borderBottomWidth: 0.5,
-  },
-  mapGridVertical: {
-    top: 0,
-    bottom: 0,
-    borderRightWidth: 0.5,
-  },
-  mapRoad: {
-    position: "absolute",
-    height: 20,
-    left: 0,
-    right: 0,
-    top: "50%",
-    marginTop: -10,
-    zIndex: 2,
-  },
-  mapRoadSecondary: {
-    position: "absolute",
-    width: 20,
-    top: 0,
-    bottom: 0,
-    left: "50%",
-    marginLeft: -10,
-    zIndex: 2,
-  },
-  // City blocks for the zoomed out map effect
-  cityBlock: {
-    position: "absolute",
-    width: "15%",
-    height: "15%",
-    borderRadius: 4,
-    zIndex: 1,
-  },
-  // Small pins for additional points of interest
-  smallPin: {
-    position: "absolute",
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    zIndex: 2,
-  },
-  // Satellite view specific styles
-  satelliteTexture: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  satelliteBlock: {
-    position: "absolute",
-    borderRadius: 2,
-    opacity: 0.7,
-  },
-  satelliteRoad: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    zIndex: 2,
-  },
-  mapLabel: {
-    position: "absolute",
-    right: 10,
-    bottom: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    zIndex: 3,
-  },
-  mapLabelText: {
+  directionsButtonText: {
+    color: "white",
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
+    marginLeft: 4,
   },
   address: {
     fontSize: 14,
