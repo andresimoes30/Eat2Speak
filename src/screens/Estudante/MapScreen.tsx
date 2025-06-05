@@ -13,14 +13,28 @@ import {
   ScrollView,
   PermissionsAndroid,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region, Callout, MapEvent } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, Region, Callout } from 'react-native-maps';
 import Geocoder from 'react-native-geocoding';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Card } from '../../components/Card';
 import * as Location from 'expo-location';
-import NetInfo from '@react-native-community/netinfo';
+import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+
+// Define custom MapEvent interface since it's not exported from react-native-maps
+interface MapEvent {
+  nativeEvent: {
+    coordinate: {
+      latitude: number;
+      longitude: number;
+    };
+    position?: {
+      x: number;
+      y: number;
+    };
+  };
+}
 
 // Initialize Geocoder with your Google Maps API key
 // For production, you would store this in a secure configuration
@@ -72,7 +86,7 @@ const MapScreen: React.FC = () => {
   
   // Subscribe to network connectivity status
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
+    const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
       setIsConnected(state.isConnected);
       
       if (!state.isConnected && !errorMessage) {
@@ -205,9 +219,9 @@ const MapScreen: React.FC = () => {
       }
       
       setErrorMessage(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error getting current location:', err);
-      if (err.message === 'No network connection') {
+      if (err?.message === 'No network connection') {
         setErrorMessage(t('map.noNetworkConnection') || 'No network connection. Unable to fetch your location.');
       } else {
         setErrorMessage(t('map.locationError') || 'Error accessing your location.');
@@ -272,9 +286,9 @@ const MapScreen: React.FC = () => {
       // Clear search input
       setSearchQuery('');
       Keyboard.dismiss();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Geocoding error:', err);
-      if (err.message === 'No network connection') {
+      if (err?.message === 'No network connection') {
         setErrorMessage(t('map.noNetworkConnection') || 'No network connection. Unable to search for locations.');
       } else {
         setErrorMessage(t('map.geocodingError') || 'Error searching for this address. Please try again.');
@@ -327,7 +341,7 @@ const MapScreen: React.FC = () => {
         longitude: coordinate.longitude,
         address,
         name: t('map.droppedPin') || 'Dropped Pin',
-        color: colors.green[600]
+        color: colors.blue[500] // Using blue instead of green since green isn't in the theme
       };
       
       setCustomMarkers(prevMarkers => [...prevMarkers, newMarker]);
@@ -480,7 +494,7 @@ const MapScreen: React.FC = () => {
           showsMyLocationButton={false}
           showsCompass={true}
           showsScale={true}
-          showsTraffic={false}
+          // showsTraffic prop is not supported, removing it
           showsIndoors={true}
           zoomEnabled={true}
           rotateEnabled={true}
