@@ -18,7 +18,13 @@ import { AppContext, AppContextType, Restaurant } from "./AppTypes"
 import { useLanguage } from "../../contexts/LanguageContext"
 import * as restaurantApi from "../../../services/restaurantApi"
 import * as favoriteApi from "../../../services/favoriteApi"
-
+// Define the filters interface
+interface RestaurantFilters {
+  search?: string;
+  city?: string;
+  cuisine?: string;
+  language?: string;
+}
 // Define the parameter list for navigation
 type NativeStackParamList = {
   NativeHomeMain: undefined;
@@ -77,7 +83,7 @@ export default function NativeSelectRestaurants() {
     
     try {
       // Fetch real restaurants from the API
-      const filters = {};
+      const filters: RestaurantFilters = {};
       if (searchTerm) filters.search = searchTerm;
       if (filterCity !== 'all') filters.city = filterCity;
       if (filterCuisine !== 'all') filters.cuisine = filterCuisine;
