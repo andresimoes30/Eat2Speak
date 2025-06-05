@@ -25,6 +25,7 @@ db.Menu = require('./menu.model')(sequelize, DataTypes);
 db.Session = require('./session.model')(sequelize, DataTypes);
 db.Payment = require('./payment.model')(sequelize, DataTypes);
 db.Review = require('./review.model')(sequelize, DataTypes);
+db.FavoriteRestaurant = require('./FavoriteRestaurant.model')(sequelize, DataTypes);
 
 // Relationships
 db.User.belongsToMany(db.Role, { through: db.UserRole, foreignKey: 'userId', as: 'Roles' });
@@ -60,6 +61,18 @@ db.Review.belongsTo(db.User, { foreignKey: 'reviewedUserId', as: 'Reviewed' });
 
 db.Session.hasMany(db.Review, { foreignKey: 'sessionId' });
 db.Review.belongsTo(db.Session, { foreignKey: 'sessionId' });
+
+// FavoriteRestaurant associations
+db.User.belongsToMany(db.Restaurant, { 
+  through: db.FavoriteRestaurant,
+  foreignKey: 'UserId',
+  otherKey: 'RestaurantId'
+});
+db.Restaurant.belongsToMany(db.User, { 
+  through: db.FavoriteRestaurant,
+  foreignKey: 'RestaurantId',
+  otherKey: 'UserId'
+});
 
 // Sync com banco remoto
 db.sequelize.sync({ alter: true })
