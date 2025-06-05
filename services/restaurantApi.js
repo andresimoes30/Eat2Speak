@@ -1,15 +1,67 @@
 import api from './api';
 
+// Type definitions
+interface RestaurantFilters {
+  search?: string;
+  city?: string;
+  cuisine?: string;
+  language?: string;
+}
+
+interface RestaurantOwner {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface ApiRestaurant {
+  restaurantId: number;
+  name: string;
+  cuisineType: string;
+  address: string;
+  commissionPercent: string;
+  createdAt: string;
+  owner: RestaurantOwner;
+}
+
+interface ApiResponse {
+  status: string;
+  data: {
+    restaurants: ApiRestaurant[];
+    pagination?: {
+      total: number;
+      totalPages: number;
+      currentPage: number;
+      limit: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+}
+
+interface Restaurant {
+  id: number;
+  name: string;
+  cuisine: string;
+  location: string;
+  rating: number;
+  languages: string[];
+  available: boolean;
+  description: string;
+  imageUrl: string;
+}
+
 /**
  * Fetches all restaurants with optional filtering
- * @param {Object} filters - Optional filters for restaurants (search, cuisine, etc.)
+ * @param {RestaurantFilters} filters - Optional filters for restaurants (search, cuisine, etc.)
  * @returns {Promise<Array>} - Array of restaurant objects
  */
-export const getRestaurants = async (filters = {}) => {
+export const getRestaurants = async (filters: RestaurantFilters = {}): Promise<Restaurant[]> => {
   try {
-    // Use the real API endpoint
+    // Use the real API endpoint provided by the user
     const response = await fetch('https://eat2speak.com/api/restaurants');
-    const data = await response.json();
+    const data: ApiResponse = await response.json();
     
     if (data.status !== 'success' || !data.data.restaurants) {
       throw new Error('Failed to fetch restaurants data');
@@ -28,7 +80,7 @@ export const getRestaurants = async (filters = {}) => {
       imageUrl: getRestaurantImage(restaurant.restaurantId)
     }));
     
-    // Apply filters if provided
+    // Apply filters
     return filterRestaurants(restaurants, filters);
   } catch (error) {
     console.error('Error fetching restaurants:', error);
@@ -41,7 +93,7 @@ export const getRestaurants = async (filters = {}) => {
  * @param {number} restaurantId - ID of the restaurant to fetch
  * @returns {Promise<Object>} - Restaurant object with detailed information
  */
-export const getRestaurantDetails = async (restaurantId) => {
+export const getRestaurantDetails = async (restaurantId: number): Promise<Restaurant> => {
   try {
     // In a real app, we would have a specific endpoint for restaurant details
     // For now, we'll fetch all restaurants and find the one we want
@@ -64,9 +116,9 @@ export const getRestaurantDetails = async (restaurantId) => {
  * @param {number} restaurantId - ID of the restaurant
  * @returns {string} - URL to restaurant image
  */
-export const getRestaurantImage = (restaurantId) => {
+export const getRestaurantImage = (restaurantId: number): string => {
   // Real restaurant images from Unsplash
-  const restaurantImages = {
+  const restaurantImages: Record<number, string> = {
     1: 'https://images.unsplash.com/photo-1555992336-03a23c7b20ee?w=500&q=80', // Francesinha Braga
     2: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500&q=80', // Fogo em Brasa
     3: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80', // Mac Daniels
@@ -80,11 +132,11 @@ export const getRestaurantImage = (restaurantId) => {
 
 /**
  * Filter restaurants based on search criteria
- * @param {Array} restaurants - List of restaurants to filter
- * @param {Object} filters - Filter criteria
- * @returns {Array} - Filtered restaurants
+ * @param {Restaurant[]} restaurants - List of restaurants to filter
+ * @param {RestaurantFilters} filters - Filter criteria
+ * @returns {Restaurant[]} - Filtered restaurants
  */
-const filterRestaurants = (restaurants, filters) => {
+const filterRestaurants = (restaurants: Restaurant[], filters: RestaurantFilters): Restaurant[] => {
   return restaurants.filter(restaurant => {
     // Apply search filter
     if (filters.search && !restaurant.name.toLowerCase().includes(filters.search.toLowerCase())) {
@@ -114,13 +166,13 @@ const filterRestaurants = (restaurants, filters) => {
 
 /**
  * Helper function to generate random languages for restaurants
- * @returns {Array} - Array of languages
+ * @returns {string[]} - Array of languages
  */
-const getRandomLanguages = () => {
+const getRandomLanguages = (): string[] => {
   const allLanguages = ['Português', 'Inglês', 'Espanhol', 'Francês', 'Italiano', 'Alemão'];
   const numLanguages = Math.floor(Math.random() * 3) + 1; // 1 to 3 languages
   
-  const languages = [];
+  const languages: string[] = [];
   for (let i = 0; i < numLanguages; i++) {
     const randomIndex = Math.floor(Math.random() * allLanguages.length);
     const language = allLanguages[randomIndex];
