@@ -12,6 +12,16 @@ declare module 'expo-location' {
     timestamp: number;
   }
 
+  // Make Accuracy directly accessible from the Location namespace
+  export const Accuracy: {
+    Lowest: 1;
+    Low: 2;
+    Balanced: 3;
+    High: 4;
+    Highest: 5;
+    BestForNavigation: 6;
+  };
+
   export enum LocationAccuracy {
     Lowest = 1,
     Low = 2,
@@ -22,7 +32,7 @@ declare module 'expo-location' {
   }
 
   export interface LocationOptions {
-    accuracy?: LocationAccuracy;
+    accuracy?: LocationAccuracy | number;
     timeInterval?: number;
     distanceInterval?: number;
     mayShowUserSettingsDialog?: boolean;
