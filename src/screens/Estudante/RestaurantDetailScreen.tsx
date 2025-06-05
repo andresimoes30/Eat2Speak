@@ -450,21 +450,52 @@ export default function RestaurantDetailScreen() {
 
             <Card style={styles.infoCard}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.sections.location")}</Text>
-              <View
-                style={[
-                  styles.mapPlaceholder,
-                  {
-                    borderColor: colors.border,
-                    backgroundColor: colors.card,
-                  },
-                ]}
-              >
-                <Ionicons name="map-outline" size={30} color={colors.text + "40"} />
-                <Text style={[styles.mapPlaceholderText, { color: colors.text + "80" }]}>
-                  {t("restaurant.mapPlaceholder")}
-                </Text>
+              <View style={styles.mapContainer}>
+                <LinearGradient
+                  colors={[colors.blue[50], colors.blue[100]]}
+                  style={styles.mapBackground}
+                />
+                
+                {/* Location pin and address display */}
+                <View style={styles.mapContent}>
+                  <View style={styles.mapPinContainer}>
+                    <View style={[styles.mapPin, { backgroundColor: colors.blue[600] }]}>
+                      <Ionicons name="location" size={24} color="white" />
+                    </View>
+                    <View style={[styles.mapPinShadow, { backgroundColor: colors.blue[600] + '30' }]} />
+                  </View>
+                  
+                  <View style={styles.mapAddressContainer}>
+                    <Text style={[styles.mapAddressTitle, { color: colors.text }]}>
+                      {restaurant.name}
+                    </Text>
+                    <Text style={[styles.mapAddressText, { color: colors.text + "90" }]}>
+                      {restaurant.location}
+                    </Text>
+                  </View>
+                </View>
+                
+                {/* Map grid lines for visual effect */}
+                <View style={styles.mapGrid}>
+                  {[...Array(5)].map((_, i) => (
+                    <View key={`h-${i}`} style={[styles.mapGridLine, styles.mapGridHorizontal, { borderColor: colors.blue[200] + '50' }]} />
+                  ))}
+                  {[...Array(5)].map((_, i) => (
+                    <View key={`v-${i}`} style={[styles.mapGridLine, styles.mapGridVertical, { borderColor: colors.blue[200] + '50' }]} />
+                  ))}
+                </View>
+                
+                {/* Road-like elements for visual effect */}
+                <View style={[styles.mapRoad, { backgroundColor: colors.blue[200] + '80' }]} />
+                <View style={[styles.mapRoadSecondary, { backgroundColor: colors.blue[200] + '50' }]} />
+                
+                {/* Map Label */}
+                <View style={[styles.mapLabel, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.mapLabelText, { color: colors.text + "80" }]}>
+                    {t("restaurant.location") || "Localização do Restaurante"}
+                  </Text>
+                </View>
               </View>
-              <Text style={[styles.address, { color: colors.text + "90" }]}>{restaurant.location}</Text>
             </Card>
           </View>
         )}
