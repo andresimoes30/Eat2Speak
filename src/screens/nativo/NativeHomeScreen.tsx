@@ -59,6 +59,7 @@ export default function NativeHomeScreen() {
   // Use local state to track availability to ensure UI updates immediately
   const [isAvailable, setIsAvailable] = useState(appState.isAvailable)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
+  const [updatingAvailability, setUpdatingAvailability] = useState(false)
   
   // State for favorite restaurants
   const [favoriteRestaurants, setFavoriteRestaurants] = useState<RestaurantWithFavorite[]>([])
