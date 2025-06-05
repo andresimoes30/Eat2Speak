@@ -17,7 +17,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient"
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
 import * as Location from "expo-location"
-import NetInfo from "@react-native-community/netinfo"
+// Removed NetInfo import that was causing bundling errors
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
@@ -29,6 +29,28 @@ import Geocoder from "react-native-geocoding"
 // Initialize Geocoder with a placeholder API key (should be replaced with your actual key)
 // For production, store this in environment variables or secure configuration
 Geocoder.init("YOUR_GOOGLE_MAPS_API_KEY")
+
+// Simple network connectivity helper (fallback for NetInfo)
+const checkNetworkConnectivity = async (): Promise<boolean> => {
+  try {
+    // A simple fetch request to check connectivity
+    // We use a timeout to avoid hanging if network is very slow
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch('https://www.google.com', { 
+      method: 'HEAD',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.log('Network connectivity check failed:', error);
+    return false;
+  }
+};
+
 // Definindo interfaces para tipagem
 interface MenuItem {
   id: number
@@ -36,6 +58,7 @@ interface MenuItem {
   price: string
   description: string
 }
+
 interface Review {
   id: number
   user: string
@@ -43,6 +66,7 @@ interface Review {
   date: string
   comment: string
 }
+
 interface RestaurantDetail {
   id: number
   name: string
@@ -70,15 +94,18 @@ interface MapError {
   code?: string;
   message: string;
 }
+
 // Interface for API error
 interface ApiError {
   message: string
   code?: string
 }
+
 // Definindo tipos para as rotas de navegação
 type RootStackParamList = {
   RestaurantDetail: { id?: number; name?: string }
 }
+
 // Default restaurant data (used while loading or as fallback)
 // Default fallback data for when the API call fails or for initial loading UI
 const fallbackRestaurantDetails: RestaurantDetail = {
@@ -145,10 +172,12 @@ const DEFAULT_REGION = {
   latitudeDelta: 0.01,
   longitudeDelta: 0.01,
 };
+
 // Definindo tipos para as rotas de navegação
 type NavigationProp = {
   navigate: (screen: string, params: { restaurantId: number; restaurantName: string }) => void
 }
+
 // Helper function to get random menu items
 const getRandomMenuItems = (count: number = 3): MenuItem[] => {
   const menuItems = [
@@ -187,6 +216,7 @@ const getRandomMenuItems = (count: number = 3): MenuItem[] => {
   // Return random items from the menu
   return [...menuItems].sort(() => 0.5 - Math.random()).slice(0, count);
 };
+
 // Helper function to get random reviews
 const getRandomReviews = (count: number = 2): Review[] => {
   const reviews = [
@@ -223,6 +253,7 @@ const getRandomReviews = (count: number = 2): Review[] => {
   // Return random reviews
   return [...reviews].sort(() => 0.5 - Math.random()).slice(0, count);
 };
+
 // Function to transform API data to match our component's data structure
 const transformRestaurantData = (apiData: any): RestaurantDetail => {
   if (!apiData) return fallbackRestaurantDetails;
@@ -268,9 +299,9 @@ const geocodeAddress = async (address: string): Promise<{ latitude: number; long
   }
   
   try {
-    // Check for network connectivity
-    const netInfoState = await NetInfo.fetch();
-    if (!netInfoState.isConnected) {
+    // Check for network connectivity using our fallback function
+    const isConnected = await checkNetworkConnectivity();
+    if (!isConnected) {
       throw new Error('No network connection');
     }
     
@@ -291,6 +322,7 @@ const geocodeAddress = async (address: string): Promise<{ latitude: number; long
     return null;
   }
 };
+
 export default function RestaurantDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "RestaurantDetail">>()
   const navigation = useNavigation<NavigationProp>()
@@ -311,6 +343,7 @@ export default function RestaurantDetailScreen() {
   const [mapError, setMapError] = useState<string | null>(null)
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false)
   const [isNetworkConnected, setIsNetworkConnected] = useState<boolean | null>(true)
+  
   // Get the restaurant ID from route params
   const restaurantId = route.params?.id || 1
 
@@ -377,21 +410,34 @@ export default function RestaurantDetailScreen() {
     }
   }, []);
   
-  // Check network connectivity
+  // Check network connectivity with a periodic check (replaces NetInfo.addEventListener)
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      setIsNetworkConnected(state.isConnected);
-      
-      // Update map error based on connectivity
-      if (!state.isConnected) {
-        setMapError(t('map.noNetworkConnection') || 'No network connection. Map functionality may be limited.');
-      } else if (mapError === 'No network connection. Map functionality may be limited.') {
-        setMapError(null);
+    // Periodically check network connectivity
+    const checkConnectivity = async () => {
+      try {
+        const isConnected = await checkNetworkConnectivity();
+        setIsNetworkConnected(isConnected);
+        
+        // Update map error based on connectivity
+        if (!isConnected) {
+          setMapError(t('map.noNetworkConnection') || 'No network connection. Map functionality may be limited.');
+        } else if (mapError === 'No network connection. Map functionality may be limited.') {
+          setMapError(null);
+        }
+      } catch (error) {
+        console.error('Error checking connectivity:', error);
+        // Don't update error state on check failure
       }
-    });
+    };
+    
+    // Initial check
+    checkConnectivity();
+    
+    // Set up interval for periodic checks
+    const intervalId = setInterval(checkConnectivity, 10000); // Check every 10 seconds
     
     return () => {
-      unsubscribe();
+      clearInterval(intervalId);
     };
   }, [mapError, t]);
   
@@ -462,6 +508,7 @@ export default function RestaurantDetailScreen() {
       tryGeocodeAddress();
     }
   }, [restaurant.location, isNetworkConnected, mapReady]);
+
   // Fetch restaurant details when component mounts or ID changes
   useEffect(() => {
     fetchRestaurantDetails(restaurantId);
@@ -511,6 +558,7 @@ export default function RestaurantDetailScreen() {
       });
     }
   }, [restaurant.coordinates, restaurant.name]);
+
   // Handle pull-to-refresh
   const handleRefresh = useCallback(() => {
     fetchRestaurantDetails(restaurantId, true);
