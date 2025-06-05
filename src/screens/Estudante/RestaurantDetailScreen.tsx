@@ -452,76 +452,74 @@ export default function RestaurantDetailScreen() {
             <Card style={styles.infoCard}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.sections.location")}</Text>
               <View style={styles.mapContainer}>
+                {/* Satellite view background */}
                 <LinearGradient
-                  colors={[colors.blue[50], colors.blue[100]]}
+                  colors={['#263238', '#37474F', '#455A64']}
                   style={styles.mapBackground}
                 />
                 
-                {/* Map grid lines for visual effect - more lines for zoomed out effect */}
-                <View style={styles.mapGrid}>
-                  {[...Array(10)].map((_, i) => (
+                {/* Satellite texture overlay */}
+                <View style={styles.satelliteTexture}>
+                  {/* Random patterns to simulate satellite imagery */}
+                  {[...Array(20)].map((_, i) => (
                     <View 
-                      key={`h-${i}`} 
+                      key={`block-${i}`} 
                       style={[
-                        styles.mapGridLine, 
-                        styles.mapGridHorizontal, 
+                        styles.satelliteBlock, 
                         { 
-                          top: `${10 * i}%`, 
-                          borderColor: colors.blue[200] + (i % 3 === 0 ? '70' : '30')
-                        }
-                      ]} 
-                    />
-                  ))}
-                  {[...Array(10)].map((_, i) => (
-                    <View 
-                      key={`v-${i}`} 
-                      style={[
-                        styles.mapGridLine, 
-                        styles.mapGridVertical, 
-                        { 
-                          left: `${10 * i}%`, 
-                          borderColor: colors.blue[200] + (i % 3 === 0 ? '70' : '30')
+                          top: `${Math.random() * 90}%`, 
+                          left: `${Math.random() * 90}%`,
+                          width: 20 + Math.random() * 60,
+                          height: 20 + Math.random() * 60,
+                          backgroundColor: `rgba(${30 + Math.random() * 40}, ${
+                            50 + Math.random() * 40
+                          }, ${60 + Math.random() * 40}, ${0.2 + Math.random() * 0.3})`,
+                          transform: [{ rotate: `${Math.random() * 360}deg` }]
                         }
                       ]} 
                     />
                   ))}
                 </View>
                 
-                {/* Multiple road-like elements for visual effect - more roads for zoomed out effect */}
-                <View style={[styles.mapRoad, { backgroundColor: colors.blue[200] + '80', height: 14 }]} />
-                <View style={[styles.mapRoadSecondary, { backgroundColor: colors.blue[200] + '70', width: 14 }]} />
-                
-                {/* Additional roads to create a grid */}
-                <View style={[styles.mapRoad, { 
-                  backgroundColor: colors.blue[200] + '60', 
-                  height: 10, 
-                  top: '25%',
-                  marginTop: -5
+                {/* Roads in satellite view */}
+                <View style={[styles.satelliteRoad, { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  height: 8,
+                  top: '50%'
                 }]} />
-                <View style={[styles.mapRoad, { 
-                  backgroundColor: colors.blue[200] + '60', 
-                  height: 10, 
-                  top: '75%',
-                  marginTop: -5
-                }]} />
-                <View style={[styles.mapRoadSecondary, { 
-                  backgroundColor: colors.blue[200] + '60', 
-                  width: 10, 
-                  left: '25%',
-                  marginLeft: -5
-                }]} />
-                <View style={[styles.mapRoadSecondary, { 
-                  backgroundColor: colors.blue[200] + '60', 
-                  width: 10, 
-                  left: '75%',
-                  marginLeft: -5
+                <View style={[styles.satelliteRoad, { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+                  width: 8,
+                  height: '100%',
+                  left: '50%',
+                  top: 0
                 }]} />
                 
-                {/* City blocks for zoomed out effect */}
-                <View style={[styles.cityBlock, { top: '20%', left: '20%', backgroundColor: colors.blue[200] + '20' }]} />
-                <View style={[styles.cityBlock, { top: '20%', left: '60%', backgroundColor: colors.blue[200] + '15' }]} />
-                <View style={[styles.cityBlock, { top: '60%', left: '30%', backgroundColor: colors.blue[200] + '25' }]} />
-                <View style={[styles.cityBlock, { top: '70%', left: '70%', backgroundColor: colors.blue[200] + '15' }]} />
+                {/* Secondary roads */}
+                <View style={[styles.satelliteRoad, { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                  height: 4,
+                  top: '30%'
+                }]} />
+                <View style={[styles.satelliteRoad, { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                  height: 4,
+                  top: '70%'
+                }]} />
+                <View style={[styles.satelliteRoad, { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                  width: 4,
+                  height: '100%',
+                  left: '30%',
+                  top: 0
+                }]} />
+                <View style={[styles.satelliteRoad, { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                  width: 4,
+                  height: '100%',
+                  left: '70%',
+                  top: 0
+                }]} />
                 
                 {/* Location pin and address display - smaller for zoomed out effect */}
                 <View style={[styles.mapContent, { justifyContent: 'center' }]}>
