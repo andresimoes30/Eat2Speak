@@ -20,7 +20,28 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Card } from '../../components/Card';
 import * as Location from 'expo-location';
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+// Remove NetInfo import to resolve bundling error
+
+// Simple network connectivity helper (replacement for NetInfo)
+const checkNetworkConnectivity = async (): Promise<boolean> => {
+  try {
+    // A simple fetch request to check connectivity
+    // We use a timeout to avoid hanging if network is very slow
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch('https://www.google.com', { 
+      method: 'HEAD',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.log('Network connectivity check failed:', error);
+    return false;
+  }
+};
 
 // Define custom MapEvent interface since it's not exported from react-native-maps
 interface MapEvent {
@@ -84,20 +105,34 @@ const MapScreen: React.FC = () => {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showSearchHistory, setShowSearchHistory] = useState(false);
   
-  // Subscribe to network connectivity status
+  // Check network connectivity with a periodic check
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
-      setIsConnected(state.isConnected);
-      
-      if (!state.isConnected && !errorMessage) {
-        setErrorMessage(t('map.noNetworkConnection') || 'No network connection. Some features may be limited.');
-      } else if (state.isConnected && errorMessage === 'No network connection. Some features may be limited.') {
-        setErrorMessage(null);
+    // Periodically check network connectivity
+    const checkConnectivity = async () => {
+      try {
+        const isConnected = await checkNetworkConnectivity();
+        setIsConnected(isConnected);
+        
+        // Update error message based on connectivity
+        if (!isConnected && !errorMessage) {
+          setErrorMessage(t('map.noNetworkConnection') || 'No network connection. Some features may be limited.');
+        } else if (isConnected && errorMessage === 'No network connection. Some features may be limited.') {
+          setErrorMessage(null);
+        }
+      } catch (error) {
+        console.error('Error checking connectivity:', error);
+        // Don't update error state on check failure
       }
-    });
-
+    };
+    
+    // Initial check
+    checkConnectivity();
+    
+    // Set up interval for periodic checks
+    const intervalId = setInterval(checkConnectivity, 10000); // Check every 10 seconds
+    
     return () => {
-      unsubscribe();
+      clearInterval(intervalId);
     };
   }, [errorMessage, t]);
 
@@ -154,9 +189,9 @@ const MapScreen: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Check for network connectivity
-      const netInfoState = await NetInfo.fetch();
-      if (!netInfoState.isConnected) {
+      // Check for network connectivity using our helper function
+      const isConnected = await checkNetworkConnectivity();
+      if (!isConnected) {
         throw new Error('No network connection');
       }
       
@@ -240,9 +275,9 @@ const MapScreen: React.FC = () => {
     try {
       setIsGeocoding(true);
       
-      // Check for network connectivity
-      const netInfoState = await NetInfo.fetch();
-      if (!netInfoState.isConnected) {
+      // Check for network connectivity using our helper function
+      const isConnected = await checkNetworkConnectivity();
+      if (!isConnected) {
         throw new Error('No network connection');
       }
       
@@ -302,9 +337,9 @@ const MapScreen: React.FC = () => {
   // Handle reverse geocoding (coordinates to address)
   const reverseGeocode = async (latitude: number, longitude: number): Promise<string> => {
     try {
-      // Check for network connectivity
-      const netInfoState = await NetInfo.fetch();
-      if (!netInfoState.isConnected) {
+      // Check for network connectivity using our helper function
+      const isConnected = await checkNetworkConnectivity();
+      if (!isConnected) {
         throw new Error('No network connection');
       }
       
