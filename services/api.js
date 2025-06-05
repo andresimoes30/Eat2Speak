@@ -30,24 +30,24 @@ const CONNECTION_CONFIGS = {
   },
   // Web browser environment (development)
   web: {
-    url: 'https://eat2speak.com', // Updated to production URL
+    url: 'http://localhost:3000', // Development server URL
     proxyPath: '/api',
   },
   // Android emulator configuration
   android: {
-    url: 'https://eat2speak.com', // Only using production URL
+    url: 'http://10.0.2.2:3000', // Special IP for Android emulator to access host
   },
   // iOS simulator configuration
   ios: {
-    url: 'https://eat2speak.com', // Only using production URL
+    url: 'http://localhost:3000', // Development server URL for iOS simulator
   },
   // Physical device configuration
   physicalDevice: {
-    url: 'https://eat2speak.com', // Only using production URL
+    url: 'http://YOUR_COMPUTER_IP:3000', // Update with your computer's IP for physical devices
   },
   // Expo environment 
   expo: {
-    url: 'https://eat2speak.com', // Only using production URL
+    url: 'http://localhost:3000', // Development server URL for Expo
   }
 };
 
@@ -73,8 +73,16 @@ const isPhysicalDevice = () => {
   return true;
 };
 
-// Helper function to determine the appropriate base URL for the current environment
+// Helper to determine the appropriate base URL for the current environment
 const getBaseUrl = () => {
+  // Define development mode - set to true for local development
+  const isDevelopment = true;
+  
+  // If in production mode, use production URL
+  if (!isDevelopment) {
+    return CONNECTION_CONFIGS.production.url;
+  }
+  
   try {
     // Check if we're in a browser environment
     if (typeof window !== 'undefined' && window.location) {
@@ -112,8 +120,8 @@ const getBaseUrl = () => {
     }
   } catch (err) {
     console.log("Error in getBaseUrl, using fallback configuration:", err.message);
-    // Use a safe fallback if anything fails
-    return CONNECTION_CONFIGS.production.url;
+    // Use development fallback if anything fails during development
+    return CONNECTION_CONFIGS.web.url;
   }
   
   // If running in Expo environment
@@ -121,7 +129,7 @@ const getBaseUrl = () => {
     return process.env.EXPO_PUBLIC_API_URL;
   }
   
-  // Default fallback
+  // Default to development URL
   return CONNECTION_CONFIGS.web.url;
 };
 
