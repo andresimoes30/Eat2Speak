@@ -180,45 +180,92 @@ export default function NativeHomeScreen() {
     }
   }
   
-  const toggleAvailability = () => {
+  const toggleAvailability = async () => {
     if (!isAvailable) {
       // If currently not available and trying to become available,
       // show the confirmation modal
       setShowAvailabilityModal(true);
     } else {
-      // If turning off availability, just do it directly
-      setIsAvailable(false);
-      updateAppState({ 
-        isAvailable: false,
-        user: {
-          ...appState.user,
-          isAvailable: false
-        }
-      });
+      // If turning off availability, update the database
+      setUpdatingAvailability(true);
       
-      Alert.alert(
-        t("native.availability.unavailableTitle"),
-        t("native.availability.unavailableMessage"),
-        [{ text: t("common.ok") }]
-      );
+      try {
+        // Update availability in the database
+        await userApi.updateUserAvailability(false);
+        
+        // Update local state
+        setIsAvailable(false);
+        
+        // Update context state
+        updateAppState({ 
+          isAvailable: false,
+          user: {
+            ...appState.user,
+            isAvailable: false
+          }
+        });
+        
+        // Show success message
+        Alert.alert(
+          t("native.availability.unavailableTitle") || "Status Updated",
+          t("native.availability.unavailableMessage") || "You are now marked as unavailable for sessions.",
+          [{ text: t("common.ok") }]
+        );
+      } catch (error) {
+        console.error("Error updating availability status:", error);
+        
+        // Show error message
+        Alert.alert(
+          t("native.availability.errorTitle") || "Error",
+          t("native.availability.errorMessage") || "Failed to update availability status. Please try again.",
+          [{ text: t("common.ok") }]
+        );
+      } finally {
+        setUpdatingAvailability(false);
+      }
     }
   }
   
-  const confirmAvailability = () => {
-    // Update local state
-    setIsAvailable(true);
+  const confirmAvailability = async () => {
+    setUpdatingAvailability(true);
     
-    // Update context state
-    updateAppState({ 
-      isAvailable: true,
-      user: {
-        ...appState.user,
-        isAvailable: true
-      }
-    });
-    
-    // Close the modal
-    setShowAvailabilityModal(false);
+    try {
+      // Update availability in the database
+      await userApi.updateUserAvailability(true);
+      
+      // Update local state
+      setIsAvailable(true);
+      
+      // Update context state
+      updateAppState({ 
+        isAvailable: true,
+        user: {
+          ...appState.user,
+          isAvailable: true
+        }
+      });
+      
+      // Show success message
+      Alert.alert(
+        t("native.availability.availableTitle") || "Status Updated",
+        t("native.availability.availableMessage") || "You are now marked as available for sessions.",
+        [{ text: t("common.ok") }]
+      );
+      
+      // Close the modal
+      setShowAvailabilityModal(false);
+    } catch (error) {
+      console.error("Error updating availability status:", error);
+      
+      // Show error message
+      Alert.alert(
+        t("native.availability.errorTitle") || "Error",
+        t("native.availability.errorMessage") || "Failed to update availability status. Please try again.",
+        [{ text: t("common.ok") }]
+      );
+    } finally {
+      setUpdatingAvailability(false);
+    }
   }
 
   // Helper function to generate random languages - only used if API doesn't provide them
