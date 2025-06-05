@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
 
     FavoriteRestaurant.belongsTo(models.Restaurant, {
       foreignKey: 'RestaurantId',
-      targetKey: 'restaurantid', // referência correta da tabela Restaurants
+      targetKey: 'restaurantId', // referência correta da tabela Restaurants
       as: 'restaurant'
     });
   };
