@@ -150,7 +150,7 @@ export default function NativeHomeScreen() {
             { 
               ...restaurant,
               isFavorite: true
-            }
+            } as RestaurantWithFavorite
           ])
           
           // Show success message
