@@ -86,7 +86,7 @@ async function verifyAuthToken(req, res, next) {
     // Add user and session data to request object
     req.user = user.toJSON();
     req.session = {
-      id: session.sessionId,
+      id: Number(session.sessionId), // Ensure it's always a number
       isActive: session.isActive
     };
     

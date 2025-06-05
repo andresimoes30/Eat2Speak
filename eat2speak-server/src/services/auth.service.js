@@ -323,8 +323,8 @@ function maskEmail(email) {
 
 /**
  * Log out a user by invalidating their session
- * @param {string} userId - User ID
- * @param {string} sessionId - Session ID to invalidate
+ * @param {string|number} userId - User ID
+ * @param {string|number} sessionId - Session ID to invalidate
  * @param {string} ipAddress - IP address of the request
  * @returns {boolean} Success indicator
  */
@@ -338,11 +338,23 @@ async function logoutUser(userId, sessionId, ipAddress = 'unknown') {
     // If sessionId provided, invalidate specific session
     if (sessionId) {
       // Ensure sessionId is converted to the correct type (INTEGER for database)
-      const parsedSessionId = typeof sessionId === 'string' ? parseInt(sessionId, 10) : sessionId;
+      // Use Number to handle both string parsing and direct number passing
+      const parsedSessionId = Number(sessionId);
+      
+      // Check if parsing resulted in a valid number
+      if (isNaN(parsedSessionId)) {
+        logger.error('Invalid sessionId format for logout', {
+          originalSessionId: sessionId,
+          type: typeof sessionId,
+          userId
+        });
+        return false;
+      }
       
       // Log conversion for debugging
       logger.info('Logout attempt', { 
         originalSessionId: sessionId,
+        originalType: typeof sessionId,
         parsedSessionId,
         userId 
       });

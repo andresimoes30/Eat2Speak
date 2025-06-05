@@ -41,10 +41,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(20),
       allowNull: true
     },
-    balance: {
-    type: DataTypes.DECIMAL(10, 2),
-    defaultValue: 0.00
-    },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW

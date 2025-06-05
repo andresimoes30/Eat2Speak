@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.vscode/settings.json
+eat2speak-server/logs/server.log
+eat2speak-server/stderr.log
+eat2speak-server/node_modules.tar
+eat2speak-server/stderr.log

@@ -63,11 +63,11 @@ app.use(helmet({
   }
 })); // Enhanced security headers
 
-// CORS configuration - optimized for production with secure defaults
+// CORS configuration - configured to allow requests from eat2speak.com
 app.use(cors({
-  // In production, restrict origins to known domains
+  // Allow requests from the specific domain
   origin: isProduction ? 
-    ['https://yourapp.com', 'https://www.yourapp.com'] : // Adjust with your actual domains
+    ['https://eat2speak.com', 'https://www.eat2speak.com'] : // Production domains
     '*', // Allow all origins in development
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

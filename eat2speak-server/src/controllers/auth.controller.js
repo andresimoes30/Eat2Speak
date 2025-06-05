@@ -131,10 +131,17 @@ const logout = async (req, res) => {
       });
     }
     
+    // Log details for debugging
+    logger.info('Attempting logout', {
+      userId: user.userId,
+      sessionId: session.id,
+      sessionIdType: typeof session.id
+    });
+    
     // Get client IP address
     const ipAddress = getClientIp(req);
     
-    // Log user out
+    // Log user out - the sessionId should already be a number from auth middleware
     const success = await logoutUser(user.userId, session.id, ipAddress);
     
     // Clear any session cookies
@@ -154,6 +161,10 @@ const logout = async (req, res) => {
         message: 'Logout successful'
       });
     } else {
+      logger.error('Logout failed', {
+        userId: user.userId,
+        sessionId: session.id
+      });
       return res.status(500).json({
         status: 'error',
         code: 500,
