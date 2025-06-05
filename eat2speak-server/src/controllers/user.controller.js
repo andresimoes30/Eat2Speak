@@ -116,7 +116,7 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, email, phoneNumber } = req.body;
+    const { firstName, lastName, email, phoneNumber, availability } = req.body;
 
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -131,6 +131,10 @@ const updateProfile = async (req, res) => {
     if (lastName) user.lastName = lastName;
     if (email) user.email = email;
     if (phoneNumber) user.phoneNumber = phoneNumber;
+    // Update availability if provided (can be true or false)
+    if (availability !== undefined) {
+      user.availability = !!availability; // Convert to boolean
+    }
 
     await user.save();
 
