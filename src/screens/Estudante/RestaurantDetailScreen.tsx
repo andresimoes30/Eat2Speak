@@ -12,6 +12,7 @@ import {
   RefreshControl, 
   Alert 
 } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../contexts/ThemeContext"
