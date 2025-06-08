@@ -710,18 +710,23 @@ export default function RestaurantDetailScreen() {
             coordinates
           }));
           
-          // Update map region
-          const newRegion = {
-            ...coordinates,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01
-          };
+          // Update map center for WebView
+          setMapCenter({
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+            zoom: 15
+          });
           
-          setMapRegion(newRegion);
-          
-          // Animate map to new coordinates if map is ready
-          if (mapRef.current && mapReady) {
-            mapRef.current.animateToRegion(newRegion, 1000);
+          // Update marker on map if map is ready
+          if (webViewRef.current && mapReady) {
+            webViewRef.current.postMessage(JSON.stringify({
+              type: 'updateMarker',
+              data: {
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude,
+                zoom: 15
+              }
+            }));
           }
         }
       } catch (err) {
