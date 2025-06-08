@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { 
   View, 
   Text, 
@@ -16,7 +16,6 @@ import {
   Dimensions
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-import { WebView } from "react-native-webview"
 import * as Location from "expo-location"
 // Import centralized connectivity utility
 import { checkNetworkConnectivity } from "../../utils/connectivity"
@@ -27,192 +26,6 @@ import { useLanguage } from "../../contexts/LanguageContext"
 import { Card } from "../../components/Card"
 import restaurantApi from "../../../services/restaurantApi"
 import Geocoder from "react-native-geocoding"
-
-// Interface for map messages from WebView
-interface MapMessage {
-  type: string;
-  data?: any;
-}
-
-// Create HTML content for the Leaflet map
-const createMapHTML = (
-  latitude: number, 
-  longitude: number, 
-  name: string, 
-  address: string, 
-  zoom: number = 15
-) => {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-      <style>
-        body {
-          padding: 0;
-          margin: 0;
-        }
-        html, body, #map {
-          height: 100%;
-          width: 100%;
-          overflow: hidden;
-        }
-        .custom-marker-icon {
-          background-color: #3B82F6;
-          width: 32px;
-          height: 32px;
-          display: block;
-          left: -16px;
-          top: -16px;
-          position: relative;
-          border-radius: 16px;
-          border: 2px solid white;
-          text-align: center;
-          color: white;
-          line-height: 32px;
-          box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        .custom-marker-icon::after {
-          content: '';
-          position: absolute;
-          bottom: -8px;
-          left: 50%;
-          margin-left: -8px;
-          border-width: 8px 8px 0;
-          border-style: solid;
-          border-color: #3B82F6 transparent;
-          display: block;
-          width: 0;
-        }
-        .custom-popup .leaflet-popup-content-wrapper {
-          border-radius: 8px;
-          padding: 0;
-          overflow: hidden;
-        }
-        .custom-popup .leaflet-popup-content {
-          margin: 0;
-          width: 220px !important;
-        }
-        .popup-container {
-          padding: 12px;
-        }
-        .popup-title {
-          font-weight: bold;
-          margin-bottom: 6px;
-          font-size: 14px;
-        }
-        .popup-address {
-          font-size: 12px;
-          color: #666;
-        }
-      </style>
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
-        crossorigin=""/>
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
-        crossorigin=""></script>
-    </head>
-    <body>
-      <div id="map"></div>
-      <script>
-        // Initialize map
-        const map = L.map('map', {
-          zoomControl: false,
-          attributionControl: false
-        }).setView([${latitude}, ${longitude}], ${zoom});
-        
-        // Add OpenStreetMap tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-        }).addTo(map);
-        
-        // Custom marker icon
-        const restaurantIcon = L.divIcon({
-          className: 'custom-marker-icon',
-          html: '<span>R</span>',
-          iconSize: [32, 32]
-        });
-        
-        // Add marker
-        const marker = L.marker([${latitude}, ${longitude}], {
-          icon: restaurantIcon,
-          draggable: false
-        }).addTo(map);
-        
-        // Add popup
-        marker.bindPopup(
-          '<div class="popup-container">' +
-          '<div class="popup-title">${name.replace(/'/g, "\\'")}</div>' +
-          '<div class="popup-address">${address.replace(/'/g, "\\'")}</div>' +
-          '</div>',
-          { 
-            className: 'custom-popup',
-            closeButton: false
-          }
-        );
-        
-        // Open popup by default
-        marker.openPopup();
-        
-        // Handle map interactions
-        map.on('moveend', function() {
-          const center = map.getCenter();
-          const zoom = map.getZoom();
-          
-          // Send data to React Native
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'mapMoved',
-            data: {
-              latitude: center.lat,
-              longitude: center.lng,
-              zoom: zoom
-            }
-          }));
-        });
-        
-        // Handle marker click
-        marker.on('click', function() {
-          // Send data to React Native
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'markerClicked',
-            data: {
-              name: '${name.replace(/'/g, "\\'")}'
-            }
-          }));
-        });
-        
-        // Handle message from React Native
-        window.addEventListener('message', function(event) {
-          try {
-            const message = JSON.parse(event.data);
-            
-            if (message.type === 'updateMarker') {
-              // Update marker position
-              marker.setLatLng([message.data.latitude, message.data.longitude]);
-              map.setView([message.data.latitude, message.data.longitude], message.data.zoom || ${zoom});
-            } 
-            else if (message.type === 'zoomIn') {
-              map.setZoom(map.getZoom() + 1);
-            } 
-            else if (message.type === 'zoomOut') {
-              map.setZoom(map.getZoom() - 1);
-            }
-          } catch (e) {
-            console.error('Error processing message:', e);
-          }
-        });
-        
-        // Let React Native know the map is ready
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'mapReady'
-        }));
-      </script>
-    </body>
-    </html>
-  `;
-};
 
 // Simple network connectivity helper (fallback for NetInfo)
 // Removed local implementation as we now import from centralized utility
@@ -334,8 +147,7 @@ const fallbackRestaurantDetails: RestaurantDetail = {
 // Default region for the map (Lisbon, Portugal)
 const DEFAULT_REGION = {
   latitude: 38.7223,
-  longitude: -9.1393,
-  zoom: 15
+  longitude: -9.1393
 };
 
 // Definindo tipos para as rotas de navegação
@@ -502,71 +314,12 @@ export default function RestaurantDetailScreen() {
   const [error, setError] = useState<string | null>(null)
   
   // Map-specific states
-  const [webViewRef, setWebViewRef] = useState<WebView | null>(null)
-  const [mapReady, setMapReady] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
-  const [mapCenter, setMapCenter] = useState({
-    latitude: DEFAULT_REGION.latitude,
-    longitude: DEFAULT_REGION.longitude,
-    zoom: DEFAULT_REGION.zoom
-  })
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false)
   const [isNetworkConnected, setIsNetworkConnected] = useState<boolean | null>(true)
   
   // Get the restaurant ID from route params
   const restaurantId = route.params?.id || 1
-
-  // Handle WebView messages from the Leaflet map
-  const handleWebViewMessage = useCallback((event: { nativeEvent: { data: string } }) => {
-    try {
-      const message: MapMessage = JSON.parse(event.nativeEvent.data);
-      
-      switch (message.type) {
-        case 'mapReady':
-          setMapReady(true);
-          setMapError(null);
-          break;
-          
-        case 'mapMoved':
-          if (message.data) {
-            setMapCenter({
-              latitude: message.data.latitude,
-              longitude: message.data.longitude,
-              zoom: message.data.zoom
-            });
-          }
-          break;
-          
-        case 'markerClicked':
-          // Handle marker click if needed
-          break;
-          
-        case 'mapError':
-          setMapError(message.data?.message || 'An error occurred with the map');
-          break;
-      }
-    } catch (error) {
-      console.error('Error parsing WebView message:', error);
-    }
-  }, []);
-  
-  // Zoom map in
-  const zoomIn = useCallback(() => {
-    if (webViewRef && mapReady) {
-      webViewRef.postMessage(JSON.stringify({
-        type: 'zoomIn'
-      }));
-    }
-  }, [webViewRef, mapReady]);
-  
-  // Zoom map out
-  const zoomOut = useCallback(() => {
-    if (webViewRef && mapReady) {
-      webViewRef.postMessage(JSON.stringify({
-        type: 'zoomOut'
-      }));
-    }
-  }, [webViewRef, mapReady]);
   
   // Function to fetch restaurant details
   const fetchRestaurantDetails = useCallback(async (id: number, isRefreshing = false) => {
@@ -587,27 +340,6 @@ export default function RestaurantDetailScreen() {
       
       // Update state with fetched data
       setRestaurant(transformedData);
-      
-      // Update map center based on restaurant coordinates
-      if (transformedData.coordinates) {
-        setMapCenter({
-          latitude: transformedData.coordinates.latitude,
-          longitude: transformedData.coordinates.longitude,
-          zoom: 15
-        });
-        
-        // Update marker on map if map is ready
-        if (webViewRef && mapReady) {
-          webViewRef.postMessage(JSON.stringify({
-            type: 'updateMarker',
-            data: {
-              latitude: transformedData.coordinates.latitude,
-              longitude: transformedData.coordinates.longitude,
-              zoom: 15
-            }
-          }));
-        }
-      }
       
       setError(null);
       setMapError(null);
@@ -634,7 +366,7 @@ export default function RestaurantDetailScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [refreshing]);
   
   // Check network connectivity with a periodic check (replaces NetInfo.addEventListener)
   useEffect(() => {
@@ -709,25 +441,6 @@ export default function RestaurantDetailScreen() {
             ...prev,
             coordinates
           }));
-          
-          // Update map center for WebView
-          setMapCenter({
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
-            zoom: 15
-          });
-          
-          // Update marker on map if map is ready
-          if (webViewRef && mapReady) {
-            webViewRef.postMessage(JSON.stringify({
-              type: 'updateMarker',
-              data: {
-                latitude: coordinates.latitude,
-                longitude: coordinates.longitude,
-                zoom: 15
-              }
-            }));
-          }
         }
       } catch (err) {
         console.error('Error geocoding address:', err);
@@ -738,28 +451,12 @@ export default function RestaurantDetailScreen() {
     if (isNetworkConnected) {
       tryGeocodeAddress();
     }
-  }, [restaurant.location, isNetworkConnected, mapReady]);
+  }, [restaurant.location, isNetworkConnected]);
 
   // Fetch restaurant details when component mounts or ID changes
   useEffect(() => {
     fetchRestaurantDetails(restaurantId);
   }, [restaurantId, fetchRestaurantDetails]);
-  
-  // Update map marker when restaurant coordinates change
-  useEffect(() => {
-    if (webViewRef && mapReady && restaurant.coordinates) {
-      const message = {
-        type: 'updateMarker',
-        data: {
-          latitude: restaurant.coordinates.latitude,
-          longitude: restaurant.coordinates.longitude,
-          zoom: 15
-        }
-      };
-      
-      webViewRef.postMessage(JSON.stringify(message));
-    }
-  }, [restaurant.coordinates, mapReady, webViewRef]);
   
   // Open directions in native maps app
   const openDirections = useCallback(() => {
@@ -964,98 +661,41 @@ export default function RestaurantDetailScreen() {
                   </View>
                 )}
                 
-                {/* Loading indicator while map initializes */}
-                {!mapReady && (
-                  <View style={styles.mapLoadingContainer}>
-                    <ActivityIndicator size="large" color={colors.blue[600]} />
-                    <Text style={[styles.mapLoadingText, { color: colors.text }]}>
-                      {t("restaurant.loadingMap") || "Carregando mapa..."}
+                {/* Map placeholder with gradient background */}
+                <View style={styles.mapPlaceholder}>
+                  <LinearGradient
+                    colors={[colors.blue[400], colors.blue[600]]}
+                    style={styles.mapPlaceholderGradient}
+                  >
+                    <Ionicons name="map" size={32} color="white" />
+                    <Text style={styles.mapPlaceholderText}>
+                      {t("restaurant.viewMapExternal") || "Visualizar Localização"}
                     </Text>
-                  </View>
-                )}
-                
-                {/* WebView-based map */}
-                <WebView
-                  ref={setWebViewRef}
-                  style={styles.map}
-                  originWhitelist={['*']}
-                  source={{ 
-                    html: createMapHTML(
-                      restaurant.coordinates.latitude,
-                      restaurant.coordinates.longitude,
-                      restaurant.name,
-                      restaurant.location,
-                      15
-                    )
-                  }}
-                  onMessage={handleWebViewMessage}
-                  onError={() => setMapError(t('map.loadError') || 'Error loading map')}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  startInLoadingState={true}
-                  renderLoading={() => (
-                    <View style={styles.mapLoadingContainer}>
-                      <ActivityIndicator size="large" color={colors.blue[600]} />
-                      <Text style={[styles.mapLoadingText, { color: colors.text }]}>
-                        {t("restaurant.loadingMap") || "Carregando mapa..."}
-                      </Text>
-                    </View>
-                  )}
-                  onHttpError={() => setMapError(t('map.connectionError') || 'Failed to load map resources')}
-                />
-                
-                {/* Map controls */}
-                <View style={styles.mapControls}>
-                  <TouchableOpacity 
-                    style={[styles.mapControlButton, { backgroundColor: colors.card }]}
-                    onPress={zoomIn}
-                  >
-                    <Ionicons name="add" size={20} color={colors.text} />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.mapControlButton, { backgroundColor: colors.card }]}
-                    onPress={zoomOut}
-                  >
-                    <Ionicons name="remove" size={20} color={colors.text} />
-                  </TouchableOpacity>
+                  </LinearGradient>
                 </View>
                 
-                {/* Map overlay with restaurant information */}
-                <View style={styles.mapOverlay}>
-                  <View 
-                    style={[
-                      styles.mapAddressContainer, 
-                      { 
-                        backgroundColor: 'rgba(255,255,255,0.95)',
-                        borderWidth: 1,
-                        borderColor: colors.blue[300] 
-                      }
-                    ]}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                      <Ionicons name="navigate" size={18} color={colors.blue[600]} />
-                      <Text style={{ fontSize: 12, color: colors.blue[600], fontWeight: '600', marginLeft: 4 }}>
-                        ENDEREÇO
-                      </Text>
-                    </View>
-                    <Text style={[styles.mapAddressTitle, { color: colors.text, fontSize: 16, fontWeight: 'bold' }]}>
+                {/* Location information */}
+                <View style={[styles.locationInfoContainer, { backgroundColor: colors.card }]}>
+                  <View style={styles.locationHeader}>
+                    <Ionicons name="location" size={24} color={colors.blue[600]} />
+                    <Text style={[styles.locationTitle, { color: colors.text }]}>
                       {restaurant.name}
                     </Text>
-                    <Text style={[styles.mapAddressText, { color: colors.text, fontSize: 14, fontWeight: '500' }]}>
-                      {restaurant.location}
-                    </Text>
-                    
-                    {/* Directions button */}
-                    <TouchableOpacity 
-                      style={[styles.directionsButton, { backgroundColor: colors.blue[600] }]}
-                      onPress={openDirections}
-                    >
-                      <Ionicons name="navigate-circle-outline" size={16} color="white" />
-                      <Text style={styles.directionsButtonText}>
-                        {t("restaurant.getDirections") || "Como Chegar"}
-                      </Text>
-                    </TouchableOpacity>
                   </View>
+                  
+                  <Text style={[styles.locationAddress, { color: colors.text + "90" }]}>
+                    {restaurant.location}
+                  </Text>
+                  
+                  <TouchableOpacity
+                    style={[styles.directionsButton, { backgroundColor: colors.blue[600] }]}
+                    onPress={openDirections}
+                  >
+                    <Ionicons name="navigate" size={18} color="white" />
+                    <Text style={styles.directionsButtonText}>
+                      {t("restaurant.getDirections") || "Como Chegar"}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </Card>
@@ -1274,113 +914,77 @@ const styles = StyleSheet.create({
   },
   // Map styles
   mapContainer: {
-    height: 220,
     borderRadius: 8,
     overflow: "hidden",
-    position: "relative",
     marginBottom: 12,
   },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  // Map loading styles
-  mapLoadingContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.7)",
-    zIndex: 5,
-  },
-  mapLoadingText: {
-    marginTop: 12,
-    fontSize: 14,
-  },
-  // Map error styles
   mapErrorContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    padding: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
-    zIndex: 10,
   },
   mapErrorText: {
     marginLeft: 8,
-    fontSize: 12,
+    fontSize: 14,
     flex: 1,
   },
-  // Map controls
-  mapControls: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 10,
-  },
-  mapControlButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    elevation: 2,
-  },
-  mapOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    zIndex: 10,
-  },
-  mapAddressContainer: {
-    padding: 12,
+  // Map placeholder styles
+  mapPlaceholder: {
+    height: 150,
+    width: '100%',
     borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    overflow: 'hidden',
+    marginBottom: 12,
   },
-  mapAddressTitle: {
+  mapPlaceholderGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapPlaceholderText: {
+    color: 'white',
+    marginTop: 8,
+    fontWeight: '600',
     fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-    textAlign: "center",
   },
-  mapAddressText: {
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 8,
+  // Location info styles
+  locationInfoContainer: {
+    padding: 16,
+    borderRadius: 8,
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  locationTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 12,
+    flex: 1,
+  },
+  locationAddress: {
+    fontSize: 15,
+    marginBottom: 16,
+    lineHeight: 20,
   },
   directionsButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    marginTop: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
   directionsButtonText: {
     color: "white",
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: "600",
-    marginLeft: 4,
+    marginLeft: 8,
   },
-  address: {
-    fontSize: 14,
-  },
+  // Menu styles
   menuItemCard: {
     marginBottom: 12,
   },
@@ -1401,6 +1005,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  // Review styles
   reviewCard: {
     marginBottom: 12,
   },
