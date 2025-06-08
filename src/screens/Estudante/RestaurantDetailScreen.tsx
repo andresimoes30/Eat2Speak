@@ -502,7 +502,7 @@ export default function RestaurantDetailScreen() {
   const [error, setError] = useState<string | null>(null)
   
   // Map-specific states
-  const webViewRef = useRef<WebView>(null)
+  const [webViewRef, setWebViewRef] = useState<WebView | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const [mapCenter, setMapCenter] = useState({
@@ -552,21 +552,21 @@ export default function RestaurantDetailScreen() {
   
   // Zoom map in
   const zoomIn = useCallback(() => {
-    if (webViewRef.current && mapReady) {
-      webViewRef.current.postMessage(JSON.stringify({
+    if (webViewRef && mapReady) {
+      webViewRef.postMessage(JSON.stringify({
         type: 'zoomIn'
       }));
     }
-  }, [mapReady]);
+  }, [webViewRef, mapReady]);
   
   // Zoom map out
   const zoomOut = useCallback(() => {
-    if (webViewRef.current && mapReady) {
-      webViewRef.current.postMessage(JSON.stringify({
+    if (webViewRef && mapReady) {
+      webViewRef.postMessage(JSON.stringify({
         type: 'zoomOut'
       }));
     }
-  }, [mapReady]);
+  }, [webViewRef, mapReady]);
   
   // Function to fetch restaurant details
   const fetchRestaurantDetails = useCallback(async (id: number, isRefreshing = false) => {
@@ -597,8 +597,8 @@ export default function RestaurantDetailScreen() {
         });
         
         // Update marker on map if map is ready
-        if (webViewRef.current && mapReady) {
-          webViewRef.current.postMessage(JSON.stringify({
+        if (webViewRef && mapReady) {
+          webViewRef.postMessage(JSON.stringify({
             type: 'updateMarker',
             data: {
               latitude: transformedData.coordinates.latitude,
@@ -718,8 +718,8 @@ export default function RestaurantDetailScreen() {
           });
           
           // Update marker on map if map is ready
-          if (webViewRef.current && mapReady) {
-            webViewRef.current.postMessage(JSON.stringify({
+          if (webViewRef && mapReady) {
+            webViewRef.postMessage(JSON.stringify({
               type: 'updateMarker',
               data: {
                 latitude: coordinates.latitude,
@@ -747,7 +747,7 @@ export default function RestaurantDetailScreen() {
   
   // Update map marker when restaurant coordinates change
   useEffect(() => {
-    if (webViewRef.current && mapReady && restaurant.coordinates) {
+    if (webViewRef && mapReady && restaurant.coordinates) {
       const message = {
         type: 'updateMarker',
         data: {
@@ -757,9 +757,9 @@ export default function RestaurantDetailScreen() {
         }
       };
       
-      webViewRef.current.postMessage(JSON.stringify(message));
+      webViewRef.postMessage(JSON.stringify(message));
     }
-  }, [restaurant.coordinates, mapReady]);
+  }, [restaurant.coordinates, mapReady, webViewRef]);
   
   // Open directions in native maps app
   const openDirections = useCallback(() => {
@@ -976,7 +976,7 @@ export default function RestaurantDetailScreen() {
                 
                 {/* WebView-based map */}
                 <WebView
-                  ref={webViewRef}
+                  ref={setWebViewRef}
                   style={styles.map}
                   originWhitelist={['*']}
                   source={{ 
