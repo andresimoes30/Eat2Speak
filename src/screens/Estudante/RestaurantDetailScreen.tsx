@@ -502,7 +502,7 @@ export default function RestaurantDetailScreen() {
   const [error, setError] = useState<string | null>(null)
   
   // Map-specific states
-  const webViewRef = useRef<WebView | null>(null)
+  const webViewRef = useRef<WebView>(null)
   const [mapReady, setMapReady] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const [mapCenter, setMapCenter] = useState({
