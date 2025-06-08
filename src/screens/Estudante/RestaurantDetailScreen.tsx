@@ -650,53 +650,28 @@ export default function RestaurantDetailScreen() {
 
             <Card style={styles.infoCard}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("restaurant.sections.location")}</Text>
-              <View style={styles.mapContainer}>
-                {/* Show map error if there is one */}
-                {mapError && (
-                  <View style={[styles.mapErrorContainer, { backgroundColor: colors.error + '15' }]}>
-                    <Ionicons name="alert-circle-outline" size={24} color={colors.error} />
-                    <Text style={[styles.mapErrorText, { color: colors.error }]}>
-                      {mapError}
-                    </Text>
-                  </View>
-                )}
-                
-                {/* Map placeholder with gradient background */}
-                <View style={styles.mapPlaceholder}>
-                  <LinearGradient
-                    colors={[colors.blue[400], colors.blue[600]]}
-                    style={styles.mapPlaceholderGradient}
-                  >
-                    <Ionicons name="map" size={32} color="white" />
-                    <Text style={styles.mapPlaceholderText}>
-                      {t("restaurant.viewMapExternal") || "Visualizar Localização"}
-                    </Text>
-                  </LinearGradient>
-                </View>
-                
-                {/* Location information */}
-                <View style={[styles.locationInfoContainer, { backgroundColor: colors.card }]}>
-                  <View style={styles.locationHeader}>
-                    <Ionicons name="location" size={24} color={colors.blue[600]} />
-                    <Text style={[styles.locationTitle, { color: colors.text }]}>
-                      {restaurant.name}
-                    </Text>
-                  </View>
-                  
-                  <Text style={[styles.locationAddress, { color: colors.text + "90" }]}>
-                    {restaurant.location}
+              {/* Location information card */}
+              <View style={[styles.locationCard, { backgroundColor: colors.card }]}>
+                <View style={styles.locationHeader}>
+                  <Ionicons name="location" size={24} color={colors.blue[600]} />
+                  <Text style={[styles.locationTitle, { color: colors.text }]}>
+                    {restaurant.name}
                   </Text>
-                  
-                  <TouchableOpacity
-                    style={[styles.directionsButton, { backgroundColor: colors.blue[600] }]}
-                    onPress={openDirections}
-                  >
-                    <Ionicons name="navigate" size={18} color="white" />
-                    <Text style={styles.directionsButtonText}>
-                      {t("restaurant.getDirections") || "Como Chegar"}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
+                
+                <Text style={[styles.locationAddress, { color: colors.text + "90" }]}>
+                  {restaurant.location}
+                </Text>
+                
+                <TouchableOpacity
+                  style={[styles.directionsButton, { backgroundColor: colors.blue[600] }]}
+                  onPress={openDirections}
+                >
+                  <Ionicons name="navigate" size={18} color="white" />
+                  <Text style={styles.directionsButtonText}>
+                    {t("restaurant.getDirections") || "Como Chegar"}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </Card>
           </View>
@@ -912,47 +887,11 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: 14,
   },
-  // Map styles
-  mapContainer: {
-    borderRadius: 8,
-    overflow: "hidden",
-    marginBottom: 12,
-  },
-  mapErrorContainer: {
-    padding: 12,
-    marginBottom: 12,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  mapErrorText: {
-    marginLeft: 8,
-    fontSize: 14,
-    flex: 1,
-  },
-  // Map placeholder styles
-  mapPlaceholder: {
-    height: 150,
-    width: '100%',
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  mapPlaceholderGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  mapPlaceholderText: {
-    color: 'white',
-    marginTop: 8,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  // Location info styles
-  locationInfoContainer: {
+  // Location card styles
+  locationCard: {
     padding: 16,
     borderRadius: 8,
+    marginBottom: 16,
   },
   locationHeader: {
     flexDirection: 'row',
