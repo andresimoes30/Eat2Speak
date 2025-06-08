@@ -12,10 +12,11 @@ import {
   RefreshControl, 
   Alert,
   Linking,
-  Platform
+  Platform,
+  Dimensions
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
+import { WebView } from "react-native-webview"
 import * as Location from "expo-location"
 // Import centralized connectivity utility
 import { checkNetworkConnectivity } from "../../utils/connectivity"
@@ -27,9 +28,191 @@ import { Card } from "../../components/Card"
 import restaurantApi from "../../../services/restaurantApi"
 import Geocoder from "react-native-geocoding"
 
-// Initialize Geocoder with a placeholder API key (should be replaced with your actual key)
-// For production, store this in environment variables or secure configuration
-Geocoder.init("YOUR_GOOGLE_MAPS_API_KEY")
+// Interface for map messages from WebView
+interface MapMessage {
+  type: string;
+  data?: any;
+}
+
+// Create HTML content for the Leaflet map
+const createMapHTML = (
+  latitude: number, 
+  longitude: number, 
+  name: string, 
+  address: string, 
+  zoom: number = 15
+) => {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <style>
+        body {
+          padding: 0;
+          margin: 0;
+        }
+        html, body, #map {
+          height: 100%;
+          width: 100%;
+          overflow: hidden;
+        }
+        .custom-marker-icon {
+          background-color: #3B82F6;
+          width: 32px;
+          height: 32px;
+          display: block;
+          left: -16px;
+          top: -16px;
+          position: relative;
+          border-radius: 16px;
+          border: 2px solid white;
+          text-align: center;
+          color: white;
+          line-height: 32px;
+          box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .custom-marker-icon::after {
+          content: '';
+          position: absolute;
+          bottom: -8px;
+          left: 50%;
+          margin-left: -8px;
+          border-width: 8px 8px 0;
+          border-style: solid;
+          border-color: #3B82F6 transparent;
+          display: block;
+          width: 0;
+        }
+        .custom-popup .leaflet-popup-content-wrapper {
+          border-radius: 8px;
+          padding: 0;
+          overflow: hidden;
+        }
+        .custom-popup .leaflet-popup-content {
+          margin: 0;
+          width: 220px !important;
+        }
+        .popup-container {
+          padding: 12px;
+        }
+        .popup-title {
+          font-weight: bold;
+          margin-bottom: 6px;
+          font-size: 14px;
+        }
+        .popup-address {
+          font-size: 12px;
+          color: #666;
+        }
+      </style>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+        crossorigin=""/>
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+        crossorigin=""></script>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        // Initialize map
+        const map = L.map('map', {
+          zoomControl: false,
+          attributionControl: false
+        }).setView([${latitude}, ${longitude}], ${zoom});
+        
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+        }).addTo(map);
+        
+        // Custom marker icon
+        const restaurantIcon = L.divIcon({
+          className: 'custom-marker-icon',
+          html: '<span>R</span>',
+          iconSize: [32, 32]
+        });
+        
+        // Add marker
+        const marker = L.marker([${latitude}, ${longitude}], {
+          icon: restaurantIcon,
+          draggable: false
+        }).addTo(map);
+        
+        // Add popup
+        marker.bindPopup(
+          '<div class="popup-container">' +
+          '<div class="popup-title">${name.replace(/'/g, "\\'")}</div>' +
+          '<div class="popup-address">${address.replace(/'/g, "\\'")}</div>' +
+          '</div>',
+          { 
+            className: 'custom-popup',
+            closeButton: false
+          }
+        );
+        
+        // Open popup by default
+        marker.openPopup();
+        
+        // Handle map interactions
+        map.on('moveend', function() {
+          const center = map.getCenter();
+          const zoom = map.getZoom();
+          
+          // Send data to React Native
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'mapMoved',
+            data: {
+              latitude: center.lat,
+              longitude: center.lng,
+              zoom: zoom
+            }
+          }));
+        });
+        
+        // Handle marker click
+        marker.on('click', function() {
+          // Send data to React Native
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'markerClicked',
+            data: {
+              name: '${name.replace(/'/g, "\\'")}'
+            }
+          }));
+        });
+        
+        // Handle message from React Native
+        window.addEventListener('message', function(event) {
+          try {
+            const message = JSON.parse(event.data);
+            
+            if (message.type === 'updateMarker') {
+              // Update marker position
+              marker.setLatLng([message.data.latitude, message.data.longitude]);
+              map.setView([message.data.latitude, message.data.longitude], message.data.zoom || ${zoom});
+            } 
+            else if (message.type === 'zoomIn') {
+              map.setZoom(map.getZoom() + 1);
+            } 
+            else if (message.type === 'zoomOut') {
+              map.setZoom(map.getZoom() - 1);
+            }
+          } catch (e) {
+            console.error('Error processing message:', e);
+          }
+        });
+        
+        // Let React Native know the map is ready
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'mapReady'
+        }));
+      </script>
+    </body>
+    </html>
+  `;
+};
 
 // Simple network connectivity helper (fallback for NetInfo)
 // Removed local implementation as we now import from centralized utility
@@ -152,8 +335,7 @@ const fallbackRestaurantDetails: RestaurantDetail = {
 const DEFAULT_REGION = {
   latitude: 38.7223,
   longitude: -9.1393,
-  latitudeDelta: 0.01,
-  longitudeDelta: 0.01,
+  zoom: 15
 };
 
 // Definindo tipos para as rotas de navegação
