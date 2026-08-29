@@ -1,36 +1,20 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Eat2Speak is a mobile language-learning app designed to help people practice new languages through real restaurant experiences. It connects language students, native speakers, and restaurants in one platform, making learning more practical, social, and engaging.
+Users can discover restaurants, explore menus and restaurant information, make reservations, and join conversation sessions where they can practice languages in real-life situations. Restaurants can use the platform to reach new customers, while native speakers can help learners improve their communication skills.
+The app is developed using both TypeScript and JavaScript. The mobile application is built with React Native and Expo, while the backend uses Node.js and Express. MySQL is used to store user accounts, restaurant information, reservations, and other application data.
 
-## Getting Started
+# How to install
 
-First, run the development server:
+1. Install Node.js: [nodejs.org](https://nodejs.org/).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. Extract the ZIP file and open PowerShell inside the project folder.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Run:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+npm.cmd install
+npm.cmd start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Install and open the Expo Go app on your phone and scan the QR code shown in the terminal.
 
-## Learn More
+Your computer and phone must be connected to the same Wi‑Fi network.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+5. When you open the app, it is set to Spanish by default. Choose one of these three options: Student, Native Speaker, or Restaurant user. Then create an account and sign in. After logging in, go to Settings and change the language to English.
