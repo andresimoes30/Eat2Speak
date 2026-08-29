@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "Eat2Speak",
+    "slug": "eat2speak",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#8C1C13"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Eat2Speak to use your location to find nearby restaurants and provide directions.",
+          "locationAlwaysPermission": "Allow Eat2Speak to use your location to find nearby restaurants and provide directions.",
+          "locationWhenInUsePermission": "Allow Eat2Speak to use your location to find nearby restaurants and provide directions."
+        }
+      ]
+    ],
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.eat2speak.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Eat2Speak needs your location to show nearby restaurants and provide directions.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Eat2Speak needs your location to show nearby restaurants and provide directions.",
+        "NSLocationAlwaysUsageDescription": "Eat2Speak needs your location to show nearby restaurants and provide directions.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyAaT9CtjBtIkQ2PNcfmGj3m6f5FyAWkI1Y"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#8C1C13"
+      },
+      "package": "com.eat2speak.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "FOREGROUND_SERVICE",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAaT9CtjBtIkQ2PNcfmGj3m6f5FyAWkI1Y"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
